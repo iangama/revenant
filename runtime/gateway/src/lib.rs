@@ -601,7 +601,10 @@ impl SharedSession {
             activity_messages(self.activity.apply_trigger(&WorldTrigger::ActorGroupDead {
                 group_id: group_id.to_owned(),
             }));
-        for message in messages {
+        let (completion_messages, state_messages): (Vec<_>, Vec<_>) = messages
+            .into_iter()
+            .partition(|message| matches!(message, ServerMessage::ActivityComplete(_)));
+        for message in state_messages {
             self.broadcast(message);
         }
         if self.stage == SessionStage::Drone {
@@ -609,6 +612,9 @@ impl SharedSession {
             self.enemy_id = None;
         } else {
             self.complete_activity(&owner)?;
+            for message in completion_messages {
+                self.broadcast(message);
+            }
         }
         Ok(())
     }
