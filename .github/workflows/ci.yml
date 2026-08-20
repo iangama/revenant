@@ -71,7 +71,20 @@ jobs:
             -C "$RUNNER_TEMP/install"
           cd "$RUNNER_TEMP/install/revenant-0.1.0-linux-x86_64"
           sha256sum --check SHA256SUMS
-          bin/revenant-gateway --healthcheck
+          reconstruction_log="$RUNNER_TEMP/reconstruction.log"
+          REVENANT_RECONSTRUCTION_ADDR=127.0.0.1:17016 \
+            bin/revenant-reconstructed-v1 >"$reconstruction_log" 2>&1 &
+          reconstruction_pid=$!
+          trap 'kill "$reconstruction_pid" 2>/dev/null || true' EXIT
+          for _ in {1..50}; do
+            if grep -q 'listening' "$reconstruction_log"; then
+              break
+            fi
+            sleep 0.1
+          done
+          REVENANT_GAME_ADDR=127.0.0.1:17016 bin/revenant-client-v1
+          wait "$reconstruction_pid"
+          grep -q 'without revenant-gateway' "$reconstruction_log"
       - uses: actions/upload-artifact@v4
         with:
           name: revenant-0.1.0-linux-x86_64

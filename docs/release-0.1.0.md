@@ -28,7 +28,7 @@ The release script uses locked Rust dependencies, a clean npm install, release-m
 
 ## Clean-install verification
 
-Extract the archive into a new temporary directory, validate `SHA256SUMS`, run `bin/revenant-gateway --healthcheck`, serve `inspector/` with any static HTTP server, and open `game/project.godot` with Godot 4.7.1. The full network/database acceptance test remains `make check` from source.
+Extract the archive into a new temporary directory, validate `SHA256SUMS`, run `bin/revenant-reconstructed-v1` and `bin/revenant-client-v1` together on an isolated local port, serve `inspector/` with any static HTTP server, and open `game/project.godot` with Godot 4.7.1. The full current-gateway/database acceptance test remains `make check` from source.
 
 ## Version control checkpoint
 
