@@ -1,0 +1,17 @@
+; Engine configuration file.
+; Revenant M0 client skeleton. Gameplay and networking begin in later milestones.
+config_version=5
+
+[application]
+
+config/name="Revenant"
+run/main_scene="res://main.tscn"
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"

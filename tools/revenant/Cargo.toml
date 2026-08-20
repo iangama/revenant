@@ -1,0 +1,16 @@
+[package]
+name = "revenant-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "revenant"
+path = "src/main.rs"
+
+[dependencies]
+revenant-persistence = { path = "../../runtime/persistence" }
+revenant-replay = { path = "../../runtime/replay" }
+
+[lints]
+workspace = true

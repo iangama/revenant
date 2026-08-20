@@ -1,0 +1,11 @@
+[package]
+name = "revenant-combat"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+revenant-actors = { path = "../actors" }
+
+[lints]
+workspace = true

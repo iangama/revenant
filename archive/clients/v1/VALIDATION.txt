@@ -1,0 +1,10 @@
+M14 authorized validation transcript
+
+runtime_current_protocol: 2
+client_frozen_protocol: 1
+adapter: FrozenV1 -> canonical client messages
+result: accepted
+observed_flow: handshake -> authentication -> character list -> world join
+client_output: frozen client V1 build 0.1.0-frozen joined relay-hub through compatibility adapter
+
+No third-party packet, asset, executable, protocol, or private data was used.

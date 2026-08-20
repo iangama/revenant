@@ -1,0 +1,10 @@
+/target/
+/.tooling/
+.env
+.godot/
+*.log
+node_modules/
+dist/
+*.tsbuildinfo
+/release/
+*.pgdump

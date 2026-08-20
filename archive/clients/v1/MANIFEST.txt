@@ -1,0 +1,11 @@
+artifact: revenant-client-v1
+client_version: 0.1.0-frozen
+protocol_version: 1
+framing: 4-byte big-endian length + named MessagePack map
+source_origin: Revenant project, author-controlled
+frozen_at_milestone: M14
+expected_runtime: Revenant Core Protocol V2 with V1 compatibility adapter
+source_sha256: 4f481e9fc5d22a5ab6d8f2d0a40e2d05dc9aaf92099debdd9dedf59c26f31f72
+cargo_manifest_sha256: c951c5fe88daa2dd9fb91a4da98ca316fd3923e0bff5332d748db44bce367322
+validated_linux_binary_sha256: ef62fcbec65e68db17fc5a6b2e9ce0f4fc5b2ad49209c9e9145471861c53a161
+binary_note: local x86_64 Linux validation artifact; rebuild from frozen source for other targets

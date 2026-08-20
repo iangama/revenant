@@ -1,0 +1,7 @@
+target
+.git
+.env
+.godot
+**/node_modules
+**/dist
+**/*.tsbuildinfo

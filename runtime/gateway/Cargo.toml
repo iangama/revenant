@@ -1,0 +1,22 @@
+[package]
+name = "revenant-gateway"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+revenant-activities = { path = "../activities" }
+revenant-ai = { path = "../ai" }
+revenant-actors = { path = "../actors" }
+revenant-combat = { path = "../combat" }
+revenant-compatibility = { path = "../compatibility" }
+revenant-identity = { path = "../identity" }
+revenant-objectives = { path = "../objectives" }
+revenant-persistence = { path = "../persistence" }
+revenant-protocol = { path = "../protocol" }
+revenant-replay = { path = "../replay" }
+revenant-world = { path = "../world" }
+serde_json.workspace = true
+
+[lints]
+workspace = true

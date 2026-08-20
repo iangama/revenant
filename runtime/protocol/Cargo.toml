@@ -1,0 +1,12 @@
+[package]
+name = "revenant-protocol"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+rmp-serde.workspace = true
+serde.workspace = true
+
+[lints]
+workspace = true
