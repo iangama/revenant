@@ -2,7 +2,7 @@
 
 Revenant is an original game-engineering and software-preservation project. It will evolve into a small online game, an authoritative client-server runtime, and eventually a controlled compatibility laboratory for old builds of Revenant itself.
 
-The repository currently prepares **M16 — Release Baseline 0.1**. M0–M15 are implemented, and version 0.1.0 adds reproducible packaging, artifact checksums, recovery documentation, secret auditing, and clean-install verification without changing runtime behavior.
+The repository currently implements **M17 — Playable Vertical Slice** on top of the published 0.1.0 baseline. The Godot client can now complete `relay_awakening` manually with server-authoritative movement and combat, an engineering-focused HUD, mouse aiming, and visible encounter feedback while retaining the automated acceptance flow.
 
 ## Repository map
 
@@ -66,6 +66,8 @@ docker compose --env-file .env -f infra/docker-compose.yml up --build
 Do not commit `.env`; the checked-in example contains local-only defaults.
 
 Open `http://127.0.0.1:4173` for the Inspector. The container serves the static application and proxies its read-only `/api/inspector` requests to the gateway.
+
+Open `client/game/project.godot` with Godot 4.7.1 to play the vertical slice. Use WASD, arrow keys, or the on-screen directional pad to move; aim the cursor at the active enemy and click, press Space, or use the on-screen Attack button. After defeating the relay drone, move to `x=6` to open the relay core and fight the Warden. The HUD displays player/enemy HP, objective progress, position and door distance, connection/encounter guidance, input diagnostics, and completion feedback. The gateway prepares a fresh run automatically after all players leave the current session.
 
 The game protocol listens on TCP port 7000. Clients complete a versioned handshake, authenticate a local username, and request their character list; see `docs/protocol/README.md` for the contract.
 The current protocol is V2. The gateway also accepts the frozen V1 client through `revenant-compatibility`; both versions map into the same canonical domain inputs.

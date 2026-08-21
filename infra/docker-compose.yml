@@ -6,13 +6,16 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-revenant}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-revenant_local}
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 10
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    stop_grace_period: 15s
     volumes:
       - revenant-postgres:/var/lib/postgresql/data
 
@@ -24,18 +27,23 @@ services:
       REVENANT_BIND_ADDR: 0.0.0.0:8080
       REVENANT_GAME_ADDR: 0.0.0.0:7000
       REVENANT_ACTIVITY_SCRIPT: /scripts/activities/relay_awakening.lua
-      DATABASE_URL: postgres://revenant:revenant_local@postgres:5432/revenant
+      DATABASE_URL: postgres://${POSTGRES_USER:-revenant}:${POSTGRES_PASSWORD:-revenant_local}@postgres:5432/${POSTGRES_DB:-revenant}
     depends_on:
       postgres:
         condition: service_healthy
     ports:
-      - "8080:8080"
-      - "7000:7000"
+      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:7000:7000"
     healthcheck:
       test: ["CMD", "/revenant-gateway", "--healthcheck"]
       interval: 5s
       timeout: 3s
       retries: 10
+    restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    stop_grace_period: 15s
 
   inspector:
     build:
@@ -45,12 +53,16 @@ services:
       gateway:
         condition: service_healthy
     ports:
-      - "${INSPECTOR_PORT:-4173}:80"
+      - "127.0.0.1:${INSPECTOR_PORT:-4173}:80"
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--spider", "http://127.0.0.1/"]
       interval: 5s
       timeout: 3s
       retries: 10
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    stop_grace_period: 15s
 
 volumes:
   revenant-postgres:
