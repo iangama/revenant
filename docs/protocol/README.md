@@ -60,6 +60,8 @@ M8 adds `MoveIntent`, `DoorState`, and `ActivityComplete`. `MoveIntent` is valid
 
 M12 does not add wire message types or change Protocol V1 framing. After the configured player count joins, each client receives `ActivityStart`, the current objective, an `ActorSpawn` for every participating player, and the shared enemy. Authoritative `ActorUpdate`, `DamageApplied`, `ActorDestroy`, objective, door, boss, and completion messages are broadcast to every participant. Intents from either player are validated against the same server-owned actor and activity state.
 
+M17 does not add wire messages. `MoveIntent.position` may target integer coordinates within the relay-hub bounds `x,z = -12..12` and requires `y = 0`; the server updates and broadcasts the player actor. Reaching `[6,0,0]` during the active door stage triggers the boss encounter. A client still cannot submit HP, damage, objective, door, spawn, or completion state.
+
 ## Compatibility matrix
 
 | Client | Wire protocol | Runtime support |

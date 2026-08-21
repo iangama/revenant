@@ -1,6 +1,6 @@
 # Revenant 0.1.0 release baseline
 
-Release status: prepared locally; commit and tag require explicit owner authorization.
+Release status: published as the stable `v0.1.0` baseline.
 
 This baseline contains milestones M0 through M15: bootstrap, handshake, identity, world join, actors, authoritative combat and AI, objectives and triggers, Lua activity runtime, PostgreSQL persistence, replay, multiplayer, Inspector, frozen V1 compatibility, and the controlled reconstruction experiment.
 

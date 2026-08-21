@@ -1,7 +1,9 @@
 use std::env;
-use std::io::{self, BufRead, BufReader, Write};
+use std::io::{self, BufRead, BufReader, Read, Write};
 use std::net::{TcpListener, TcpStream};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::mpsc::{self, Receiver, Sender};
+use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
@@ -25,6 +27,11 @@ use revenant_world::WorldService;
 pub const DEFAULT_BIND_ADDR: &str = "127.0.0.1:8080";
 pub const DEFAULT_GAME_ADDR: &str = "127.0.0.1:7000";
 pub const DEFAULT_DATABASE_URL: &str = "postgres://revenant:revenant_local@127.0.0.1:5432/revenant";
+const HANDSHAKE_TIMEOUT: Duration = Duration::from_secs(15);
+const GAMEPLAY_IDLE_TIMEOUT: Duration = Duration::from_mins(5);
+const HTTP_TIMEOUT: Duration = Duration::from_secs(5);
+const MAX_GAME_CONNECTIONS: usize = 64;
+const MAX_HTTP_REQUEST_LINE: usize = 4096;
 
 /// Runs the gateway until the process is terminated.
 ///
@@ -49,9 +56,7 @@ pub fn run(bind_addr: &str, game_addr: &str) -> io::Result<()> {
     }
     let script_path = env::var("REVENANT_ACTIVITY_SCRIPT")
         .unwrap_or_else(|_| "scripts/activities/relay_awakening.lua".to_owned());
-    let activity = ScriptedActivity::load(script_path)
-        .map_err(|error| io::Error::other(format!("activity load failed: {error}")))?;
-    let session = SharedSession::new(&database_url, activity, expected_players)?;
+    let session = SharedSession::new(&database_url, &script_path, expected_players)?;
     let (command_tx, command_rx) = mpsc::channel();
     thread::spawn(move || session.run(command_rx));
 
@@ -62,13 +67,21 @@ pub fn run(bind_addr: &str, game_addr: &str) -> io::Result<()> {
     );
     let inspector_database_url = database_url.clone();
     thread::spawn(move || serve_http(&health_listener, &inspector_database_url));
+    let active_connections = Arc::new(AtomicUsize::new(0));
 
     for stream in game_listener.incoming() {
         match stream {
             Ok(stream) => {
+                if active_connections.fetch_add(1, Ordering::Relaxed) >= MAX_GAME_CONNECTIONS {
+                    active_connections.fetch_sub(1, Ordering::Relaxed);
+                    eprintln!("{{\"event\":\"connection_rejected\",\"error\":\"connection limit reached\"}}");
+                    continue;
+                }
                 let database_url = database_url.clone();
                 let command_tx = command_tx.clone();
+                let connection_guard = ConnectionGuard(Arc::clone(&active_connections));
                 thread::spawn(move || {
+                    let _connection_guard = connection_guard;
                     if let Err(error) = handle_game_connection(stream, &database_url, &command_tx) {
                         eprintln!("{{\"event\":\"connection_failed\",\"error\":\"{error}\"}}");
                     }
@@ -80,26 +93,38 @@ pub fn run(bind_addr: &str, game_addr: &str) -> io::Result<()> {
     Ok(())
 }
 
+struct ConnectionGuard(Arc<AtomicUsize>);
+
+impl Drop for ConnectionGuard {
+    fn drop(&mut self) {
+        self.0.fetch_sub(1, Ordering::Relaxed);
+    }
+}
+
 fn serve_http(listener: &TcpListener, database_url: &str) {
     for stream in listener.incoming() {
         match stream {
-            Ok(mut stream) => match handle_http_connection(&stream, database_url) {
-                Ok((status, body)) => {
-                    let response = format!(
+            Ok(mut stream) => {
+                let _ = stream.set_read_timeout(Some(HTTP_TIMEOUT));
+                let _ = stream.set_write_timeout(Some(HTTP_TIMEOUT));
+                match handle_http_connection(&stream, database_url) {
+                    Ok((status, body)) => {
+                        let response = format!(
                         "HTTP/1.1 {status}\r\nContent-Type: application/json\r\nAccess-Control-Allow-Origin: *\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
                         body.len()
                     );
-                    let _ = stream.write_all(response.as_bytes());
-                }
-                Err(error) => {
-                    let body = serde_json::json!({ "error": error.to_string() }).to_string();
-                    let response = format!(
+                        let _ = stream.write_all(response.as_bytes());
+                    }
+                    Err(error) => {
+                        let body = serde_json::json!({ "error": error.to_string() }).to_string();
+                        let response = format!(
                         "HTTP/1.1 500 Internal Server Error\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
                         body.len()
                     );
-                    let _ = stream.write_all(response.as_bytes());
+                        let _ = stream.write_all(response.as_bytes());
+                    }
                 }
-            },
+            }
             Err(error) => eprintln!("{{\"event\":\"health_accept_failed\",\"error\":\"{error}\"}}"),
         }
     }
@@ -109,8 +134,7 @@ fn handle_http_connection(
     stream: &TcpStream,
     database_url: &str,
 ) -> Result<(&'static str, String), Box<dyn std::error::Error>> {
-    let mut request_line = String::new();
-    BufReader::new(stream).read_line(&mut request_line)?;
+    let request_line = read_http_request_line(stream)?;
     let path = request_line
         .split_whitespace()
         .nth(1)
@@ -168,6 +192,21 @@ fn handle_http_connection(
     }
 }
 
+fn read_http_request_line(reader: impl Read) -> io::Result<String> {
+    let mut bytes = Vec::with_capacity(128);
+    BufReader::new(reader)
+        .take((MAX_HTTP_REQUEST_LINE + 1) as u64)
+        .read_until(b'\n', &mut bytes)?;
+    if bytes.last() != Some(&b'\n') || bytes.len() > MAX_HTTP_REQUEST_LINE {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            "HTTP request line is incomplete or too large",
+        ));
+    }
+    String::from_utf8(bytes)
+        .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "HTTP request line is not UTF-8"))
+}
+
 #[derive(Debug, PartialEq, Eq)]
 enum InspectorRoute<'a> {
     Health,
@@ -203,8 +242,8 @@ fn handle_game_connection(
     database_url: &str,
     command_tx: &Sender<SessionCommand>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    stream.set_read_timeout(Some(Duration::from_secs(15)))?;
-    stream.set_write_timeout(Some(Duration::from_secs(15)))?;
+    stream.set_read_timeout(Some(HANDSHAKE_TIMEOUT))?;
+    stream.set_write_timeout(Some(HANDSHAKE_TIMEOUT))?;
     let ClientMessage::ClientHello(hello) = read_message(&mut stream)? else {
         return Err(unexpected_message("ClientHello"));
     };
@@ -310,6 +349,37 @@ fn handle_game_connection(
     }
     load_character_state(&mut persistence, &request.character_id)?;
     let player = WorldService.join(&request.character_id);
+    let (outbound_tx, outbound_rx) = mpsc::channel();
+    let (join_result_tx, join_result_rx) = mpsc::channel();
+    command_tx.send(SessionCommand::Join {
+        participant: Participant {
+            account_id: account.id,
+            character_id: request.character_id,
+            actor: Actor {
+                id: player.actor_id,
+                kind: ActorKind::Player,
+                archetype: "operator".to_owned(),
+                position: [0, 0, 0],
+                health: 100,
+                max_health: 100,
+            },
+            outbound: outbound_tx,
+        },
+        result: join_result_tx,
+    })?;
+    if let Err(message) = join_result_rx.recv()? {
+        write_message(
+            &mut stream,
+            &ServerMessage::WorldJoinResponse(WorldJoinResponse {
+                accepted: false,
+                world_id: player.world_id,
+                player_actor_id: 0,
+                spawn_position: [0, 0, 0],
+                message,
+            }),
+        )?;
+        return Ok(());
+    }
     write_message(
         &mut stream,
         &ServerMessage::WorldJoinResponse(WorldJoinResponse {
@@ -321,22 +391,10 @@ fn handle_game_connection(
         }),
     )?;
 
-    let (outbound_tx, outbound_rx) = mpsc::channel();
     let mut writer = stream.try_clone()?;
     thread::spawn(move || write_outbound(&mut writer, outbound_rx));
-    command_tx.send(SessionCommand::Join(Participant {
-        account_id: account.id,
-        character_id: request.character_id,
-        actor: Actor {
-            id: player.actor_id,
-            kind: ActorKind::Player,
-            archetype: "operator".to_owned(),
-            position: [0, 0, 0],
-            health: 100,
-            max_health: 100,
-        },
-        outbound: outbound_tx,
-    }))?;
+    command_tx.send(SessionCommand::Start(player.actor_id))?;
+    stream.set_read_timeout(Some(GAMEPLAY_IDLE_TIMEOUT))?;
 
     loop {
         match read_canonical(&mut stream, adapter) {
@@ -378,9 +436,19 @@ fn write_outbound(stream: &mut TcpStream, messages: Receiver<ServerMessage>) {
 }
 
 enum SessionCommand {
-    Join(Participant),
-    Attack { player_id: u64, target_id: u64 },
-    Move { player_id: u64, position: [i32; 3] },
+    Join {
+        participant: Participant,
+        result: Sender<Result<(), String>>,
+    },
+    Start(u64),
+    Attack {
+        player_id: u64,
+        target_id: u64,
+    },
+    Move {
+        player_id: u64,
+        position: [i32; 3],
+    },
     Disconnect(u64),
 }
 
@@ -411,14 +479,12 @@ struct SharedSession {
     stage: SessionStage,
     persistence: Persistence,
     session_id: String,
+    activity_script: String,
 }
 
 impl SharedSession {
-    fn new(
-        database_url: &str,
-        activity: ScriptedActivity,
-        expected_players: usize,
-    ) -> io::Result<Self> {
+    fn new(database_url: &str, activity_script: &str, expected_players: usize) -> io::Result<Self> {
+        let activity = load_activity(activity_script)?;
         Ok(Self {
             expected_players,
             participants: Vec::new(),
@@ -434,13 +500,26 @@ impl SharedSession {
                 ))
             })?,
             session_id: new_session_id()?,
+            activity_script: activity_script.to_owned(),
         })
     }
 
     fn run(mut self, commands: Receiver<SessionCommand>) {
         for command in commands {
             let result = match command {
-                SessionCommand::Join(participant) => self.join(participant),
+                SessionCommand::Join {
+                    participant,
+                    result,
+                } => {
+                    let join_result = self.join(participant);
+                    let response = match &join_result {
+                        Ok(()) => Ok(()),
+                        Err(error) => Err(error.to_string()),
+                    };
+                    let _ = result.send(response);
+                    join_result
+                }
+                SessionCommand::Start(player_id) => self.start_if_ready(player_id),
                 SessionCommand::Attack {
                     player_id,
                     target_id,
@@ -449,10 +528,7 @@ impl SharedSession {
                     player_id,
                     position,
                 } => self.move_player(player_id, position),
-                SessionCommand::Disconnect(player_id) => {
-                    self.disconnect(player_id);
-                    Ok(())
-                }
+                SessionCommand::Disconnect(player_id) => self.disconnect(player_id),
             };
             if let Err(error) = result {
                 eprintln!("{{\"event\":\"session_command_failed\",\"error\":\"{error}\"}}");
@@ -461,8 +537,11 @@ impl SharedSession {
     }
 
     fn join(&mut self, participant: Participant) -> Result<(), Box<dyn std::error::Error>> {
-        if self.stage != SessionStage::Waiting || self.participants.len() >= self.expected_players {
-            return Err(io::Error::other("shared session is not accepting more players").into());
+        if !session_accepts_join(self.stage, self.participants.len(), self.expected_players) {
+            return Err(io::Error::other(
+                "relay-hub session is already active; try again after the current players leave",
+            )
+            .into());
         }
         self.actors.insert(participant.actor.clone());
         self.append_event(
@@ -472,7 +551,18 @@ impl SharedSession {
             "player joined",
         )?;
         self.participants.push(participant);
-        if self.participants.len() == self.expected_players {
+        Ok(())
+    }
+
+    fn start_if_ready(&mut self, player_id: u64) -> Result<(), Box<dyn std::error::Error>> {
+        if !self
+            .participants
+            .iter()
+            .any(|participant| participant.actor.id == player_id)
+        {
+            return Err(io::Error::other("player is not admitted to the shared session").into());
+        }
+        if self.stage == SessionStage::Waiting && self.participants.len() == self.expected_players {
             self.start_activity()?;
         }
         Ok(())
@@ -571,6 +661,10 @@ impl SharedSession {
             remaining_health: result.remaining_health,
             killed: result.killed,
         }));
+        println!(
+            "{{\"event\":\"attack_applied\",\"source_actor_id\":{player_id},\"target_actor_id\":{target_id},\"damage\":{},\"remaining_health\":{},\"killed\":{}}}",
+            result.damage, result.remaining_health, result.killed
+        );
         if result.killed {
             self.enemy_defeated(target_id)?;
         }
@@ -624,8 +718,11 @@ impl SharedSession {
         player_id: u64,
         position: [i32; 3],
     ) -> Result<(), Box<dyn std::error::Error>> {
-        if self.stage != SessionStage::Door || position != [6, 0, 0] {
-            return Err(io::Error::other("relay door is not reachable now").into());
+        if self.stage == SessionStage::Complete {
+            return Err(io::Error::other("movement is unavailable after completion").into());
+        }
+        if !valid_movement_target(position) {
+            return Err(io::Error::other("movement target is outside relay-hub bounds").into());
         }
         self.actors
             .update_position(player_id, position)
@@ -634,6 +731,13 @@ impl SharedSession {
             actor_id: player_id,
             position,
         }));
+        println!(
+            "{{\"event\":\"movement_applied\",\"actor_id\":{player_id},\"position\":[{},{},{}]}}",
+            position[0], position[1], position[2]
+        );
+        if self.stage != SessionStage::Door || position != [6, 0, 0] {
+            return Ok(());
+        }
         let (messages, boss_archetype) =
             activity_messages(self.activity.apply_trigger(&WorldTrigger::AreaReached {
                 area_id: "relay_door".to_owned(),
@@ -711,12 +815,35 @@ impl SharedSession {
             .retain(|participant| participant.outbound.send(message.clone()).is_ok());
     }
 
-    fn disconnect(&mut self, player_id: u64) {
-        if self.stage == SessionStage::Complete {
-            self.participants
-                .retain(|participant| participant.actor.id != player_id);
+    fn disconnect(&mut self, player_id: u64) -> Result<(), Box<dyn std::error::Error>> {
+        self.participants
+            .retain(|participant| participant.actor.id != player_id);
+        self.actors.destroy(player_id);
+        if self.participants.is_empty() {
+            self.reset()?;
         }
+        Ok(())
     }
+
+    fn reset(&mut self) -> io::Result<()> {
+        self.activity = load_activity(&self.activity_script)?;
+        self.actors = ActorRegistry::default();
+        self.combat = CombatRuntime::default();
+        self.combat_started = Instant::now();
+        self.enemy_id = None;
+        self.stage = SessionStage::Waiting;
+        self.session_id = new_session_id()?;
+        println!(
+            "{{\"event\":\"session_reset\",\"session_id\":\"{}\"}}",
+            self.session_id
+        );
+        Ok(())
+    }
+}
+
+fn load_activity(path: &str) -> io::Result<ScriptedActivity> {
+    ScriptedActivity::load(path)
+        .map_err(|error| io::Error::other(format!("activity load failed: {error}")))
 }
 
 fn activity_messages(events: Vec<ActivityEvent>) -> (Vec<ServerMessage>, Option<String>) {
@@ -804,6 +931,14 @@ fn new_session_id() -> io::Result<String> {
     Ok(format!("session-{timestamp}"))
 }
 
+fn valid_movement_target(position: [i32; 3]) -> bool {
+    position[1] == 0 && position[0].abs() <= 12 && position[2].abs() <= 12
+}
+
+fn session_accepts_join(stage: SessionStage, participants: usize, expected_players: usize) -> bool {
+    stage == SessionStage::Waiting && participants < expected_players
+}
+
 fn unexpected_message(expected: &str) -> Box<dyn std::error::Error> {
     io::Error::new(
         io::ErrorKind::InvalidData,
@@ -814,9 +949,12 @@ fn unexpected_message(expected: &str) -> Box<dyn std::error::Error> {
 
 #[cfg(test)]
 mod tests {
+    use std::io::Cursor;
+
     use super::{
-        inspector_route, InspectorRoute, SessionStage, DEFAULT_BIND_ADDR, DEFAULT_DATABASE_URL,
-        DEFAULT_GAME_ADDR,
+        inspector_route, read_http_request_line, session_accepts_join, valid_movement_target,
+        InspectorRoute, SessionStage, DEFAULT_BIND_ADDR, DEFAULT_DATABASE_URL, DEFAULT_GAME_ADDR,
+        MAX_HTTP_REQUEST_LINE,
     };
 
     #[test]
@@ -831,6 +969,32 @@ mod tests {
         assert_ne!(SessionStage::Waiting, SessionStage::Drone);
         assert_ne!(SessionStage::Door, SessionStage::Boss);
         assert_ne!(SessionStage::Boss, SessionStage::Complete);
+    }
+
+    #[test]
+    fn manual_movement_stays_inside_relay_hub() {
+        assert!(valid_movement_target([6, 0, 0]));
+        assert!(valid_movement_target([-12, 0, 12]));
+        assert!(!valid_movement_target([13, 0, 0]));
+        assert!(!valid_movement_target([0, 1, 0]));
+    }
+
+    #[test]
+    fn active_or_full_sessions_reject_late_players() {
+        assert!(session_accepts_join(SessionStage::Waiting, 0, 1));
+        assert!(!session_accepts_join(SessionStage::Waiting, 1, 1));
+        assert!(!session_accepts_join(SessionStage::Drone, 0, 1));
+        assert!(!session_accepts_join(SessionStage::Complete, 0, 1));
+    }
+
+    #[test]
+    fn http_request_line_is_bounded_and_complete() {
+        let line = read_http_request_line(Cursor::new(b"GET /health HTTP/1.1\r\n"))
+            .expect("complete request line should parse");
+        assert_eq!(line, "GET /health HTTP/1.1\r\n");
+        assert!(read_http_request_line(Cursor::new(b"GET /health HTTP/1.1")).is_err());
+        let oversized = vec![b'a'; MAX_HTTP_REQUEST_LINE + 1];
+        assert!(read_http_request_line(Cursor::new(oversized)).is_err());
     }
 
     #[test]

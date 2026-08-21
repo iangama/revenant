@@ -47,6 +47,17 @@ wait_for_gateway() {
   return 1
 }
 
+wait_for_session_resets() {
+  local expected="$1"
+  for _ in {1..100}; do
+    if [[ "$(grep -c '"event":"session_reset"' "$log_file" || true)" -ge "$expected" ]]; then
+      return 0
+    fi
+    sleep 0.1
+  done
+  return 1
+}
+
 expected_players=2
 start_gateway
 
@@ -84,6 +95,36 @@ if wait_for_gateway; then
       REVENANT_GAME_PORT="17000" \
       REVENANT_EXIT_AFTER_FLOW="1" \
         timeout 15s "$GODOT_BIN" --headless --path client/game
+
+      wait_for_session_resets 1
+      reusable_session_output="$(XDG_DATA_HOME="$godot_data_dir/data" \
+        XDG_CONFIG_HOME="$godot_data_dir/config" \
+        XDG_CACHE_HOME="$godot_data_dir/cache" \
+        REVENANT_GAME_HOST="127.0.0.1" \
+        REVENANT_GAME_PORT="17000" \
+        REVENANT_EXIT_AFTER_FLOW="1" \
+          timeout 15s "$GODOT_BIN" --headless --path client/game)"
+      echo "$reusable_session_output"
+      [[ "$reusable_session_output" == *"activity relay_awakening completed"* ]]
+
+      wait_for_session_resets 2
+      manual_output="$(XDG_DATA_HOME="$godot_data_dir/data" \
+        XDG_CONFIG_HOME="$godot_data_dir/config" \
+        XDG_CACHE_HOME="$godot_data_dir/cache" \
+        REVENANT_GAME_HOST="127.0.0.1" \
+        REVENANT_GAME_PORT="17000" \
+        REVENANT_VALIDATE_MANUAL_FLOW="1" \
+          timeout 20s "$GODOT_BIN" --headless --path client/game)"
+      echo "$manual_output"
+      [[ "$manual_output" == *"M17 manual controls completed relay_awakening without user input"* ]]
+
+      slice_output="$(XDG_DATA_HOME="$godot_data_dir/data" \
+        XDG_CONFIG_HOME="$godot_data_dir/config" \
+        XDG_CACHE_HOME="$godot_data_dir/cache" \
+        REVENANT_VALIDATE_SLICE="1" \
+          timeout 10s "$GODOT_BIN" --headless --path client/game)"
+      echo "$slice_output"
+      [[ "$slice_output" == *"M17 playable slice validated"* ]]
     fi
 
     kill "$server_pid"
@@ -164,6 +205,7 @@ if wait_for_gateway; then
     grep -q "without revenant-gateway" "$reconstruction_log"
 
     echo "M15 reconstruction experiment smoke test passed"
+    echo "M17 playable vertical slice smoke test passed"
     exit 0
 fi
 

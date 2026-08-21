@@ -52,24 +52,33 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const loadSessions = async () => {
-    setLoading(true);
+  const loadSessions = async (signal?: AbortSignal, showLoading = true) => {
+    if (showLoading) setLoading(true);
     setError("");
     try {
-      const response = await fetch(`${API_ROOT}/sessions`);
+      const response = await fetch(`${API_ROOT}/sessions`, { signal });
       if (!response.ok) throw new Error(`sessions request returned ${response.status}`);
       const body = (await response.json()) as { sessions: Session[] };
       setSessions(body.sessions);
       setSelectedId((current) => current || body.sessions[0]?.session_id || "");
     } catch (caught) {
+      if (caught instanceof DOMException && caught.name === "AbortError") return;
       setError(caught instanceof Error ? caught.message : "Inspector API unavailable");
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   };
 
   useEffect(() => {
-    void loadSessions();
+    const controller = new AbortController();
+    void loadSessions(controller.signal);
+    const refresh = window.setInterval(() => {
+      void loadSessions(controller.signal, false);
+    }, 10_000);
+    return () => {
+      window.clearInterval(refresh);
+      controller.abort();
+    };
   }, []);
 
   useEffect(() => {
@@ -77,16 +86,19 @@ function App() {
       setEvents([]);
       return;
     }
+    const controller = new AbortController();
     setSelectedEvent(null);
-    fetch(`${API_ROOT}/sessions/${selectedId}/events`)
+    fetch(`${API_ROOT}/sessions/${selectedId}/events`, { signal: controller.signal })
       .then((response) => {
         if (!response.ok) throw new Error(`events request returned ${response.status}`);
         return response.json() as Promise<{ events: ReplayEvent[] }>;
       })
       .then((body) => setEvents(body.events))
-      .catch((caught: unknown) =>
-        setError(caught instanceof Error ? caught.message : "Events unavailable"),
-      );
+      .catch((caught: unknown) => {
+        if (caught instanceof DOMException && caught.name === "AbortError") return;
+        setError(caught instanceof Error ? caught.message : "Events unavailable");
+      });
+    return () => controller.abort();
   }, [selectedId]);
 
   const selectedSession = sessions.find((session) => session.session_id === selectedId);
@@ -108,13 +120,13 @@ function App() {
           <p>REVENANT CORE</p>
           <h1>Session Inspector</h1>
         </div>
-        <div className="runtime-status"><i /> READ-ONLY / LIVE DATA</div>
+        <div className="runtime-status" aria-live="polite"><i /> READ-ONLY / AUTO REFRESH 10S</div>
         <button className="refresh" onClick={() => void loadSessions()} disabled={loading}>
           {loading ? "SYNCING" : "REFRESH"}
         </button>
       </header>
 
-      {error && <div className="error-banner">LINK ERROR · {error}</div>}
+      {error && <div className="error-banner" role="alert">LINK ERROR · {error}</div>}
 
       <main className="workspace">
         <aside className="sessions-panel">

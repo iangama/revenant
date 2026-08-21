@@ -6,6 +6,6 @@ Before changing code: inspect the repository, identify the current milestone, ru
 
 The server is authoritative. Keep protocol parsing outside domain systems, prefer composition and explicit observable state, avoid premature services and abstractions, and do not use third-party proprietary code, assets, private protocols, or data.
 
-M0-M15 are complete. M16 prepares the recoverable 0.1.0 release baseline with auditing, deterministic packaging, checksums, CI artifacts, and recovery documentation. Stop after M16.
+M0-M16 are complete and version 0.1.0 is published. M17 adds the manual Godot playable vertical slice while preserving the automated acceptance client. Stop before M18.
 
-For M16, do not modify frozen artifacts or runtime behavior. Local releases and database dumps must stay ignored. Do not create a commit or tag without explicit owner authorization.
+For M17, keep movement and combat server-authoritative, retain all previous smoke coverage, do not modify frozen V1 artifacts, and do not begin loot/inventory gameplay from M18. Do not create a commit without explicit owner authorization.
