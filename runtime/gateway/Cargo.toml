@@ -15,6 +15,7 @@ revenant-inventory = { path = "../inventory" }
 revenant-objectives = { path = "../objectives" }
 revenant-persistence = { path = "../persistence" }
 revenant-protocol = { path = "../protocol" }
+revenant-progression = { path = "../progression" }
 revenant-replay = { path = "../replay" }
 revenant-world = { path = "../world" }
 serde_json.workspace = true

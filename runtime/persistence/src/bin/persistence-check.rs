@@ -34,8 +34,11 @@ fn main() -> Result<(), Box<dyn Error>> {
         return Err(io::Error::other("persisted activity reward was not found").into());
     }
     let progression = persistence.progression_for(&character_id)?;
-    if progression.is_none() {
+    let Some(progression) = progression else {
         return Err(io::Error::other("persisted progression was not found").into());
+    };
+    if progression.experience < 100 || progression.level < 1 {
+        return Err(io::Error::other("persisted progression reward was not found").into());
     }
     let completions = persistence.activity_completion_count(&account_id, "relay_awakening")?;
     if completions < 1 {
@@ -43,7 +46,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     println!(
-        "persistence verified: account={account_id} character={character_id} completions={completions}"
+        "persistence verified: account={account_id} character={character_id} completions={completions} level={} experience={}"
+        , progression.level, progression.experience
     );
     Ok(())
 }

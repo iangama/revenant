@@ -27,6 +27,7 @@ pub enum ServerMessage {
     CharacterListResponse(CharacterListResponse),
     WorldJoinResponse(WorldJoinResponse),
     InventorySnapshot(InventorySnapshot),
+    ProgressionSnapshot(ProgressionSnapshot),
     ActorSpawn(ActorSpawn),
     ActorUpdate(ActorUpdate),
     ActorDestroy(ActorDestroy),
@@ -36,6 +37,7 @@ pub enum ServerMessage {
     DoorState(DoorState),
     ActivityComplete(ActivityComplete),
     LootGranted(LootGranted),
+    ProgressionGranted(ProgressionGranted),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -104,6 +106,13 @@ pub struct InventorySnapshot {
 pub struct InventoryItem {
     pub item_id: String,
     pub quantity: u32,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ProgressionSnapshot {
+    pub level: u32,
+    pub experience: u64,
+    pub experience_to_next_level: u64,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -177,6 +186,16 @@ pub struct LootGranted {
     pub item_id: String,
     pub quantity: u32,
     pub resulting_quantity: u32,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ProgressionGranted {
+    pub activity_id: String,
+    pub experience_granted: u64,
+    pub experience: u64,
+    pub previous_level: u32,
+    pub level: u32,
+    pub experience_to_next_level: u64,
 }
 
 #[derive(Debug)]
@@ -275,7 +294,7 @@ mod tests {
 
     use super::{
         read_message, write_message, CharacterListRequest, ClientHello, ClientMessage,
-        InventoryItem, InventorySnapshot, ServerMessage, PROTOCOL_VERSION,
+        InventoryItem, InventorySnapshot, ProgressionSnapshot, ServerMessage, PROTOCOL_VERSION,
     };
 
     #[test]
@@ -332,6 +351,20 @@ mod tests {
         write_message(&mut frame, &expected).expect("inventory should encode");
         let actual: ServerMessage =
             read_message(&mut Cursor::new(frame)).expect("inventory should decode");
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn progression_snapshot_round_trips() {
+        let expected = ServerMessage::ProgressionSnapshot(ProgressionSnapshot {
+            level: 2,
+            experience: 500,
+            experience_to_next_level: 500,
+        });
+        let mut frame = Vec::new();
+        write_message(&mut frame, &expected).expect("progression should encode");
+        let actual: ServerMessage =
+            read_message(&mut Cursor::new(frame)).expect("progression should decode");
         assert_eq!(actual, expected);
     }
 }

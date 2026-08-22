@@ -1,9 +1,11 @@
 use postgres::{Client, NoTls};
+use revenant_progression::{ExperienceReward, Progression as DomainProgression};
 
 const SCHEMA: &str = concat!(
     include_str!("../migrations/0001_initial.sql"),
     include_str!("../migrations/0002_replay_events.sql"),
-    include_str!("../migrations/0003_inventory_rewards.sql")
+    include_str!("../migrations/0003_inventory_rewards.sql"),
+    include_str!("../migrations/0004_progression_rewards.sql")
 );
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -24,6 +26,25 @@ pub struct InventoryEntry {
 pub struct Progression {
     pub level: i32,
     pub experience: i64,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CompletionRewards {
+    pub item_quantity: i32,
+    pub experience_granted: i64,
+    pub previous_level: i32,
+    pub level: i32,
+    pub experience: i64,
+}
+
+pub struct ActivityCompletion<'a> {
+    pub session_id: &'a str,
+    pub account_id: &'a str,
+    pub character_id: &'a str,
+    pub activity_id: &'a str,
+    pub item_id: &'a str,
+    pub item_quantity: i32,
+    pub experience_reward: ExperienceReward,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -203,28 +224,28 @@ impl Persistence {
         Ok(())
     }
 
-    /// Atomically records an activity completion and grants its idempotent reward.
+    /// Atomically records completion and grants idempotent inventory and progression rewards.
     ///
-    /// Returns the resulting item quantity, or `None` when this session already
-    /// granted the same reward to the character.
+    /// Returns the resulting authoritative state, or `None` when this session was
+    /// already applied to the character.
     ///
     /// # Errors
     ///
     /// Returns the `PostgreSQL` error when the transaction fails.
-    pub fn complete_activity_with_reward(
+    pub fn complete_activity_with_rewards(
         &mut self,
-        session_id: &str,
-        account_id: &str,
-        character_id: &str,
-        activity_id: &str,
-        item_id: &str,
-        quantity: i32,
-    ) -> Result<Option<i32>, postgres::Error> {
+        completion: &ActivityCompletion<'_>,
+    ) -> Result<Option<CompletionRewards>, postgres::Error> {
         let mut transaction = self.client.transaction()?;
         let inserted = transaction.query_opt(
             "INSERT INTO inventory_reward_grants (session_id, character_id, item_id, quantity) \
              VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING RETURNING quantity",
-            &[&session_id, &character_id, &item_id, &quantity],
+            &[
+                &completion.session_id,
+                &completion.character_id,
+                &completion.item_id,
+                &completion.item_quantity,
+            ],
         )?;
         if inserted.is_none() {
             transaction.commit()?;
@@ -235,15 +256,58 @@ impl Persistence {
                 "INSERT INTO inventory (character_id, item_id, quantity) VALUES ($1, $2, $3) \
                  ON CONFLICT (character_id, item_id) DO UPDATE \
                  SET quantity = inventory.quantity + EXCLUDED.quantity RETURNING quantity",
-                &[&character_id, &item_id, &quantity],
+                &[
+                    &completion.character_id,
+                    &completion.item_id,
+                    &completion.item_quantity,
+                ],
             )?
             .get(0);
+        let progression_row = transaction.query_one(
+            "SELECT level, experience FROM progression WHERE character_id = $1 FOR UPDATE",
+            &[&completion.character_id],
+        )?;
+        let previous_level: i32 = progression_row.get(0);
+        let previous_experience: i64 = progression_row.get(1);
+        let current = DomainProgression::from_experience(previous_experience.unsigned_abs());
+        let resulting = current.grant(completion.experience_reward);
+        let experience = i64::try_from(resulting.experience).unwrap_or(i64::MAX);
+        let level = i32::try_from(resulting.level).unwrap_or(i32::MAX);
+        let experience_granted =
+            i64::try_from(completion.experience_reward.experience()).unwrap_or(i64::MAX);
+        transaction.execute(
+            "INSERT INTO progression_reward_grants (session_id, character_id, experience) \
+             VALUES ($1, $2, $3)",
+            &[
+                &completion.session_id,
+                &completion.character_id,
+                &experience_granted,
+            ],
+        )?;
+        transaction.execute(
+            "UPDATE progression SET level = $2, experience = $3 WHERE character_id = $1",
+            &[&completion.character_id, &level, &experience],
+        )?;
+        transaction.execute(
+            "UPDATE characters SET level = $2 WHERE id = $1",
+            &[&completion.character_id, &level],
+        )?;
         transaction.execute(
             "INSERT INTO activity_history (account_id, character_id, activity_id) VALUES ($1, $2, $3)",
-            &[&account_id, &character_id, &activity_id],
+            &[
+                &completion.account_id,
+                &completion.character_id,
+                &completion.activity_id,
+            ],
         )?;
         transaction.commit()?;
-        Ok(Some(resulting_quantity))
+        Ok(Some(CompletionRewards {
+            item_quantity: resulting_quantity,
+            experience_granted,
+            previous_level,
+            level,
+            experience,
+        }))
     }
 
     /// Counts recorded completions for smoke and diagnostic tooling.
@@ -390,6 +454,7 @@ mod tests {
             "activity_history",
             "replay_events",
             "inventory_reward_grants",
+            "progression_reward_grants",
         ] {
             assert!(SCHEMA.contains(&format!("CREATE TABLE IF NOT EXISTS {table}")));
         }

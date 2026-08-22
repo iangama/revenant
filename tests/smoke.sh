@@ -126,6 +126,7 @@ if wait_for_gateway; then
       echo "$slice_output"
       [[ "$slice_output" == *"M17 playable slice validated"* ]]
       [[ "$slice_output" == *"M18 inventory HUD validated"* ]]
+      [[ "$slice_output" == *"M19 progression HUD validated"* ]]
     fi
 
     kill "$server_pid"
@@ -151,6 +152,8 @@ if wait_for_gateway; then
       "activity completed" \
       "loot granted: relay_core_fragment x1" \
       "loot_grants=2" \
+      "progression granted: +100 XP" \
+      "progression_grants=2" \
       "completed=true"; do
       if [[ "$replay_output" != *"$expected"* ]]; then
         echo "replay timeline is missing: $expected" >&2
@@ -210,6 +213,7 @@ if wait_for_gateway; then
     echo "M15 reconstruction experiment smoke test passed"
     echo "M17 playable vertical slice smoke test passed"
     echo "M18 authoritative loot and inventory smoke test passed"
+    echo "M19 authoritative progression smoke test passed"
     exit 0
 fi
 

@@ -22,4 +22,6 @@ M17 keeps the Godot client thin while making the existing activity manually play
 
 M18 adds `revenant-inventory` as the server-owned item catalog and reward-validation boundary. Lua activity content declares a reward but cannot introduce unknown items or non-positive quantities. On completion, persistence uses an idempotency key to grant each character's reward and record activity history atomically. Current V2 clients receive inventory snapshots and individual loot results; the gateway suppresses those new projections for frozen V1 connections. Replay records each grant so reconstruction and the read-only Inspector expose the authoritative outcome.
 
+M19 adds `revenant-progression` as the owner of experience reward limits and the deterministic level formula. Persistence locks the character progression row and applies experience, derived level, M18 loot, and activity history in one idempotent completion transaction. The mirrored character level keeps selection summaries consistent. V2 receives progression snapshots and grants, while replay and Inspector expose explicit XP totals and level transitions without allowing mutation. V1 projection remains unchanged.
+
 M6 adds a server-side finite-state AI runtime. AI mutates the authoritative `ActorRegistry`; clients observe replicated movement and damage but never execute enemy decisions.

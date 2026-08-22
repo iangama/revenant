@@ -7,6 +7,7 @@ use std::path::Path;
 use mlua::{Lua, LuaOptions, StdLib, Table};
 use revenant_inventory::Reward;
 use revenant_objectives::{Objective, ObjectiveKind, ObjectiveState, WorldTrigger};
+use revenant_progression::ExperienceReward;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ActivityEvent {
@@ -21,6 +22,7 @@ pub enum ActivityEvent {
 pub struct ScriptedActivity {
     id: String,
     reward: Reward,
+    experience_reward: ExperienceReward,
     objectives: HashMap<String, Objective>,
     objective_order: Vec<String>,
     triggers: Vec<TriggerDefinition>,
@@ -81,6 +83,13 @@ impl ScriptedActivity {
                 .map_err(activity_error)?,
         )
         .map_err(activity_error)?;
+        let progression_table: Table = definition.get("progression").map_err(activity_error)?;
+        let experience_reward = ExperienceReward::validated(
+            progression_table
+                .get::<u64>("experience")
+                .map_err(activity_error)?,
+        )
+        .map_err(activity_error)?;
         let objective_tables: Table = definition.get("objectives").map_err(activity_error)?;
         let mut objectives = HashMap::new();
         let mut objective_order = Vec::new();
@@ -97,6 +106,7 @@ impl ScriptedActivity {
         Ok(Self {
             id,
             reward,
+            experience_reward,
             objectives,
             objective_order,
             triggers,
@@ -106,6 +116,11 @@ impl ScriptedActivity {
     #[must_use]
     pub fn reward(&self) -> &Reward {
         &self.reward
+    }
+
+    #[must_use]
+    pub fn experience_reward(&self) -> ExperienceReward {
+        self.experience_reward
     }
 
     #[must_use]
@@ -256,5 +271,6 @@ mod tests {
             .any(|event| matches!(event, ActivityEvent::Completed { .. })));
         assert_eq!(activity.reward().item_id, "relay_core_fragment");
         assert_eq!(activity.reward().quantity, 1);
+        assert_eq!(activity.experience_reward().experience(), 100);
     }
 }

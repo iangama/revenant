@@ -15,12 +15,14 @@ use revenant_compatibility::{CanonicalClientMessage, ProtocolAdapter, ProtocolGe
 use revenant_identity::LocalIdentityService;
 use revenant_inventory::ItemStack;
 use revenant_objectives::{Objective, ObjectiveKind, ObjectiveState, WorldTrigger};
-use revenant_persistence::{NewReplayEvent, Persistence};
+use revenant_persistence::{ActivityCompletion, NewReplayEvent, Persistence};
+use revenant_progression::{Progression as DomainProgression, EXPERIENCE_PER_LEVEL};
 use revenant_protocol::{
     read_message, write_message, ActivityComplete, ActivityStart, ActorDestroy, ActorSpawn,
     ActorUpdate, AuthResponse, CharacterListResponse, CharacterSummary, ClientMessage,
     DamageApplied, DoorState, InventoryItem, InventorySnapshot, LootGranted, ObjectiveUpdate,
-    ServerHello, ServerMessage, WorldJoinResponse, PROTOCOL_VERSION,
+    ProgressionGranted, ProgressionSnapshot, ServerHello, ServerMessage, WorldJoinResponse,
+    PROTOCOL_VERSION,
 };
 use revenant_replay::ReplayEventKind;
 use revenant_world::WorldService;
@@ -348,7 +350,7 @@ fn handle_game_connection(
         )?;
         return Ok(());
     }
-    let inventory = load_character_state(&mut persistence, &request.character_id)?;
+    let (inventory, progression) = load_character_state(&mut persistence, &request.character_id)?;
     let player = WorldService.join(&request.character_id);
     let (outbound_tx, outbound_rx) = mpsc::channel();
     let (join_result_tx, join_result_rx) = mpsc::channel();
@@ -404,6 +406,10 @@ fn handle_game_connection(
                     })
                     .collect(),
             }),
+        )?;
+        write_message(
+            &mut stream,
+            &ServerMessage::ProgressionSnapshot(progression_message(progression)),
         )?;
     }
 
@@ -793,6 +799,7 @@ impl SharedSession {
         )?;
         let activity_id = self.activity.id().to_owned();
         let reward = self.activity.reward().clone();
+        let experience_reward = self.activity.experience_reward();
         let quantity = i32::try_from(reward.quantity)?;
         let participants = self
             .participants
@@ -808,14 +815,17 @@ impl SharedSession {
             })
             .collect::<Vec<_>>();
         for (account_id, character_id, actor_id, generation, outbound) in participants {
-            let Some(resulting_quantity) = self.persistence.complete_activity_with_reward(
-                &self.session_id,
-                &account_id,
-                &character_id,
-                &activity_id,
-                &reward.item_id,
-                quantity,
-            )?
+            let Some(rewards) =
+                self.persistence
+                    .complete_activity_with_rewards(&ActivityCompletion {
+                        session_id: &self.session_id,
+                        account_id: &account_id,
+                        character_id: &character_id,
+                        activity_id: &activity_id,
+                        item_id: &reward.item_id,
+                        item_quantity: quantity,
+                        experience_reward,
+                    })?
             else {
                 continue;
             };
@@ -824,8 +834,20 @@ impl SharedSession {
                 &account_id,
                 Some(actor_id),
                 &format!(
-                    "loot granted: {} x{} (total {resulting_quantity})",
-                    reward.item_id, reward.quantity
+                    "loot granted: {} x{} (total {})",
+                    reward.item_id, reward.quantity, rewards.item_quantity
+                ),
+            )?;
+            self.append_event(
+                ReplayEventKind::ProgressionGranted,
+                &account_id,
+                Some(actor_id),
+                &format!(
+                    "progression granted: +{} XP (total {}, level {} -> {})",
+                    rewards.experience_granted,
+                    rewards.experience,
+                    rewards.previous_level,
+                    rewards.level
                 ),
             )?;
             if generation == ProtocolGeneration::CurrentV2 {
@@ -833,7 +855,16 @@ impl SharedSession {
                     activity_id: activity_id.clone(),
                     item_id: reward.item_id.clone(),
                     quantity: reward.quantity,
-                    resulting_quantity: u32::try_from(resulting_quantity)?,
+                    resulting_quantity: u32::try_from(rewards.item_quantity)?,
+                }));
+                let experience = u64::try_from(rewards.experience)?;
+                let _ = outbound.send(ServerMessage::ProgressionGranted(ProgressionGranted {
+                    activity_id: activity_id.clone(),
+                    experience_granted: u64::try_from(rewards.experience_granted)?,
+                    experience,
+                    previous_level: u32::try_from(rewards.previous_level)?,
+                    level: u32::try_from(rewards.level)?,
+                    experience_to_next_level: experience_to_next_level(experience),
                 }));
             }
         }
@@ -971,7 +1002,7 @@ fn actor_spawn_message(actor: &Actor) -> ServerMessage {
 fn load_character_state(
     persistence: &mut Persistence,
     character_id: &str,
-) -> Result<Vec<ItemStack>, Box<dyn std::error::Error>> {
+) -> Result<(Vec<ItemStack>, DomainProgression), Box<dyn std::error::Error>> {
     let inventory = persistence
         .inventory_for(character_id)?
         .into_iter()
@@ -982,10 +1013,25 @@ fn load_character_state(
             })
         })
         .collect::<Result<Vec<_>, std::num::TryFromIntError>>()?;
-    persistence
+    let progression = persistence
         .progression_for(character_id)?
         .ok_or_else(|| io::Error::other("character progression is missing"))?;
-    Ok(inventory)
+    Ok((
+        inventory,
+        DomainProgression::from_experience(u64::try_from(progression.experience)?),
+    ))
+}
+
+fn progression_message(progression: DomainProgression) -> ProgressionSnapshot {
+    ProgressionSnapshot {
+        level: progression.level,
+        experience: progression.experience,
+        experience_to_next_level: experience_to_next_level(progression.experience),
+    }
+}
+
+fn experience_to_next_level(experience: u64) -> u64 {
+    EXPERIENCE_PER_LEVEL - experience % EXPERIENCE_PER_LEVEL
 }
 
 fn new_session_id() -> io::Result<String> {

@@ -1,7 +1,8 @@
 use std::env;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use revenant_persistence::{NewReplayEvent, Persistence};
+use revenant_persistence::{ActivityCompletion, NewReplayEvent, Persistence};
+use revenant_progression::ExperienceReward;
 
 #[test]
 fn appends_and_loads_replay_events_from_postgres() {
@@ -75,27 +76,34 @@ fn grants_activity_reward_once_per_session() {
         .expect("test account should persist");
 
     let first = persistence
-        .complete_activity_with_reward(
-            &session_id,
-            &account_id,
-            &character_id,
-            "relay_awakening",
-            "relay_core_fragment",
-            1,
-        )
+        .complete_activity_with_rewards(&ActivityCompletion {
+            session_id: &session_id,
+            account_id: &account_id,
+            character_id: &character_id,
+            activity_id: "relay_awakening",
+            item_id: "relay_core_fragment",
+            item_quantity: 1,
+            experience_reward: ExperienceReward::validated(100)
+                .expect("experience should validate"),
+        })
         .expect("first reward should persist");
     let duplicate = persistence
-        .complete_activity_with_reward(
-            &session_id,
-            &account_id,
-            &character_id,
-            "relay_awakening",
-            "relay_core_fragment",
-            1,
-        )
+        .complete_activity_with_rewards(&ActivityCompletion {
+            session_id: &session_id,
+            account_id: &account_id,
+            character_id: &character_id,
+            activity_id: "relay_awakening",
+            item_id: "relay_core_fragment",
+            item_quantity: 1,
+            experience_reward: ExperienceReward::validated(100)
+                .expect("experience should validate"),
+        })
         .expect("duplicate reward should be harmless");
 
-    assert_eq!(first, Some(1));
+    let first = first.expect("first reward should be applied");
+    assert_eq!(first.item_quantity, 1);
+    assert_eq!(first.experience, 100);
+    assert_eq!(first.level, 1);
     assert_eq!(duplicate, None);
     let inventory = persistence
         .inventory_for(&character_id)
@@ -108,5 +116,46 @@ fn grants_activity_reward_once_per_session() {
             .activity_completion_count(&account_id, "relay_awakening")
             .expect("completion count should load"),
         1
+    );
+    assert_eq!(
+        persistence
+            .progression_for(&character_id)
+            .expect("progression should load")
+            .expect("progression should exist"),
+        revenant_persistence::Progression {
+            level: 1,
+            experience: 100,
+        }
+    );
+    for index in 2..=5 {
+        persistence
+            .complete_activity_with_rewards(&ActivityCompletion {
+                session_id: &format!("{session_id}-{index}"),
+                account_id: &account_id,
+                character_id: &character_id,
+                activity_id: "relay_awakening",
+                item_id: "relay_core_fragment",
+                item_quantity: 1,
+                experience_reward: ExperienceReward::validated(100)
+                    .expect("experience should validate"),
+            })
+            .expect("later session reward should persist")
+            .expect("later session should be unique");
+    }
+    assert_eq!(
+        persistence
+            .progression_for(&character_id)
+            .expect("progression should load")
+            .expect("progression should exist"),
+        revenant_persistence::Progression {
+            level: 2,
+            experience: 500,
+        }
+    );
+    assert_eq!(
+        persistence
+            .activity_completion_count(&account_id, "relay_awakening")
+            .expect("completion count should load"),
+        5
     );
 }

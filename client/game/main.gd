@@ -17,6 +17,7 @@ var _next_move_at := 0
 var _next_attack_at := 0
 var _activity_complete := false
 var _inventory := {}
+var _progression := {"level": 1, "experience": 0, "experience_to_next_level": 500}
 var _camera: Camera3D
 var _door: MeshInstance3D
 var _status_label: Label
@@ -29,6 +30,7 @@ var _crosshair: Label
 var _guidance_label: Label
 var _input_log_label: Label
 var _inventory_label: Label
+var _progression_label: Label
 var _input_events: Array[String] = []
 var _attack_requested := false
 var _ui_attack_requested := false
@@ -145,6 +147,11 @@ func _run_handshake() -> void:
 		_fail("expected InventorySnapshot")
 		return
 	_apply_inventory_snapshot(inventory_snapshot)
+	var progression_snapshot := await _receive_message(Time.get_ticks_msec() + 5000)
+	if progression_snapshot.get("type") != "ProgressionSnapshot":
+		_fail("expected ProgressionSnapshot")
+		return
+	_apply_progression(progression_snapshot)
 	_status_label.text = "CONNECTED  •  RELAY-HUB"
 	_controls_label.text = "WAITING FOR THE RELAY ACTIVITY..."
 	_set_guidance("GETTING READY", "The server is preparing your encounter. This should take only a moment.")
@@ -256,11 +263,13 @@ func _run_handshake() -> void:
 	_destroy_actor(boss_destroy.get("actor_id"))
 	var boss_complete := await _receive_message(Time.get_ticks_msec() + 5000)
 	var loot := await _receive_message(Time.get_ticks_msec() + 5000)
+	var progression_grant := await _receive_message(Time.get_ticks_msec() + 5000)
 	var activity_complete := await _receive_message(Time.get_ticks_msec() + 5000)
-	if boss_complete.get("state") != "Completed" or loot.get("type") != "LootGranted" or activity_complete.get("type") != "ActivityComplete":
+	if boss_complete.get("state") != "Completed" or loot.get("type") != "LootGranted" or progression_grant.get("type") != "ProgressionGranted" or activity_complete.get("type") != "ActivityComplete":
 		_fail("activity did not complete after boss death")
 		return
 	_apply_loot_grant(loot)
+	_apply_progression(progression_grant)
 	print("activity %s completed" % activity_complete.get("activity_id"))
 	if _should_exit_after_flow():
 		get_tree().quit(0)
@@ -434,6 +443,8 @@ func _handle_manual_message(message: Dictionary) -> void:
 			print("manual activity %s completed" % message.get("activity_id"))
 		"LootGranted":
 			_apply_loot_grant(message)
+		"ProgressionGranted":
+			_apply_progression(message)
 		_:
 			_fail("unexpected manual gameplay message: %s" % message.get("type"))
 
@@ -525,6 +536,24 @@ func _update_inventory_hud() -> void:
 	_inventory_label.text = "\n".join(lines)
 
 
+func _apply_progression(message: Dictionary) -> void:
+	_progression["level"] = message.get("level", 1)
+	_progression["experience"] = message.get("experience", 0)
+	_progression["experience_to_next_level"] = message.get("experience_to_next_level", 500)
+	_update_progression_hud()
+	if message.get("type") == "ProgressionGranted":
+		_status_label.text = "PROGRESSION SECURED  •  +%d XP" % message.get("experience_granted", 0)
+		print("progression granted: +%d XP, level %d" % [message.get("experience_granted", 0), message.get("level", 1)])
+
+
+func _update_progression_hud() -> void:
+	_progression_label.text = "PROGRESSION  •  LEVEL %d\nXP %d  •  %d TO NEXT LEVEL" % [
+		_progression.get("level", 1),
+		_progression.get("experience", 0),
+		_progression.get("experience_to_next_level", 500),
+	]
+
+
 func _set_door_open(open: bool) -> void:
 	_door.visible = not open
 	_status_label.text = "RELAY CORE OPEN  •  WARDEN INBOUND" if open else "RELAY CORE SEALED"
@@ -601,11 +630,13 @@ func _build_playable_scene() -> void:
 	var inventory_panel := ColorRect.new()
 	inventory_panel.color = Color(0.025, 0.045, 0.075, 0.92)
 	inventory_panel.position = Vector2(894, 422)
-	inventory_panel.size = Vector2(362, 150)
+	inventory_panel.size = Vector2(362, 176)
 	inventory_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(inventory_panel)
 	_inventory_label = _hud_label(canvas, Vector2(918, 440), 16, Color("a9b8cc"), "INVENTORY\nWAITING FOR SERVER")
-	_inventory_label.size = Vector2(314, 112)
+	_inventory_label.size = Vector2(314, 82)
+	_progression_label = _hud_label(canvas, Vector2(918, 516), 15, Color("35d0ba"), "PROGRESSION  •  WAITING FOR SERVER")
+	_progression_label.size = Vector2(314, 58)
 
 	_create_control_button(canvas, "W", Vector2(92, 558), Vector2(58, 48), Vector2(0, -1))
 	_create_control_button(canvas, "A", Vector2(28, 612), Vector2(58, 48), Vector2(-1, 0))
@@ -747,6 +778,7 @@ func _validate_playable_slice() -> void:
 		or _guidance_label == null
 		or _input_log_label == null
 		or _inventory_label == null
+		or _progression_label == null
 		or _movement_buttons.size() != 4
 		or _attack_button == null
 		or _crosshair.mouse_filter != Control.MOUSE_FILTER_IGNORE
@@ -760,6 +792,7 @@ func _validate_playable_slice() -> void:
 		return
 	print("M17 playable slice validated: camera, HUD, movement, aiming and attack inputs are ready")
 	print("M18 inventory HUD validated: authoritative snapshot and loot presentation are ready")
+	print("M19 progression HUD validated: authoritative experience and level presentation are ready")
 	get_tree().quit(0)
 
 
@@ -853,6 +886,16 @@ func _decode_value(bytes: PackedByteArray, offset: int) -> Array:
 		return [bytes[offset + 1], offset + 2]
 	if marker == 0xcd and offset + 2 < bytes.size():
 		return [(bytes[offset + 1] << 8) | bytes[offset + 2], offset + 3]
+	if marker == 0xce and offset + 4 < bytes.size():
+		var value32 := 0
+		for index in range(1, 5):
+			value32 = (value32 << 8) | bytes[offset + index]
+		return [value32, offset + 5]
+	if marker == 0xcf and offset + 8 < bytes.size():
+		var value64 := 0
+		for index in range(1, 9):
+			value64 = (value64 << 8) | bytes[offset + index]
+		return [value64, offset + 9]
 	if marker == 0xd9 and offset + 1 < bytes.size():
 		return _decode_string(bytes, offset + 2, bytes[offset + 1])
 	return []
