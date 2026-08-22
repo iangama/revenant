@@ -120,6 +120,39 @@ fn handshake() -> Result<(), Box<dyn std::error::Error>> {
         "received authoritative progression: level {} with {} XP",
         progression.level, progression.experience
     );
+    let ServerMessage::EquipmentSnapshot(equipment) = read_message(&mut stream)? else {
+        return Err("expected EquipmentSnapshot".into());
+    };
+    if equipment.weapons.len() != 2
+        || !equipment
+            .weapons
+            .iter()
+            .any(|weapon| weapon.item_id == "pulse_rifle" && weapon.damage == 40)
+        || !equipment
+            .weapons
+            .iter()
+            .any(|weapon| weapon.item_id == "arc_sidearm" && weapon.damage == 25)
+    {
+        return Err("authoritative equipment profiles are incomplete".into());
+    }
+    println!(
+        "received authoritative loadout: {}",
+        equipment.equipped_weapon_item_id
+    );
+    if role != "observer" {
+        write_message(
+            &mut stream,
+            &ClientMessage::EquipIntent(revenant_protocol::EquipIntent {
+                item_id: "relay_core_fragment".to_owned(),
+            }),
+        )?;
+        write_message(
+            &mut stream,
+            &ClientMessage::EquipIntent(revenant_protocol::EquipIntent {
+                item_id: "arc_sidearm".to_owned(),
+            }),
+        )?;
+    }
     let ServerMessage::ActivityStart(activity) = read_message(&mut stream)? else {
         return Err("expected ActivityStart".into());
     };
@@ -156,6 +189,19 @@ fn handshake() -> Result<(), Box<dyn std::error::Error>> {
         return observe_shared_activity(&mut stream, enemy_id, expected_players);
     }
     observe_enemy_ai(&mut stream, enemy_id)?;
+    let ServerMessage::EquipmentChanged(rejected) = read_message(&mut stream)? else {
+        return Err("expected rejected EquipmentChanged".into());
+    };
+    if rejected.accepted || !rejected.message.contains("not an equipable weapon") {
+        return Err("non-weapon equipment intent was not rejected".into());
+    }
+    let ServerMessage::EquipmentChanged(equipment) = read_message(&mut stream)? else {
+        return Err("expected EquipmentChanged".into());
+    };
+    if !equipment.accepted || equipment.equipped_weapon_item_id != "arc_sidearm" {
+        return Err(format!("sidearm equip rejected: {}", equipment.message).into());
+    }
+    println!("equipped authoritative weapon arc_sidearm");
     defeat_enemy(&mut stream, enemy_id)?;
     verify_objective_progression(&mut stream)?;
     complete_activity(&mut stream, world.player_actor_id)?;
@@ -290,6 +336,7 @@ fn observe_shared_activity(
     let mut objective_updates = 1;
     let mut loot_received = false;
     let mut progression_received = false;
+    let mut equipment_change_received = false;
     loop {
         match read_message(stream)? {
             ServerMessage::ActorDestroy(destroy) if destroy.actor_id == first_enemy_id => {
@@ -308,6 +355,9 @@ fn observe_shared_activity(
             {
                 progression_received = true;
             }
+            ServerMessage::EquipmentChanged(equipment) if equipment.accepted => {
+                equipment_change_received = true;
+            }
             ServerMessage::ActivityComplete(activity) => {
                 if !enemy_destroyed
                     || !boss_spawned
@@ -315,6 +365,7 @@ fn observe_shared_activity(
                     || objective_updates < 5
                     || !loot_received
                     || !progression_received
+                    || !equipment_change_received
                 {
                     return Err("observer missed shared activity state".into());
                 }

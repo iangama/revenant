@@ -24,4 +24,6 @@ M18 adds `revenant-inventory` as the server-owned item catalog and reward-valida
 
 M19 adds `revenant-progression` as the owner of experience reward limits and the deterministic level formula. Persistence locks the character progression row and applies experience, derived level, M18 loot, and activity history in one idempotent completion transaction. The mirrored character level keeps selection summaries consistent. V2 receives progression snapshots and grants, while replay and Inspector expose explicit XP totals and level transitions without allowing mutation. V1 projection remains unchanged.
 
+M20 extends `revenant-inventory` with equipability and immutable weapon profiles, while PostgreSQL persists one selected weapon identifier per character. The shared-session coordinator validates `EquipIntent` ownership and item type, then projects accepted state to V2 and replay. Combat receives the selected profile but owns a per-attacker ready deadline, preventing a weapon switch from resetting cooldown. Frozen V1 connections receive no equipment vocabulary and retain the default rifle behavior.
+
 M6 adds a server-side finite-state AI runtime. AI mutates the authoritative `ActorRegistry`; clients observe replicated movement and damage but never execute enemy decisions.

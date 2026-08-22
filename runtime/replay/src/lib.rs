@@ -12,6 +12,7 @@ pub enum ReplayEventKind {
     ActivityCompleted,
     LootGranted,
     ProgressionGranted,
+    EquipmentChanged,
 }
 
 impl Display for ReplayEventKind {
@@ -25,6 +26,7 @@ impl Display for ReplayEventKind {
             Self::ActivityCompleted => "activity_completed",
             Self::LootGranted => "loot_granted",
             Self::ProgressionGranted => "progression_granted",
+            Self::EquipmentChanged => "equipment_changed",
         })
     }
 }
@@ -53,6 +55,7 @@ impl FromStr for ReplayEventKind {
             "activity_completed" => Ok(Self::ActivityCompleted),
             "loot_granted" => Ok(Self::LootGranted),
             "progression_granted" => Ok(Self::ProgressionGranted),
+            "equipment_changed" => Ok(Self::EquipmentChanged),
             _ => Err(UnknownReplayEventKind(value.to_owned())),
         }
     }
@@ -80,6 +83,7 @@ pub struct ReconstructedSession {
     pub completed: bool,
     pub loot_grants: usize,
     pub progression_grants: usize,
+    pub equipment_changes: usize,
     pub timeline: Vec<String>,
 }
 
@@ -100,6 +104,7 @@ pub fn reconstruct(events: &[ReplayEvent]) -> Result<ReconstructedSession, Repla
         completed: false,
         loot_grants: 0,
         progression_grants: 0,
+        equipment_changes: 0,
         timeline: Vec::with_capacity(events.len()),
     };
     for event in events {
@@ -117,6 +122,7 @@ pub fn reconstruct(events: &[ReplayEvent]) -> Result<ReconstructedSession, Repla
             ReplayEventKind::ActivityCompleted => state.completed = true,
             ReplayEventKind::LootGranted => state.loot_grants += 1,
             ReplayEventKind::ProgressionGranted => state.progression_grants += 1,
+            ReplayEventKind::EquipmentChanged => state.equipment_changes += 1,
             ReplayEventKind::ActivityStarted => {}
         }
         state.timeline.push(format!(
@@ -172,6 +178,7 @@ mod tests {
             ReplayEventKind::ActivityCompleted,
             ReplayEventKind::LootGranted,
             ReplayEventKind::ProgressionGranted,
+            ReplayEventKind::EquipmentChanged,
         ];
         let events = kinds
             .into_iter()
@@ -185,6 +192,7 @@ mod tests {
         assert!(state.completed);
         assert_eq!(state.loot_grants, 1);
         assert_eq!(state.progression_grants, 1);
+        assert_eq!(state.equipment_changes, 1);
         assert_eq!(state.timeline.len(), events.len());
     }
 }

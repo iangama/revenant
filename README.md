@@ -2,7 +2,7 @@
 
 Revenant is an original game-engineering and software-preservation project. It will evolve into a small online game, an authoritative client-server runtime, and eventually a controlled compatibility laboratory for old builds of Revenant itself.
 
-The repository currently implements **M19 — Authoritative Progression** on top of the published 0.1.0 baseline. The playable `relay_awakening` slice now grants persisted loot and deterministic experience, derives levels on the server, and presents both authoritative results in Godot while retaining the complete automated acceptance flow.
+The repository currently implements **M20 — Authoritative Equipment and Loadout** on top of the published 0.1.0 baseline. The playable `relay_awakening` slice now persists a selected weapon, applies server-owned weapon profiles to combat, and presents inventory, progression, and loadout state in Godot while retaining the complete automated acceptance flow.
 
 ## Repository map
 
@@ -74,6 +74,8 @@ Open `client/game/project.godot` with Godot 4.7.1 to play the vertical slice. Us
 The inventory panel is read-only and reflects server messages. Each successful `relay_awakening` completion grants every participating character one persisted `relay_core_fragment`.
 
 The progression display is also read-only. Each completion grants 100 XP; characters begin at level 1 and gain one level per 500 total XP.
+
+The loadout offers a `pulse_rifle` and `arc_sidearm`. Selection is an intent: ownership, equipability, damage, range, cooldown, and the persisted result remain server-authoritative.
 
 The game protocol listens on TCP port 7000. Clients complete a versioned handshake, authenticate a local username, and request their character list; see `docs/protocol/README.md` for the contract.
 The current protocol is V2. The gateway also accepts the frozen V1 client through `revenant-compatibility`; both versions map into the same canonical domain inputs.

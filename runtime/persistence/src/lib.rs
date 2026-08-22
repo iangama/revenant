@@ -5,7 +5,8 @@ const SCHEMA: &str = concat!(
     include_str!("../migrations/0001_initial.sql"),
     include_str!("../migrations/0002_replay_events.sql"),
     include_str!("../migrations/0003_inventory_rewards.sql"),
-    include_str!("../migrations/0004_progression_rewards.sql")
+    include_str!("../migrations/0004_progression_rewards.sql"),
+    include_str!("../migrations/0005_equipment_loadouts.sql")
 );
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -130,6 +131,16 @@ impl Persistence {
              ON CONFLICT (character_id, item_id) DO NOTHING",
             &[&character_id],
         )?;
+        transaction.execute(
+            "INSERT INTO inventory (character_id, item_id, quantity) VALUES ($1, 'arc_sidearm', 1) \
+             ON CONFLICT (character_id, item_id) DO NOTHING",
+            &[&character_id],
+        )?;
+        transaction.execute(
+            "INSERT INTO equipment_loadouts (character_id, weapon_item_id) \
+             VALUES ($1, 'pulse_rifle') ON CONFLICT (character_id) DO NOTHING",
+            &[&character_id],
+        )?;
         transaction.commit()
     }
 
@@ -204,6 +215,43 @@ impl Persistence {
                     experience: row.get(1),
                 })
             })
+    }
+
+    /// Loads the selected weapon for a character.
+    ///
+    /// # Errors
+    ///
+    /// Returns the `PostgreSQL` error when the query fails.
+    pub fn equipped_weapon_for(
+        &mut self,
+        character_id: &str,
+    ) -> Result<Option<String>, postgres::Error> {
+        self.client
+            .query_opt(
+                "SELECT weapon_item_id FROM equipment_loadouts WHERE character_id = $1",
+                &[&character_id],
+            )
+            .map(|row| row.map(|row| row.get(0)))
+    }
+
+    /// Persists the authoritative weapon selection.
+    ///
+    /// The caller validates ownership and equipability before crossing this boundary.
+    ///
+    /// # Errors
+    ///
+    /// Returns the `PostgreSQL` error when the update fails.
+    pub fn equip_weapon(
+        &mut self,
+        character_id: &str,
+        item_id: &str,
+    ) -> Result<bool, postgres::Error> {
+        self.client
+            .execute(
+                "UPDATE equipment_loadouts SET weapon_item_id = $2 WHERE character_id = $1",
+                &[&character_id, &item_id],
+            )
+            .map(|updated| updated == 1)
     }
 
     /// Records a completed activity for operational history.
@@ -455,6 +503,7 @@ mod tests {
             "replay_events",
             "inventory_reward_grants",
             "progression_reward_grants",
+            "equipment_loadouts",
         ] {
             assert!(SCHEMA.contains(&format!("CREATE TABLE IF NOT EXISTS {table}")));
         }

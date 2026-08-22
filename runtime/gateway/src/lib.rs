@@ -10,18 +10,19 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use revenant_activities::{ActivityEvent, ScriptedActivity};
 use revenant_actors::{Actor, ActorKind, ActorRegistry};
 use revenant_ai::{AiController, AiEvent};
-use revenant_combat::CombatRuntime;
+use revenant_combat::{AttackProfile, CombatRuntime};
 use revenant_compatibility::{CanonicalClientMessage, ProtocolAdapter, ProtocolGeneration};
 use revenant_identity::LocalIdentityService;
-use revenant_inventory::ItemStack;
+use revenant_inventory::{weapon_profile, ItemStack, ARC_SIDEARM_PROFILE, PULSE_RIFLE_PROFILE};
 use revenant_objectives::{Objective, ObjectiveKind, ObjectiveState, WorldTrigger};
 use revenant_persistence::{ActivityCompletion, NewReplayEvent, Persistence};
 use revenant_progression::{Progression as DomainProgression, EXPERIENCE_PER_LEVEL};
 use revenant_protocol::{
     read_message, write_message, ActivityComplete, ActivityStart, ActorDestroy, ActorSpawn,
     ActorUpdate, AuthResponse, CharacterListResponse, CharacterSummary, ClientMessage,
-    DamageApplied, DoorState, InventoryItem, InventorySnapshot, LootGranted, ObjectiveUpdate,
-    ProgressionGranted, ProgressionSnapshot, ServerHello, ServerMessage, WorldJoinResponse,
+    DamageApplied, DoorState, EquipmentChanged, EquipmentSnapshot, InventoryItem,
+    InventorySnapshot, LootGranted, ObjectiveUpdate, ProgressionGranted, ProgressionSnapshot,
+    ServerHello, ServerMessage, WeaponProfile as WireWeaponProfile, WorldJoinResponse,
     PROTOCOL_VERSION,
 };
 use revenant_replay::ReplayEventKind;
@@ -350,7 +351,8 @@ fn handle_game_connection(
         )?;
         return Ok(());
     }
-    let (inventory, progression) = load_character_state(&mut persistence, &request.character_id)?;
+    let (inventory, progression, equipped_weapon_item_id) =
+        load_character_state(&mut persistence, &request.character_id)?;
     let player = WorldService.join(&request.character_id);
     let (outbound_tx, outbound_rx) = mpsc::channel();
     let (join_result_tx, join_result_rx) = mpsc::channel();
@@ -368,6 +370,8 @@ fn handle_game_connection(
             },
             outbound: outbound_tx,
             protocol_generation: adapter.generation(),
+            owned_items: inventory.iter().map(|item| item.item_id.clone()).collect(),
+            equipped_weapon_item_id: equipped_weapon_item_id.clone(),
         },
         result: join_result_tx,
     })?;
@@ -411,6 +415,16 @@ fn handle_game_connection(
             &mut stream,
             &ServerMessage::ProgressionSnapshot(progression_message(progression)),
         )?;
+        write_message(
+            &mut stream,
+            &ServerMessage::EquipmentSnapshot(EquipmentSnapshot {
+                equipped_weapon_item_id,
+                weapons: [PULSE_RIFLE_PROFILE, ARC_SIDEARM_PROFILE]
+                    .into_iter()
+                    .map(wire_weapon_profile)
+                    .collect(),
+            }),
+        )?;
     }
 
     let mut writer = stream.try_clone()?;
@@ -432,7 +446,17 @@ fn handle_game_connection(
                     position: intent.position,
                 })?;
             }
-            Ok(_) => return Err(unexpected_message("AttackIntent or MoveIntent")),
+            Ok(CanonicalClientMessage::EquipIntent(intent)) => {
+                command_tx.send(SessionCommand::Equip {
+                    player_id: player.actor_id,
+                    item_id: intent.item_id,
+                })?;
+            }
+            Ok(_) => {
+                return Err(unexpected_message(
+                    "AttackIntent, MoveIntent, or EquipIntent",
+                ))
+            }
             Err(_) => {
                 let _ = command_tx.send(SessionCommand::Disconnect(player.actor_id));
                 return Ok(());
@@ -471,6 +495,10 @@ enum SessionCommand {
         player_id: u64,
         position: [i32; 3],
     },
+    Equip {
+        player_id: u64,
+        item_id: String,
+    },
     Disconnect(u64),
 }
 
@@ -480,6 +508,8 @@ struct Participant {
     actor: Actor,
     outbound: Sender<ServerMessage>,
     protocol_generation: ProtocolGeneration,
+    owned_items: Vec<String>,
+    equipped_weapon_item_id: String,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -551,6 +581,9 @@ impl SharedSession {
                     player_id,
                     position,
                 } => self.move_player(player_id, position),
+                SessionCommand::Equip { player_id, item_id } => {
+                    self.equip_weapon(player_id, &item_id)
+                }
                 SessionCommand::Disconnect(player_id) => self.disconnect(player_id),
             };
             if let Err(error) = result {
@@ -674,9 +707,25 @@ impl SharedSession {
         }
         let elapsed_ms =
             u64::try_from(self.combat_started.elapsed().as_millis()).unwrap_or(u64::MAX);
-        let result = self
-            .combat
-            .attack(&mut self.actors, player_id, target_id, elapsed_ms)?;
+        let equipped_item_id = self
+            .participants
+            .iter()
+            .find(|participant| participant.actor.id == player_id)
+            .map(|participant| participant.equipped_weapon_item_id.as_str())
+            .ok_or_else(|| io::Error::other("attacking participant was not found"))?;
+        let weapon = weapon_profile(equipped_item_id)
+            .ok_or_else(|| io::Error::other("equipped item has no weapon profile"))?;
+        let result = self.combat.attack(
+            &mut self.actors,
+            player_id,
+            target_id,
+            elapsed_ms,
+            AttackProfile {
+                damage: weapon.damage,
+                range: weapon.range,
+                cooldown_ms: weapon.cooldown_ms,
+            },
+        )?;
         self.broadcast(ServerMessage::DamageApplied(DamageApplied {
             source_actor_id: player_id,
             target_actor_id: target_id,
@@ -692,6 +741,92 @@ impl SharedSession {
             self.enemy_defeated(target_id)?;
         }
         Ok(())
+    }
+
+    fn equip_weapon(
+        &mut self,
+        player_id: u64,
+        item_id: &str,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let profile = weapon_profile(item_id);
+        let Some(participant_index) = self
+            .participants
+            .iter()
+            .position(|participant| participant.actor.id == player_id)
+        else {
+            return Err(io::Error::other("equipping participant was not found").into());
+        };
+        let rejection = if self.stage == SessionStage::Complete {
+            Some("equipment is locked after activity completion")
+        } else if profile.is_none() {
+            Some("item is not an equipable weapon")
+        } else if !self.participants[participant_index]
+            .owned_items
+            .iter()
+            .any(|owned| owned == item_id)
+        {
+            Some("character does not own that weapon")
+        } else {
+            None
+        };
+        if let Some(message) = rejection {
+            self.send_equipment_result(participant_index, false, message);
+            return Ok(());
+        }
+        let profile = profile.expect("validated weapon profile should exist");
+        let character_id = self.participants[participant_index].character_id.clone();
+        if !self.persistence.equip_weapon(&character_id, item_id)? {
+            return Err(io::Error::other("persisted equipment loadout is missing").into());
+        }
+        self.participants[participant_index]
+            .equipped_weapon_item_id
+            .clone_from(&item_id.to_owned());
+        let account_id = self.participants[participant_index].account_id.clone();
+        self.append_event(
+            ReplayEventKind::EquipmentChanged,
+            &account_id,
+            Some(player_id),
+            &format!("weapon equipped: {item_id}"),
+        )?;
+        let message = ServerMessage::EquipmentChanged(EquipmentChanged {
+            accepted: true,
+            message: "weapon equipped".to_owned(),
+            actor_id: player_id,
+            equipped_weapon_item_id: item_id.to_owned(),
+            damage: profile.damage,
+            range: profile.range,
+            cooldown_ms: profile.cooldown_ms,
+        });
+        self.broadcast_v2(&message);
+        Ok(())
+    }
+
+    fn send_equipment_result(&self, participant_index: usize, accepted: bool, message: &str) {
+        let participant = &self.participants[participant_index];
+        if participant.protocol_generation != ProtocolGeneration::CurrentV2 {
+            return;
+        }
+        let profile =
+            weapon_profile(&participant.equipped_weapon_item_id).unwrap_or(PULSE_RIFLE_PROFILE);
+        let _ = participant
+            .outbound
+            .send(ServerMessage::EquipmentChanged(EquipmentChanged {
+                accepted,
+                message: message.to_owned(),
+                actor_id: participant.actor.id,
+                equipped_weapon_item_id: participant.equipped_weapon_item_id.clone(),
+                damage: profile.damage,
+                range: profile.range,
+                cooldown_ms: profile.cooldown_ms,
+            }));
+    }
+
+    fn broadcast_v2(&self, message: &ServerMessage) {
+        for participant in &self.participants {
+            if participant.protocol_generation == ProtocolGeneration::CurrentV2 {
+                let _ = participant.outbound.send(message.clone());
+            }
+        }
     }
 
     fn enemy_defeated(&mut self, target_id: u64) -> Result<(), Box<dyn std::error::Error>> {
@@ -1002,7 +1137,7 @@ fn actor_spawn_message(actor: &Actor) -> ServerMessage {
 fn load_character_state(
     persistence: &mut Persistence,
     character_id: &str,
-) -> Result<(Vec<ItemStack>, DomainProgression), Box<dyn std::error::Error>> {
+) -> Result<(Vec<ItemStack>, DomainProgression, String), Box<dyn std::error::Error>> {
     let inventory = persistence
         .inventory_for(character_id)?
         .into_iter()
@@ -1016,10 +1151,23 @@ fn load_character_state(
     let progression = persistence
         .progression_for(character_id)?
         .ok_or_else(|| io::Error::other("character progression is missing"))?;
+    let equipped_weapon_item_id = persistence
+        .equipped_weapon_for(character_id)?
+        .ok_or_else(|| io::Error::other("character equipment loadout is missing"))?;
     Ok((
         inventory,
         DomainProgression::from_experience(u64::try_from(progression.experience)?),
+        equipped_weapon_item_id,
     ))
+}
+
+fn wire_weapon_profile(profile: revenant_inventory::WeaponProfile) -> WireWeaponProfile {
+    WireWeaponProfile {
+        item_id: profile.item_id.to_owned(),
+        damage: profile.damage,
+        range: profile.range,
+        cooldown_ms: profile.cooldown_ms,
+    }
 }
 
 fn progression_message(progression: DomainProgression) -> ProgressionSnapshot {
