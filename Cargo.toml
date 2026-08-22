@@ -11,6 +11,7 @@ members = [
     "runtime/objectives",
     "runtime/persistence",
     "runtime/protocol",
+    "runtime/progression",
     "runtime/replay",
     "runtime/world",
     "tools/revenant",

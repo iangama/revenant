@@ -6,6 +6,6 @@ Before changing code: inspect the repository, identify the current milestone, ru
 
 The server is authoritative. Keep protocol parsing outside domain systems, prefer composition and explicit observable state, avoid premature services and abstractions, and do not use third-party proprietary code, assets, private protocols, or data.
 
-M0-M16 are complete and version 0.1.0 is published. M17 adds the manual Godot playable vertical slice while preserving the automated acceptance client. Stop before M18.
+M0-M18 are complete and version 0.1.0 is published. M19 adds authoritative experience and level progression while preserving every previous acceptance and compatibility flow. Stop before M20.
 
-For M17, keep movement and combat server-authoritative, retain all previous smoke coverage, do not modify frozen V1 artifacts, and do not begin loot/inventory gameplay from M18. Do not create a commit without explicit owner authorization.
+For M19, grant deterministic experience with loot and activity history in one idempotent transaction, keep progression server-authoritative, retain all previous smoke coverage, and do not modify frozen V1 artifacts. Do not begin skills, level effects, equipment, or M20 work. Do not create a commit without explicit owner authorization.

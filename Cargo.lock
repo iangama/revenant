@@ -551,6 +551,7 @@ dependencies = [
  "mlua",
  "revenant-inventory",
  "revenant-objectives",
+ "revenant-progression",
 ]
 
 [[package]]
@@ -614,6 +615,7 @@ dependencies = [
  "revenant-inventory",
  "revenant-objectives",
  "revenant-persistence",
+ "revenant-progression",
  "revenant-protocol",
  "revenant-replay",
  "revenant-world",
@@ -637,7 +639,12 @@ name = "revenant-persistence"
 version = "0.1.0"
 dependencies = [
  "postgres",
+ "revenant-progression",
 ]
+
+[[package]]
+name = "revenant-progression"
+version = "0.1.0"
 
 [[package]]
 name = "revenant-protocol"

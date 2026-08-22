@@ -11,6 +11,7 @@ pub enum ReplayEventKind {
     BossSpawned,
     ActivityCompleted,
     LootGranted,
+    ProgressionGranted,
 }
 
 impl Display for ReplayEventKind {
@@ -23,6 +24,7 @@ impl Display for ReplayEventKind {
             Self::BossSpawned => "boss_spawned",
             Self::ActivityCompleted => "activity_completed",
             Self::LootGranted => "loot_granted",
+            Self::ProgressionGranted => "progression_granted",
         })
     }
 }
@@ -50,6 +52,7 @@ impl FromStr for ReplayEventKind {
             "boss_spawned" => Ok(Self::BossSpawned),
             "activity_completed" => Ok(Self::ActivityCompleted),
             "loot_granted" => Ok(Self::LootGranted),
+            "progression_granted" => Ok(Self::ProgressionGranted),
             _ => Err(UnknownReplayEventKind(value.to_owned())),
         }
     }
@@ -76,6 +79,7 @@ pub struct ReconstructedSession {
     pub boss_spawned: bool,
     pub completed: bool,
     pub loot_grants: usize,
+    pub progression_grants: usize,
     pub timeline: Vec<String>,
 }
 
@@ -95,6 +99,7 @@ pub fn reconstruct(events: &[ReplayEvent]) -> Result<ReconstructedSession, Repla
         boss_spawned: false,
         completed: false,
         loot_grants: 0,
+        progression_grants: 0,
         timeline: Vec::with_capacity(events.len()),
     };
     for event in events {
@@ -111,6 +116,7 @@ pub fn reconstruct(events: &[ReplayEvent]) -> Result<ReconstructedSession, Repla
             ReplayEventKind::BossSpawned => state.boss_spawned = true,
             ReplayEventKind::ActivityCompleted => state.completed = true,
             ReplayEventKind::LootGranted => state.loot_grants += 1,
+            ReplayEventKind::ProgressionGranted => state.progression_grants += 1,
             ReplayEventKind::ActivityStarted => {}
         }
         state.timeline.push(format!(
@@ -165,6 +171,7 @@ mod tests {
             ReplayEventKind::EnemyDied,
             ReplayEventKind::ActivityCompleted,
             ReplayEventKind::LootGranted,
+            ReplayEventKind::ProgressionGranted,
         ];
         let events = kinds
             .into_iter()
@@ -177,6 +184,7 @@ mod tests {
         assert!(state.boss_spawned);
         assert!(state.completed);
         assert_eq!(state.loot_grants, 1);
+        assert_eq!(state.progression_grants, 1);
         assert_eq!(state.timeline.len(), events.len());
     }
 }

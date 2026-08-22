@@ -64,6 +64,8 @@ M17 does not add wire messages. `MoveIntent.position` may target integer coordin
 
 M18 adds V2-only `InventorySnapshot` and `LootGranted` server messages. `InventorySnapshot.items` contains stable `item_id` and `quantity` fields and follows an accepted `WorldJoinResponse`. `LootGranted` contains `activity_id`, `item_id`, granted `quantity`, and authoritative `resulting_quantity`; it precedes `ActivityComplete`. Clients cannot submit inventory mutations.
 
+M19 adds V2-only `ProgressionSnapshot` and `ProgressionGranted`. The snapshot follows `InventorySnapshot` and contains authoritative `level`, total `experience`, and `experience_to_next_level`. A completion grant contains the activity, awarded and total experience, previous and resulting levels, and distance to the next level. It follows `LootGranted` and precedes `ActivityComplete`. Clients cannot submit experience or level changes.
+
 ## Compatibility matrix
 
 | Client | Wire protocol | Runtime support |

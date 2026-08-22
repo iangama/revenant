@@ -6,6 +6,7 @@ license.workspace = true
 
 [dependencies]
 postgres.workspace = true
+revenant-progression = { path = "../progression" }
 
 [lints]
 workspace = true

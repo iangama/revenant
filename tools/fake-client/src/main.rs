@@ -110,6 +110,16 @@ fn handshake() -> Result<(), Box<dyn std::error::Error>> {
         return Err("starter inventory snapshot is missing pulse_rifle".into());
     }
     println!("received authoritative inventory snapshot");
+    let ServerMessage::ProgressionSnapshot(progression) = read_message(&mut stream)? else {
+        return Err("expected ProgressionSnapshot".into());
+    };
+    if progression.level == 0 || progression.experience_to_next_level == 0 {
+        return Err("authoritative progression snapshot is invalid".into());
+    }
+    println!(
+        "received authoritative progression: level {} with {} XP",
+        progression.level, progression.experience
+    );
     let ServerMessage::ActivityStart(activity) = read_message(&mut stream)? else {
         return Err("expected ActivityStart".into());
     };
@@ -200,6 +210,12 @@ fn complete_activity(
     if loot.item_id != "relay_core_fragment" || loot.quantity != 1 {
         return Err("activity granted unexpected loot".into());
     }
+    let ServerMessage::ProgressionGranted(progression) = read_message(stream)? else {
+        return Err("expected ProgressionGranted".into());
+    };
+    if progression.experience_granted != 100 || progression.level < progression.previous_level {
+        return Err("activity granted unexpected progression".into());
+    }
     let ServerMessage::ActivityComplete(completed) = read_message(stream)? else {
         return Err("expected ActivityComplete".into());
     };
@@ -209,6 +225,10 @@ fn complete_activity(
     println!(
         "activity {} completed; received {} x{} (total {})",
         completed.activity_id, loot.item_id, loot.quantity, loot.resulting_quantity
+    );
+    println!(
+        "received {} XP (total {}, level {})",
+        progression.experience_granted, progression.experience, progression.level
     );
     Ok(())
 }
@@ -269,6 +289,7 @@ fn observe_shared_activity(
     let mut boss_destroyed = false;
     let mut objective_updates = 1;
     let mut loot_received = false;
+    let mut progression_received = false;
     loop {
         match read_message(stream)? {
             ServerMessage::ActorDestroy(destroy) if destroy.actor_id == first_enemy_id => {
@@ -282,12 +303,18 @@ fn observe_shared_activity(
             ServerMessage::LootGranted(loot) if loot.item_id == "relay_core_fragment" => {
                 loot_received = true;
             }
+            ServerMessage::ProgressionGranted(progression)
+                if progression.experience_granted == 100 =>
+            {
+                progression_received = true;
+            }
             ServerMessage::ActivityComplete(activity) => {
                 if !enemy_destroyed
                     || !boss_spawned
                     || !boss_destroyed
                     || objective_updates < 5
                     || !loot_received
+                    || !progression_received
                 {
                     return Err("observer missed shared activity state".into());
                 }

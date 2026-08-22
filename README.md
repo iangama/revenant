@@ -2,7 +2,7 @@
 
 Revenant is an original game-engineering and software-preservation project. It will evolve into a small online game, an authoritative client-server runtime, and eventually a controlled compatibility laboratory for old builds of Revenant itself.
 
-The repository currently implements **M18 — Authoritative Loot and Inventory** on top of the published 0.1.0 baseline. The playable `relay_awakening` slice now loads persisted inventory, grants a deterministic completion reward, and presents the authoritative result in Godot while retaining the complete automated acceptance flow.
+The repository currently implements **M19 — Authoritative Progression** on top of the published 0.1.0 baseline. The playable `relay_awakening` slice now grants persisted loot and deterministic experience, derives levels on the server, and presents both authoritative results in Godot while retaining the complete automated acceptance flow.
 
 ## Repository map
 
@@ -10,6 +10,7 @@ The repository currently implements **M18 — Authoritative Loot and Inventory**
 - `runtime/identity`: local account policy and deterministic character creation
 - `runtime/inventory`: server-owned item catalog and reward validation
 - `runtime/protocol`: versioned MessagePack messages and framing
+- `runtime/progression`: experience reward validation and deterministic levels
 - `runtime/world`: authoritative world entry and player actor allocation
 - `runtime/actors`: actor registry and explicit lifecycle
 - `runtime/combat`: authoritative range, cooldown, damage, health, and death
@@ -71,6 +72,8 @@ Open `http://127.0.0.1:4173` for the Inspector. The container serves the static 
 Open `client/game/project.godot` with Godot 4.7.1 to play the vertical slice. Use WASD, arrow keys, or the on-screen directional pad to move; aim the cursor at the active enemy and click, press Space, or use the on-screen Attack button. After defeating the relay drone, move to `x=6` to open the relay core and fight the Warden. The HUD displays player/enemy HP, objective progress, position and door distance, connection/encounter guidance, input diagnostics, and completion feedback. The gateway prepares a fresh run automatically after all players leave the current session.
 
 The inventory panel is read-only and reflects server messages. Each successful `relay_awakening` completion grants every participating character one persisted `relay_core_fragment`.
+
+The progression display is also read-only. Each completion grants 100 XP; characters begin at level 1 and gain one level per 500 total XP.
 
 The game protocol listens on TCP port 7000. Clients complete a versioned handshake, authenticate a local username, and request their character list; see `docs/protocol/README.md` for the contract.
 The current protocol is V2. The gateway also accepts the frozen V1 client through `revenant-compatibility`; both versions map into the same canonical domain inputs.
