@@ -549,6 +549,7 @@ name = "revenant-activities"
 version = "0.1.0"
 dependencies = [
  "mlua",
+ "revenant-inventory",
  "revenant-objectives",
 ]
 
@@ -610,6 +611,7 @@ dependencies = [
  "revenant-combat",
  "revenant-compatibility",
  "revenant-identity",
+ "revenant-inventory",
  "revenant-objectives",
  "revenant-persistence",
  "revenant-protocol",
@@ -620,6 +622,10 @@ dependencies = [
 
 [[package]]
 name = "revenant-identity"
+version = "0.1.0"
+
+[[package]]
+name = "revenant-inventory"
 version = "0.1.0"
 
 [[package]]

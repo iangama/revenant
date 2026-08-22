@@ -10,6 +10,7 @@ pub enum ReplayEventKind {
     EnemyDied,
     BossSpawned,
     ActivityCompleted,
+    LootGranted,
 }
 
 impl Display for ReplayEventKind {
@@ -21,6 +22,7 @@ impl Display for ReplayEventKind {
             Self::EnemyDied => "enemy_died",
             Self::BossSpawned => "boss_spawned",
             Self::ActivityCompleted => "activity_completed",
+            Self::LootGranted => "loot_granted",
         })
     }
 }
@@ -47,6 +49,7 @@ impl FromStr for ReplayEventKind {
             "enemy_died" => Ok(Self::EnemyDied),
             "boss_spawned" => Ok(Self::BossSpawned),
             "activity_completed" => Ok(Self::ActivityCompleted),
+            "loot_granted" => Ok(Self::LootGranted),
             _ => Err(UnknownReplayEventKind(value.to_owned())),
         }
     }
@@ -72,6 +75,7 @@ pub struct ReconstructedSession {
     pub defeated_enemies: usize,
     pub boss_spawned: bool,
     pub completed: bool,
+    pub loot_grants: usize,
     pub timeline: Vec<String>,
 }
 
@@ -90,6 +94,7 @@ pub fn reconstruct(events: &[ReplayEvent]) -> Result<ReconstructedSession, Repla
         defeated_enemies: 0,
         boss_spawned: false,
         completed: false,
+        loot_grants: 0,
         timeline: Vec::with_capacity(events.len()),
     };
     for event in events {
@@ -105,6 +110,7 @@ pub fn reconstruct(events: &[ReplayEvent]) -> Result<ReconstructedSession, Repla
             ReplayEventKind::EnemyDied => state.defeated_enemies += 1,
             ReplayEventKind::BossSpawned => state.boss_spawned = true,
             ReplayEventKind::ActivityCompleted => state.completed = true,
+            ReplayEventKind::LootGranted => state.loot_grants += 1,
             ReplayEventKind::ActivityStarted => {}
         }
         state.timeline.push(format!(
@@ -158,6 +164,7 @@ mod tests {
             ReplayEventKind::BossSpawned,
             ReplayEventKind::EnemyDied,
             ReplayEventKind::ActivityCompleted,
+            ReplayEventKind::LootGranted,
         ];
         let events = kinds
             .into_iter()
@@ -169,6 +176,7 @@ mod tests {
         assert_eq!(state.defeated_enemies, 2);
         assert!(state.boss_spawned);
         assert!(state.completed);
+        assert_eq!(state.loot_grants, 1);
         assert_eq!(state.timeline.len(), events.len());
     }
 }

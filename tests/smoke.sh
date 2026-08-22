@@ -125,6 +125,7 @@ if wait_for_gateway; then
           timeout 10s "$GODOT_BIN" --headless --path client/game)"
       echo "$slice_output"
       [[ "$slice_output" == *"M17 playable slice validated"* ]]
+      [[ "$slice_output" == *"M18 inventory HUD validated"* ]]
     fi
 
     kill "$server_pid"
@@ -148,6 +149,8 @@ if wait_for_gateway; then
       "enemy died" \
       "boss spawned" \
       "activity completed" \
+      "loot granted: relay_core_fragment x1" \
+      "loot_grants=2" \
       "completed=true"; do
       if [[ "$replay_output" != *"$expected"* ]]; then
         echo "replay timeline is missing: $expected" >&2
@@ -206,6 +209,7 @@ if wait_for_gateway; then
 
     echo "M15 reconstruction experiment smoke test passed"
     echo "M17 playable vertical slice smoke test passed"
+    echo "M18 authoritative loot and inventory smoke test passed"
     exit 0
 fi
 

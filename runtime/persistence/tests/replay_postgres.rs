@@ -55,3 +55,58 @@ fn appends_and_loads_replay_events_from_postgres() {
         Some(session_id.as_str())
     );
 }
+
+#[test]
+fn grants_activity_reward_once_per_session() {
+    let Ok(database_url) = env::var("DATABASE_URL") else {
+        eprintln!("DATABASE_URL is not set; PostgreSQL integration test skipped");
+        return;
+    };
+    let suffix = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("clock should follow epoch")
+        .as_nanos();
+    let account_id = format!("local:reward-test-{suffix}");
+    let character_id = format!("{account_id}:operator");
+    let session_id = format!("reward-session-{suffix}");
+    let mut persistence = Persistence::connect(&database_url).expect("PostgreSQL should connect");
+    persistence
+        .ensure_local_account(&account_id, "reward-test")
+        .expect("test account should persist");
+
+    let first = persistence
+        .complete_activity_with_reward(
+            &session_id,
+            &account_id,
+            &character_id,
+            "relay_awakening",
+            "relay_core_fragment",
+            1,
+        )
+        .expect("first reward should persist");
+    let duplicate = persistence
+        .complete_activity_with_reward(
+            &session_id,
+            &account_id,
+            &character_id,
+            "relay_awakening",
+            "relay_core_fragment",
+            1,
+        )
+        .expect("duplicate reward should be harmless");
+
+    assert_eq!(first, Some(1));
+    assert_eq!(duplicate, None);
+    let inventory = persistence
+        .inventory_for(&character_id)
+        .expect("inventory should load");
+    assert!(inventory
+        .iter()
+        .any(|item| item.item_id == "relay_core_fragment" && item.quantity == 1));
+    assert_eq!(
+        persistence
+            .activity_completion_count(&account_id, "relay_awakening")
+            .expect("completion count should load"),
+        1
+    );
+}

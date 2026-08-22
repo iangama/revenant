@@ -99,6 +99,17 @@ fn handshake() -> Result<(), Box<dyn std::error::Error>> {
         "joined world {} as player actor {} at {:?}",
         world.world_id, world.player_actor_id, world.spawn_position
     );
+    let ServerMessage::InventorySnapshot(inventory) = read_message(&mut stream)? else {
+        return Err("expected InventorySnapshot".into());
+    };
+    if !inventory
+        .items
+        .iter()
+        .any(|item| item.item_id == "pulse_rifle" && item.quantity == 1)
+    {
+        return Err("starter inventory snapshot is missing pulse_rifle".into());
+    }
+    println!("received authoritative inventory snapshot");
     let ServerMessage::ActivityStart(activity) = read_message(&mut stream)? else {
         return Err("expected ActivityStart".into());
     };
@@ -183,13 +194,22 @@ fn complete_activity(
     let ServerMessage::ObjectiveUpdate(completed_boss) = read_message(stream)? else {
         return Err("expected completed Boss objective".into());
     };
+    let ServerMessage::LootGranted(loot) = read_message(stream)? else {
+        return Err("expected LootGranted".into());
+    };
+    if loot.item_id != "relay_core_fragment" || loot.quantity != 1 {
+        return Err("activity granted unexpected loot".into());
+    }
     let ServerMessage::ActivityComplete(completed) = read_message(stream)? else {
         return Err("expected ActivityComplete".into());
     };
     if completed_boss.state != "Completed" {
         return Err("boss objective did not complete".into());
     }
-    println!("activity {} completed", completed.activity_id);
+    println!(
+        "activity {} completed; received {} x{} (total {})",
+        completed.activity_id, loot.item_id, loot.quantity, loot.resulting_quantity
+    );
     Ok(())
 }
 
@@ -248,6 +268,7 @@ fn observe_shared_activity(
     let mut boss_spawned = false;
     let mut boss_destroyed = false;
     let mut objective_updates = 1;
+    let mut loot_received = false;
     loop {
         match read_message(stream)? {
             ServerMessage::ActorDestroy(destroy) if destroy.actor_id == first_enemy_id => {
@@ -258,8 +279,16 @@ fn observe_shared_activity(
             }
             ServerMessage::ActorDestroy(_) if boss_spawned => boss_destroyed = true,
             ServerMessage::ObjectiveUpdate(_) => objective_updates += 1,
+            ServerMessage::LootGranted(loot) if loot.item_id == "relay_core_fragment" => {
+                loot_received = true;
+            }
             ServerMessage::ActivityComplete(activity) => {
-                if !enemy_destroyed || !boss_spawned || !boss_destroyed || objective_updates < 5 {
+                if !enemy_destroyed
+                    || !boss_spawned
+                    || !boss_destroyed
+                    || objective_updates < 5
+                    || !loot_received
+                {
                     return Err("observer missed shared activity state".into());
                 }
                 println!(

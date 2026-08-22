@@ -11,6 +11,7 @@ revenant-actors = { path = "../actors" }
 revenant-combat = { path = "../combat" }
 revenant-compatibility = { path = "../compatibility" }
 revenant-identity = { path = "../identity" }
+revenant-inventory = { path = "../inventory" }
 revenant-objectives = { path = "../objectives" }
 revenant-persistence = { path = "../persistence" }
 revenant-protocol = { path = "../protocol" }
