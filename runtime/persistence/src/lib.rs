@@ -2,7 +2,8 @@ use postgres::{Client, NoTls};
 
 const SCHEMA: &str = concat!(
     include_str!("../migrations/0001_initial.sql"),
-    include_str!("../migrations/0002_replay_events.sql")
+    include_str!("../migrations/0002_replay_events.sql"),
+    include_str!("../migrations/0003_inventory_rewards.sql")
 );
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -69,7 +70,10 @@ impl Persistence {
     /// Returns the `PostgreSQL` error when the connection or migration fails.
     pub fn connect(database_url: &str) -> Result<Self, postgres::Error> {
         let mut client = Client::connect(database_url, NoTls)?;
-        client.batch_execute(SCHEMA)?;
+        let mut transaction = client.transaction()?;
+        transaction.query_one("SELECT pg_advisory_xact_lock(824_180_018)", &[])?;
+        transaction.batch_execute(SCHEMA)?;
+        transaction.commit()?;
         Ok(Self { client })
     }
 
@@ -197,6 +201,49 @@ impl Persistence {
             &[&account_id, &character_id, &activity_id],
         )?;
         Ok(())
+    }
+
+    /// Atomically records an activity completion and grants its idempotent reward.
+    ///
+    /// Returns the resulting item quantity, or `None` when this session already
+    /// granted the same reward to the character.
+    ///
+    /// # Errors
+    ///
+    /// Returns the `PostgreSQL` error when the transaction fails.
+    pub fn complete_activity_with_reward(
+        &mut self,
+        session_id: &str,
+        account_id: &str,
+        character_id: &str,
+        activity_id: &str,
+        item_id: &str,
+        quantity: i32,
+    ) -> Result<Option<i32>, postgres::Error> {
+        let mut transaction = self.client.transaction()?;
+        let inserted = transaction.query_opt(
+            "INSERT INTO inventory_reward_grants (session_id, character_id, item_id, quantity) \
+             VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING RETURNING quantity",
+            &[&session_id, &character_id, &item_id, &quantity],
+        )?;
+        if inserted.is_none() {
+            transaction.commit()?;
+            return Ok(None);
+        }
+        let resulting_quantity: i32 = transaction
+            .query_one(
+                "INSERT INTO inventory (character_id, item_id, quantity) VALUES ($1, $2, $3) \
+                 ON CONFLICT (character_id, item_id) DO UPDATE \
+                 SET quantity = inventory.quantity + EXCLUDED.quantity RETURNING quantity",
+                &[&character_id, &item_id, &quantity],
+            )?
+            .get(0);
+        transaction.execute(
+            "INSERT INTO activity_history (account_id, character_id, activity_id) VALUES ($1, $2, $3)",
+            &[&account_id, &character_id, &activity_id],
+        )?;
+        transaction.commit()?;
+        Ok(Some(resulting_quantity))
     }
 
     /// Counts recorded completions for smoke and diagnostic tooling.
@@ -342,6 +389,7 @@ mod tests {
             "progression",
             "activity_history",
             "replay_events",
+            "inventory_reward_grants",
         ] {
             assert!(SCHEMA.contains(&format!("CREATE TABLE IF NOT EXISTS {table}")));
         }

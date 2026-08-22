@@ -16,6 +16,7 @@ var _player_health := 100
 var _next_move_at := 0
 var _next_attack_at := 0
 var _activity_complete := false
+var _inventory := {}
 var _camera: Camera3D
 var _door: MeshInstance3D
 var _status_label: Label
@@ -27,6 +28,7 @@ var _controls_label: Label
 var _crosshair: Label
 var _guidance_label: Label
 var _input_log_label: Label
+var _inventory_label: Label
 var _input_events: Array[String] = []
 var _attack_requested := false
 var _ui_attack_requested := false
@@ -138,6 +140,11 @@ func _run_handshake() -> void:
 		return
 	print("joined world %s as player actor %d" % [world_response.get("world_id"), world_response.get("player_actor_id")])
 	_player_actor_id = world_response.get("player_actor_id")
+	var inventory_snapshot := await _receive_message(Time.get_ticks_msec() + 5000)
+	if inventory_snapshot.get("type") != "InventorySnapshot":
+		_fail("expected InventorySnapshot")
+		return
+	_apply_inventory_snapshot(inventory_snapshot)
 	_status_label.text = "CONNECTED  •  RELAY-HUB"
 	_controls_label.text = "WAITING FOR THE RELAY ACTIVITY..."
 	_set_guidance("GETTING READY", "The server is preparing your encounter. This should take only a moment.")
@@ -248,10 +255,12 @@ func _run_handshake() -> void:
 	var boss_destroy := await _receive_message(Time.get_ticks_msec() + 5000)
 	_destroy_actor(boss_destroy.get("actor_id"))
 	var boss_complete := await _receive_message(Time.get_ticks_msec() + 5000)
+	var loot := await _receive_message(Time.get_ticks_msec() + 5000)
 	var activity_complete := await _receive_message(Time.get_ticks_msec() + 5000)
-	if boss_complete.get("state") != "Completed" or activity_complete.get("type") != "ActivityComplete":
+	if boss_complete.get("state") != "Completed" or loot.get("type") != "LootGranted" or activity_complete.get("type") != "ActivityComplete":
 		_fail("activity did not complete after boss death")
 		return
+	_apply_loot_grant(loot)
 	print("activity %s completed" % activity_complete.get("activity_id"))
 	if _should_exit_after_flow():
 		get_tree().quit(0)
@@ -421,8 +430,10 @@ func _handle_manual_message(message: Dictionary) -> void:
 			_status_label.text = "ACTIVITY COMPLETE  •  RELAY AWAKENED"
 			_objective_label.text = "OBJECTIVE  •  COMPLETE"
 			_controls_label.text = "RELAY_AWAKENING COMPLETED"
-			_set_guidance("MISSION COMPLETE", "The relay is awake. You completed the M17 vertical slice.")
+			_set_guidance("MISSION COMPLETE", "The relay is awake. Your authoritative reward is safely stored.")
 			print("manual activity %s completed" % message.get("activity_id"))
+		"LootGranted":
+			_apply_loot_grant(message)
 		_:
 			_fail("unexpected manual gameplay message: %s" % message.get("type"))
 
@@ -488,6 +499,30 @@ func _update_objective_hud(objective: Dictionary) -> void:
 	if objective.get("objective_type") == "ReachArea" and objective.get("state") == "Active":
 		_status_label.text = "RELAY DOOR UNLOCKED  •  MOVE TO X=6"
 		_set_guidance("STEP 2  •  OPEN THE CORE", "Hold D to move right until you reach the orange relay door at x=6.")
+
+
+func _apply_inventory_snapshot(message: Dictionary) -> void:
+	_inventory.clear()
+	for item in message.get("items", []):
+		_inventory[item.get("item_id", "unknown")] = item.get("quantity", 0)
+	_update_inventory_hud()
+
+
+func _apply_loot_grant(message: Dictionary) -> void:
+	var item_id: String = message.get("item_id", "unknown")
+	_inventory[item_id] = message.get("resulting_quantity", 0)
+	_update_inventory_hud()
+	_status_label.text = "LOOT SECURED  •  %s +%d" % [item_id.replace("_", " ").to_upper(), message.get("quantity", 0)]
+	print("loot granted: %s x%d" % [item_id, message.get("quantity", 0)])
+
+
+func _update_inventory_hud() -> void:
+	var lines: Array[String] = ["INVENTORY"]
+	var item_ids := _inventory.keys()
+	item_ids.sort()
+	for item_id in item_ids:
+		lines.append("%s  x%d" % [str(item_id).replace("_", " ").to_upper(), _inventory[item_id]])
+	_inventory_label.text = "\n".join(lines)
 
 
 func _set_door_open(open: bool) -> void:
@@ -562,6 +597,15 @@ func _build_playable_scene() -> void:
 	_input_log_label = _hud_label(canvas, Vector2(918, 262), 14, Color("a9b8cc"), "Click inside the game window.\nWaiting for keyboard or mouse input...")
 	_input_log_label.size = Vector2(314, 126)
 	_input_log_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+
+	var inventory_panel := ColorRect.new()
+	inventory_panel.color = Color(0.025, 0.045, 0.075, 0.92)
+	inventory_panel.position = Vector2(894, 422)
+	inventory_panel.size = Vector2(362, 150)
+	inventory_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	canvas.add_child(inventory_panel)
+	_inventory_label = _hud_label(canvas, Vector2(918, 440), 16, Color("a9b8cc"), "INVENTORY\nWAITING FOR SERVER")
+	_inventory_label.size = Vector2(314, 112)
 
 	_create_control_button(canvas, "W", Vector2(92, 558), Vector2(58, 48), Vector2(0, -1))
 	_create_control_button(canvas, "A", Vector2(28, 612), Vector2(58, 48), Vector2(-1, 0))
@@ -702,6 +746,7 @@ func _validate_playable_slice() -> void:
 		or _crosshair == null
 		or _guidance_label == null
 		or _input_log_label == null
+		or _inventory_label == null
 		or _movement_buttons.size() != 4
 		or _attack_button == null
 		or _crosshair.mouse_filter != Control.MOUSE_FILTER_IGNORE
@@ -714,6 +759,7 @@ func _validate_playable_slice() -> void:
 		get_tree().quit(1)
 		return
 	print("M17 playable slice validated: camera, HUD, movement, aiming and attack inputs are ready")
+	print("M18 inventory HUD validated: authoritative snapshot and loot presentation are ready")
 	get_tree().quit(0)
 
 

@@ -11,15 +11,16 @@ use revenant_activities::{ActivityEvent, ScriptedActivity};
 use revenant_actors::{Actor, ActorKind, ActorRegistry};
 use revenant_ai::{AiController, AiEvent};
 use revenant_combat::CombatRuntime;
-use revenant_compatibility::{CanonicalClientMessage, ProtocolAdapter};
+use revenant_compatibility::{CanonicalClientMessage, ProtocolAdapter, ProtocolGeneration};
 use revenant_identity::LocalIdentityService;
+use revenant_inventory::ItemStack;
 use revenant_objectives::{Objective, ObjectiveKind, ObjectiveState, WorldTrigger};
 use revenant_persistence::{NewReplayEvent, Persistence};
 use revenant_protocol::{
     read_message, write_message, ActivityComplete, ActivityStart, ActorDestroy, ActorSpawn,
     ActorUpdate, AuthResponse, CharacterListResponse, CharacterSummary, ClientMessage,
-    DamageApplied, DoorState, ObjectiveUpdate, ServerHello, ServerMessage, WorldJoinResponse,
-    PROTOCOL_VERSION,
+    DamageApplied, DoorState, InventoryItem, InventorySnapshot, LootGranted, ObjectiveUpdate,
+    ServerHello, ServerMessage, WorldJoinResponse, PROTOCOL_VERSION,
 };
 use revenant_replay::ReplayEventKind;
 use revenant_world::WorldService;
@@ -347,7 +348,7 @@ fn handle_game_connection(
         )?;
         return Ok(());
     }
-    load_character_state(&mut persistence, &request.character_id)?;
+    let inventory = load_character_state(&mut persistence, &request.character_id)?;
     let player = WorldService.join(&request.character_id);
     let (outbound_tx, outbound_rx) = mpsc::channel();
     let (join_result_tx, join_result_rx) = mpsc::channel();
@@ -364,6 +365,7 @@ fn handle_game_connection(
                 max_health: 100,
             },
             outbound: outbound_tx,
+            protocol_generation: adapter.generation(),
         },
         result: join_result_tx,
     })?;
@@ -390,6 +392,20 @@ fn handle_game_connection(
             message: "world join accepted".to_owned(),
         }),
     )?;
+    if adapter.generation() == ProtocolGeneration::CurrentV2 {
+        write_message(
+            &mut stream,
+            &ServerMessage::InventorySnapshot(InventorySnapshot {
+                items: inventory
+                    .into_iter()
+                    .map(|item| InventoryItem {
+                        item_id: item.item_id,
+                        quantity: item.quantity,
+                    })
+                    .collect(),
+            }),
+        )?;
+    }
 
     let mut writer = stream.try_clone()?;
     thread::spawn(move || write_outbound(&mut writer, outbound_rx));
@@ -457,6 +473,7 @@ struct Participant {
     character_id: String,
     actor: Actor,
     outbound: Sender<ServerMessage>,
+    protocol_generation: ProtocolGeneration,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -774,12 +791,51 @@ impl SharedSession {
             None,
             "activity completed",
         )?;
-        for participant in &self.participants {
-            self.persistence.record_activity_completion(
-                &participant.account_id,
-                &participant.character_id,
-                self.activity.id(),
+        let activity_id = self.activity.id().to_owned();
+        let reward = self.activity.reward().clone();
+        let quantity = i32::try_from(reward.quantity)?;
+        let participants = self
+            .participants
+            .iter()
+            .map(|participant| {
+                (
+                    participant.account_id.clone(),
+                    participant.character_id.clone(),
+                    participant.actor.id,
+                    participant.protocol_generation,
+                    participant.outbound.clone(),
+                )
+            })
+            .collect::<Vec<_>>();
+        for (account_id, character_id, actor_id, generation, outbound) in participants {
+            let Some(resulting_quantity) = self.persistence.complete_activity_with_reward(
+                &self.session_id,
+                &account_id,
+                &character_id,
+                &activity_id,
+                &reward.item_id,
+                quantity,
+            )?
+            else {
+                continue;
+            };
+            self.append_event(
+                ReplayEventKind::LootGranted,
+                &account_id,
+                Some(actor_id),
+                &format!(
+                    "loot granted: {} x{} (total {resulting_quantity})",
+                    reward.item_id, reward.quantity
+                ),
             )?;
+            if generation == ProtocolGeneration::CurrentV2 {
+                let _ = outbound.send(ServerMessage::LootGranted(LootGranted {
+                    activity_id: activity_id.clone(),
+                    item_id: reward.item_id.clone(),
+                    quantity: reward.quantity,
+                    resulting_quantity: u32::try_from(resulting_quantity)?,
+                }));
+            }
         }
         Ok(())
     }
@@ -915,12 +971,21 @@ fn actor_spawn_message(actor: &Actor) -> ServerMessage {
 fn load_character_state(
     persistence: &mut Persistence,
     character_id: &str,
-) -> Result<(), Box<dyn std::error::Error>> {
-    let _inventory = persistence.inventory_for(character_id)?;
+) -> Result<Vec<ItemStack>, Box<dyn std::error::Error>> {
+    let inventory = persistence
+        .inventory_for(character_id)?
+        .into_iter()
+        .map(|entry| {
+            Ok(ItemStack {
+                item_id: entry.item_id,
+                quantity: u32::try_from(entry.quantity)?,
+            })
+        })
+        .collect::<Result<Vec<_>, std::num::TryFromIntError>>()?;
     persistence
         .progression_for(character_id)?
         .ok_or_else(|| io::Error::other("character progression is missing"))?;
-    Ok(())
+    Ok(inventory)
 }
 
 fn new_session_id() -> io::Result<String> {

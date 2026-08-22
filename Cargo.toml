@@ -7,6 +7,7 @@ members = [
     "runtime/compatibility",
     "runtime/gateway",
     "runtime/identity",
+    "runtime/inventory",
     "runtime/objectives",
     "runtime/persistence",
     "runtime/protocol",

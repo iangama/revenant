@@ -5,6 +5,7 @@ use std::fs;
 use std::path::Path;
 
 use mlua::{Lua, LuaOptions, StdLib, Table};
+use revenant_inventory::Reward;
 use revenant_objectives::{Objective, ObjectiveKind, ObjectiveState, WorldTrigger};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -19,6 +20,7 @@ pub enum ActivityEvent {
 #[derive(Debug)]
 pub struct ScriptedActivity {
     id: String,
+    reward: Reward,
     objectives: HashMap<String, Objective>,
     objective_order: Vec<String>,
     triggers: Vec<TriggerDefinition>,
@@ -69,6 +71,16 @@ impl ScriptedActivity {
             .map_err(activity_error)?;
         let definition: Table = lua.load(source).eval().map_err(activity_error)?;
         let id = definition.get("id").map_err(activity_error)?;
+        let reward_table: Table = definition.get("reward").map_err(activity_error)?;
+        let reward = Reward::validated(
+            reward_table
+                .get::<String>("item_id")
+                .map_err(activity_error)?,
+            reward_table
+                .get::<u32>("quantity")
+                .map_err(activity_error)?,
+        )
+        .map_err(activity_error)?;
         let objective_tables: Table = definition.get("objectives").map_err(activity_error)?;
         let mut objectives = HashMap::new();
         let mut objective_order = Vec::new();
@@ -84,10 +96,16 @@ impl ScriptedActivity {
             .collect::<Result<Vec<_>, _>>()?;
         Ok(Self {
             id,
+            reward,
             objectives,
             objective_order,
             triggers,
         })
+    }
+
+    #[must_use]
+    pub fn reward(&self) -> &Reward {
+        &self.reward
     }
 
     #[must_use]
@@ -236,5 +254,7 @@ mod tests {
         assert!(boss
             .iter()
             .any(|event| matches!(event, ActivityEvent::Completed { .. })));
+        assert_eq!(activity.reward().item_id, "relay_core_fragment");
+        assert_eq!(activity.reward().quantity, 1);
     }
 }

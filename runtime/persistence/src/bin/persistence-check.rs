@@ -27,6 +27,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     {
         return Err(io::Error::other("persisted starter inventory was not found").into());
     }
+    if !inventory
+        .iter()
+        .any(|entry| entry.item_id == "relay_core_fragment" && entry.quantity >= 1)
+    {
+        return Err(io::Error::other("persisted activity reward was not found").into());
+    }
     let progression = persistence.progression_for(&character_id)?;
     if progression.is_none() {
         return Err(io::Error::other("persisted progression was not found").into());

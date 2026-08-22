@@ -55,11 +55,12 @@ fn run() -> Result<(), Box<dyn Error>> {
         println!("{line}");
     }
     println!(
-        "State: activity={} enemies_spawned={} enemies_defeated={} boss_spawned={} completed={}",
+        "State: activity={} enemies_spawned={} enemies_defeated={} boss_spawned={} loot_grants={} completed={}",
         state.activity_id.as_deref().unwrap_or("unknown"),
         state.spawned_enemies,
         state.defeated_enemies,
         state.boss_spawned,
+        state.loot_grants,
         state.completed
     );
     Ok(())

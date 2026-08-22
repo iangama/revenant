@@ -1,5 +1,6 @@
 return {
     id = "relay_awakening",
+    reward = { item_id = "relay_core_fragment", quantity = 1 },
     objectives = {
         { id = "clear_drone_group", kind = "KillActors", state = "Active", target = 1 },
         { id = "reach_relay_door", kind = "ReachArea", state = "Pending", target = 1 },

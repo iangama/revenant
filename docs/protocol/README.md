@@ -29,7 +29,7 @@ message: string
 
 The current client uses Protocol V2. The frozen Revenant Client 0.1.0 uses Protocol V1. The gateway negotiates both versions and echoes the selected wire version in `ServerHello`; any other version is rejected before authentication.
 
-M14 intentionally keeps V1 and V2 message layouts identical. The version change establishes an explicit compatibility lifecycle: V1 is frozen and mapped by `revenant-compatibility`, while V2 remains the current contract. Domain systems receive canonical inputs and do not branch on protocol versions.
+M14 initially kept V1 and V2 message layouts identical. M18 extends only the V2 server vocabulary with inventory messages. V1 remains frozen and mapped by `revenant-compatibility`; version-aware projection at the gateway prevents V1 clients from receiving unknown inventory frames.
 
 M15 independently reconstructs only the V1 connection flow consumed by the frozen client. The reconstruction harness owns separate wire types and does not import this current protocol crate or the M14 adapter. This duplicates a small evidence-backed contract intentionally: successful interoperation while `revenant-gateway` is stopped is the experiment's proof.
 
@@ -61,6 +61,8 @@ M8 adds `MoveIntent`, `DoorState`, and `ActivityComplete`. `MoveIntent` is valid
 M12 does not add wire message types or change Protocol V1 framing. After the configured player count joins, each client receives `ActivityStart`, the current objective, an `ActorSpawn` for every participating player, and the shared enemy. Authoritative `ActorUpdate`, `DamageApplied`, `ActorDestroy`, objective, door, boss, and completion messages are broadcast to every participant. Intents from either player are validated against the same server-owned actor and activity state.
 
 M17 does not add wire messages. `MoveIntent.position` may target integer coordinates within the relay-hub bounds `x,z = -12..12` and requires `y = 0`; the server updates and broadcasts the player actor. Reaching `[6,0,0]` during the active door stage triggers the boss encounter. A client still cannot submit HP, damage, objective, door, spawn, or completion state.
+
+M18 adds V2-only `InventorySnapshot` and `LootGranted` server messages. `InventorySnapshot.items` contains stable `item_id` and `quantity` fields and follows an accepted `WorldJoinResponse`. `LootGranted` contains `activity_id`, `item_id`, granted `quantity`, and authoritative `resulting_quantity`; it precedes `ActivityComplete`. Clients cannot submit inventory mutations.
 
 ## Compatibility matrix
 

@@ -26,6 +26,7 @@ pub enum ServerMessage {
     AuthResponse(AuthResponse),
     CharacterListResponse(CharacterListResponse),
     WorldJoinResponse(WorldJoinResponse),
+    InventorySnapshot(InventorySnapshot),
     ActorSpawn(ActorSpawn),
     ActorUpdate(ActorUpdate),
     ActorDestroy(ActorDestroy),
@@ -34,6 +35,7 @@ pub enum ServerMessage {
     ObjectiveUpdate(ObjectiveUpdate),
     DoorState(DoorState),
     ActivityComplete(ActivityComplete),
+    LootGranted(LootGranted),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -91,6 +93,17 @@ pub struct WorldJoinResponse {
     pub player_actor_id: u64,
     pub spawn_position: [i32; 3],
     pub message: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct InventorySnapshot {
+    pub items: Vec<InventoryItem>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct InventoryItem {
+    pub item_id: String,
+    pub quantity: u32,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -156,6 +169,14 @@ pub struct DoorState {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ActivityComplete {
     pub activity_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct LootGranted {
+    pub activity_id: String,
+    pub item_id: String,
+    pub quantity: u32,
+    pub resulting_quantity: u32,
 }
 
 #[derive(Debug)]
@@ -254,7 +275,7 @@ mod tests {
 
     use super::{
         read_message, write_message, CharacterListRequest, ClientHello, ClientMessage,
-        PROTOCOL_VERSION,
+        InventoryItem, InventorySnapshot, ServerMessage, PROTOCOL_VERSION,
     };
 
     #[test]
@@ -296,6 +317,21 @@ mod tests {
         let actual: ClientMessage =
             read_message(&mut Cursor::new(frame)).expect("request should decode");
 
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn inventory_snapshot_round_trips() {
+        let expected = ServerMessage::InventorySnapshot(InventorySnapshot {
+            items: vec![InventoryItem {
+                item_id: "pulse_rifle".to_owned(),
+                quantity: 1,
+            }],
+        });
+        let mut frame = Vec::new();
+        write_message(&mut frame, &expected).expect("inventory should encode");
+        let actual: ServerMessage =
+            read_message(&mut Cursor::new(frame)).expect("inventory should decode");
         assert_eq!(actual, expected);
     }
 }
