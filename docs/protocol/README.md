@@ -66,6 +66,8 @@ M18 adds V2-only `InventorySnapshot` and `LootGranted` server messages. `Invento
 
 M19 adds V2-only `ProgressionSnapshot` and `ProgressionGranted`. The snapshot follows `InventorySnapshot` and contains authoritative `level`, total `experience`, and `experience_to_next_level`. A completion grant contains the activity, awarded and total experience, previous and resulting levels, and distance to the next level. It follows `LootGranted` and precedes `ActivityComplete`. Clients cannot submit experience or level changes.
 
+M20 adds V2-only `EquipmentSnapshot`, `EquipIntent`, and `EquipmentChanged`. The snapshot follows progression and exposes the selected weapon plus server-owned profiles. `EquipIntent` contains only an owned item identifier. `EquipmentChanged` reports acceptance, message, actor, selected item, and authoritative damage/range/cooldown. Frozen V1 rejects the new client message and receives no equipment server messages.
+
 ## Compatibility matrix
 
 | Client | Wire protocol | Runtime support |

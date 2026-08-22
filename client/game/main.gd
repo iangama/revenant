@@ -18,6 +18,8 @@ var _next_attack_at := 0
 var _activity_complete := false
 var _inventory := {}
 var _progression := {"level": 1, "experience": 0, "experience_to_next_level": 500}
+var _equipped_weapon_item_id := "pulse_rifle"
+var _weapon_profiles := {}
 var _camera: Camera3D
 var _door: MeshInstance3D
 var _status_label: Label
@@ -31,6 +33,7 @@ var _guidance_label: Label
 var _input_log_label: Label
 var _inventory_label: Label
 var _progression_label: Label
+var _equipment_label: Label
 var _input_events: Array[String] = []
 var _attack_requested := false
 var _ui_attack_requested := false
@@ -38,6 +41,7 @@ var _encode_failed := false
 var _ui_movement := Vector2.ZERO
 var _movement_buttons: Array[Button] = []
 var _attack_button: Button
+var _weapon_buttons: Array[Button] = []
 
 
 func _ready() -> void:
@@ -152,6 +156,11 @@ func _run_handshake() -> void:
 		_fail("expected ProgressionSnapshot")
 		return
 	_apply_progression(progression_snapshot)
+	var equipment_snapshot := await _receive_message(Time.get_ticks_msec() + 5000)
+	if equipment_snapshot.get("type") != "EquipmentSnapshot":
+		_fail("expected EquipmentSnapshot")
+		return
+	_apply_equipment_snapshot(equipment_snapshot)
 	_status_label.text = "CONNECTED  •  RELAY-HUB"
 	_controls_label.text = "WAITING FOR THE RELAY ACTIVITY..."
 	_set_guidance("GETTING READY", "The server is preparing your encounter. This should take only a moment.")
@@ -445,6 +454,8 @@ func _handle_manual_message(message: Dictionary) -> void:
 			_apply_loot_grant(message)
 		"ProgressionGranted":
 			_apply_progression(message)
+		"EquipmentChanged":
+			_apply_equipment_change(message)
 		_:
 			_fail("unexpected manual gameplay message: %s" % message.get("type"))
 
@@ -554,6 +565,34 @@ func _update_progression_hud() -> void:
 	]
 
 
+func _apply_equipment_snapshot(message: Dictionary) -> void:
+	_weapon_profiles.clear()
+	for weapon in message.get("weapons", []):
+		_weapon_profiles[weapon.get("item_id", "unknown")] = weapon
+	_equipped_weapon_item_id = message.get("equipped_weapon_item_id", "pulse_rifle")
+	_update_equipment_hud()
+
+
+func _apply_equipment_change(message: Dictionary) -> void:
+	if not message.get("accepted", false):
+		_status_label.text = "EQUIP REJECTED  •  %s" % message.get("message", "SERVER REJECTED ITEM")
+		return
+	_equipped_weapon_item_id = message.get("equipped_weapon_item_id", _equipped_weapon_item_id)
+	_update_equipment_hud()
+	_status_label.text = "WEAPON EQUIPPED  •  %s" % _equipped_weapon_item_id.replace("_", " ").to_upper()
+	print("authoritative weapon equipped: %s" % _equipped_weapon_item_id)
+
+
+func _update_equipment_hud() -> void:
+	var profile: Dictionary = _weapon_profiles.get(_equipped_weapon_item_id, {})
+	_equipment_label.text = "WEAPON  •  %s\nDMG %d  RANGE %d  COOLDOWN %d MS" % [
+		_equipped_weapon_item_id.replace("_", " ").to_upper(),
+		profile.get("damage", 0),
+		profile.get("range", 0),
+		profile.get("cooldown_ms", 0),
+	]
+
+
 func _set_door_open(open: bool) -> void:
 	_door.visible = not open
 	_status_label.text = "RELAY CORE OPEN  •  WARDEN INBOUND" if open else "RELAY CORE SEALED"
@@ -637,6 +676,8 @@ func _build_playable_scene() -> void:
 	_inventory_label.size = Vector2(314, 82)
 	_progression_label = _hud_label(canvas, Vector2(918, 516), 15, Color("35d0ba"), "PROGRESSION  •  WAITING FOR SERVER")
 	_progression_label.size = Vector2(314, 58)
+	_equipment_label = _hud_label(canvas, Vector2(280, 586), 15, Color("35d0ba"), "WEAPON  •  WAITING FOR SERVER")
+	_equipment_label.size = Vector2(360, 54)
 
 	_create_control_button(canvas, "W", Vector2(92, 558), Vector2(58, 48), Vector2(0, -1))
 	_create_control_button(canvas, "A", Vector2(28, 612), Vector2(58, 48), Vector2(-1, 0))
@@ -649,6 +690,8 @@ func _build_playable_scene() -> void:
 	_attack_button.add_theme_font_size_override("font_size", 18)
 	_attack_button.pressed.connect(_request_ui_attack)
 	canvas.add_child(_attack_button)
+	_create_weapon_button(canvas, "RIFLE", "pulse_rifle", Vector2(280, 642))
+	_create_weapon_button(canvas, "SIDEARM", "arc_sidearm", Vector2(400, 642))
 
 
 func _hud_label(parent: Node, position: Vector2, size: int, color: Color, text: String) -> Label:
@@ -688,9 +731,31 @@ func _request_ui_attack() -> void:
 	_append_input_log("ON-SCREEN ATTACK detected")
 
 
+func _create_weapon_button(parent: Node, text: String, item_id: String, position: Vector2) -> void:
+	var button := Button.new()
+	button.text = text
+	button.position = position
+	button.size = Vector2(108, 40)
+	button.pressed.connect(_request_weapon.bind(item_id))
+	parent.add_child(button)
+	_weapon_buttons.append(button)
+
+
+func _request_weapon(item_id: String) -> void:
+	var sent := _send_message({"type": "EquipIntent", "item_id": item_id})
+	_append_input_log("EquipIntent %s %s" % [item_id, "sent" if sent else "FAILED"])
+
+
 func _drive_manual_activity() -> void:
 	await get_tree().create_timer(0.2).timeout
-	for _attack_index in range(3):
+	_request_weapon("arc_sidearm")
+	var equip_deadline := Time.get_ticks_msec() + 2000
+	while _equipped_weapon_item_id != "arc_sidearm" and Time.get_ticks_msec() < equip_deadline:
+		await get_tree().process_frame
+	if _equipped_weapon_item_id != "arc_sidearm":
+		_driver_fail("sidearm did not equip through the on-screen loadout control")
+		return
+	for _attack_index in range(4):
 		_request_ui_attack()
 		await get_tree().create_timer(0.35).timeout
 	var deadline := Time.get_ticks_msec() + 3000
@@ -720,7 +785,7 @@ func _drive_manual_activity() -> void:
 	if _current_enemy_id == 0:
 		_driver_fail("Warden did not spawn after manual movement")
 		return
-	for _attack_index in range(3):
+	for _attack_index in range(5):
 		_request_ui_attack()
 		await get_tree().create_timer(0.35).timeout
 	deadline = Time.get_ticks_msec() + 3000
@@ -779,8 +844,10 @@ func _validate_playable_slice() -> void:
 		or _input_log_label == null
 		or _inventory_label == null
 		or _progression_label == null
+		or _equipment_label == null
 		or _movement_buttons.size() != 4
 		or _attack_button == null
+		or _weapon_buttons.size() != 2
 		or _crosshair.mouse_filter != Control.MOUSE_FILTER_IGNORE
 	):
 		_fail("M17 playable scene composition is incomplete")
@@ -793,6 +860,7 @@ func _validate_playable_slice() -> void:
 	print("M17 playable slice validated: camera, HUD, movement, aiming and attack inputs are ready")
 	print("M18 inventory HUD validated: authoritative snapshot and loot presentation are ready")
 	print("M19 progression HUD validated: authoritative experience and level presentation are ready")
+	print("M20 loadout HUD validated: authoritative weapon selection and profiles are ready")
 	get_tree().quit(0)
 
 

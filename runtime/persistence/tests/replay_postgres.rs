@@ -58,6 +58,7 @@ fn appends_and_loads_replay_events_from_postgres() {
 }
 
 #[test]
+#[allow(clippy::too_many_lines)]
 fn grants_activity_reward_once_per_session() {
     let Ok(database_url) = env::var("DATABASE_URL") else {
         eprintln!("DATABASE_URL is not set; PostgreSQL integration test skipped");
@@ -74,6 +75,23 @@ fn grants_activity_reward_once_per_session() {
     persistence
         .ensure_local_account(&account_id, "reward-test")
         .expect("test account should persist");
+    assert_eq!(
+        persistence
+            .equipped_weapon_for(&character_id)
+            .expect("loadout should query")
+            .as_deref(),
+        Some("pulse_rifle")
+    );
+    assert!(persistence
+        .equip_weapon(&character_id, "arc_sidearm")
+        .expect("owned sidearm should equip"));
+    assert_eq!(
+        persistence
+            .equipped_weapon_for(&character_id)
+            .expect("loadout should query")
+            .as_deref(),
+        Some("arc_sidearm")
+    );
 
     let first = persistence
         .complete_activity_with_rewards(&ActivityCompletion {

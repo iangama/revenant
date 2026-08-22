@@ -2,8 +2,8 @@ use std::error::Error;
 use std::fmt::{self, Display, Formatter};
 
 use revenant_protocol::{
-    AttackIntent, AuthRequest, CharacterListRequest, ClientMessage, MoveIntent, WorldJoinRequest,
-    PROTOCOL_VERSION,
+    AttackIntent, AuthRequest, CharacterListRequest, ClientMessage, EquipIntent, MoveIntent,
+    WorldJoinRequest, PROTOCOL_VERSION,
 };
 
 pub const FROZEN_V1: u16 = 1;
@@ -70,6 +70,12 @@ impl ProtocolAdapter {
                 Ok(CanonicalClientMessage::AttackIntent(message))
             }
             ClientMessage::MoveIntent(message) => Ok(CanonicalClientMessage::MoveIntent(message)),
+            ClientMessage::EquipIntent(message) => {
+                if self.generation == ProtocolGeneration::FrozenV1 {
+                    return Err(CompatibilityError::UnsupportedV1Message);
+                }
+                Ok(CanonicalClientMessage::EquipIntent(message))
+            }
             ClientMessage::ClientHello(_) => Err(CompatibilityError::RepeatedHandshake),
         }
     }
@@ -82,12 +88,14 @@ pub enum CanonicalClientMessage {
     WorldJoinRequest(WorldJoinRequest),
     AttackIntent(AttackIntent),
     MoveIntent(MoveIntent),
+    EquipIntent(EquipIntent),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CompatibilityError {
     UnsupportedVersion(u16),
     RepeatedHandshake,
+    UnsupportedV1Message,
 }
 
 impl Display for CompatibilityError {
@@ -100,6 +108,9 @@ impl Display for CompatibilityError {
                 )
             }
             Self::RepeatedHandshake => formatter.write_str("handshake cannot be repeated"),
+            Self::UnsupportedV1Message => {
+                formatter.write_str("message is not available in frozen protocol V1")
+            }
         }
     }
 }
@@ -108,7 +119,7 @@ impl Error for CompatibilityError {}
 
 #[cfg(test)]
 mod tests {
-    use revenant_protocol::{AuthRequest, ClientMessage, PROTOCOL_VERSION};
+    use revenant_protocol::{AuthRequest, ClientMessage, EquipIntent, PROTOCOL_VERSION};
 
     use super::{CanonicalClientMessage, CompatibilityError, ProtocolAdapter, FROZEN_V1};
 
@@ -145,5 +156,16 @@ mod tests {
             CanonicalClientMessage::AuthRequest(AuthRequest { username })
                 if username == "frozen-client"
         ));
+    }
+
+    #[test]
+    fn frozen_v1_cannot_submit_equipment_intents() {
+        let adapter = ProtocolAdapter::negotiate(FROZEN_V1).expect("V1 should negotiate");
+        assert_eq!(
+            adapter.canonicalize(ClientMessage::EquipIntent(EquipIntent {
+                item_id: "arc_sidearm".to_owned(),
+            })),
+            Err(CompatibilityError::UnsupportedV1Message)
+        );
     }
 }

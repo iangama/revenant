@@ -29,6 +29,15 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
     if !inventory
         .iter()
+        .any(|entry| entry.item_id == "arc_sidearm" && entry.quantity == 1)
+    {
+        return Err(io::Error::other("persisted sidearm was not found").into());
+    }
+    if persistence.equipped_weapon_for(&character_id)?.as_deref() != Some("arc_sidearm") {
+        return Err(io::Error::other("persisted authoritative loadout was not found").into());
+    }
+    if !inventory
+        .iter()
         .any(|entry| entry.item_id == "relay_core_fragment" && entry.quantity >= 1)
     {
         return Err(io::Error::other("persisted activity reward was not found").into());

@@ -17,6 +17,7 @@ pub enum ClientMessage {
     WorldJoinRequest(WorldJoinRequest),
     AttackIntent(AttackIntent),
     MoveIntent(MoveIntent),
+    EquipIntent(EquipIntent),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -28,6 +29,7 @@ pub enum ServerMessage {
     WorldJoinResponse(WorldJoinResponse),
     InventorySnapshot(InventorySnapshot),
     ProgressionSnapshot(ProgressionSnapshot),
+    EquipmentSnapshot(EquipmentSnapshot),
     ActorSpawn(ActorSpawn),
     ActorUpdate(ActorUpdate),
     ActorDestroy(ActorDestroy),
@@ -38,6 +40,7 @@ pub enum ServerMessage {
     ActivityComplete(ActivityComplete),
     LootGranted(LootGranted),
     ProgressionGranted(ProgressionGranted),
+    EquipmentChanged(EquipmentChanged),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -116,6 +119,20 @@ pub struct ProgressionSnapshot {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct EquipmentSnapshot {
+    pub equipped_weapon_item_id: String,
+    pub weapons: Vec<WeaponProfile>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct WeaponProfile {
+    pub item_id: String,
+    pub damage: u32,
+    pub range: i32,
+    pub cooldown_ms: u64,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ActorSpawn {
     pub actor_id: u64,
     pub actor_kind: String,
@@ -139,6 +156,11 @@ pub struct ActorDestroy {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AttackIntent {
     pub target_actor_id: u64,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct EquipIntent {
+    pub item_id: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -196,6 +218,17 @@ pub struct ProgressionGranted {
     pub previous_level: u32,
     pub level: u32,
     pub experience_to_next_level: u64,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct EquipmentChanged {
+    pub accepted: bool,
+    pub message: String,
+    pub actor_id: u64,
+    pub equipped_weapon_item_id: String,
+    pub damage: u32,
+    pub range: i32,
+    pub cooldown_ms: u64,
 }
 
 #[derive(Debug)]
@@ -294,7 +327,8 @@ mod tests {
 
     use super::{
         read_message, write_message, CharacterListRequest, ClientHello, ClientMessage,
-        InventoryItem, InventorySnapshot, ProgressionSnapshot, ServerMessage, PROTOCOL_VERSION,
+        EquipmentSnapshot, InventoryItem, InventorySnapshot, ProgressionSnapshot, ServerMessage,
+        WeaponProfile, PROTOCOL_VERSION,
     };
 
     #[test]
@@ -365,6 +399,24 @@ mod tests {
         write_message(&mut frame, &expected).expect("progression should encode");
         let actual: ServerMessage =
             read_message(&mut Cursor::new(frame)).expect("progression should decode");
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn equipment_snapshot_round_trips() {
+        let expected = ServerMessage::EquipmentSnapshot(EquipmentSnapshot {
+            equipped_weapon_item_id: "arc_sidearm".to_owned(),
+            weapons: vec![WeaponProfile {
+                item_id: "arc_sidearm".to_owned(),
+                damage: 25,
+                range: 8,
+                cooldown_ms: 150,
+            }],
+        });
+        let mut frame = Vec::new();
+        write_message(&mut frame, &expected).expect("equipment should encode");
+        let actual: ServerMessage =
+            read_message(&mut Cursor::new(frame)).expect("equipment should decode");
         assert_eq!(actual, expected);
     }
 }
