@@ -336,7 +336,7 @@ mod tests {
         let expected = ClientMessage::ClientHello(ClientHello {
             protocol_version: PROTOCOL_VERSION,
             client_name: "protocol-test".to_owned(),
-            client_build: "0.2.0".to_owned(),
+            client_build: env!("CARGO_PKG_VERSION").to_owned(),
         });
         let mut frame = Vec::new();
 
