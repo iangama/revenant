@@ -8,19 +8,21 @@ Create a host-side backup directory and stream `pg_dump` from the healthy contai
 
 ```bash
 mkdir -p backups
+backup_label=0.2.0
 docker compose -f infra/docker-compose.yml exec -T postgres \
   pg_dump --username revenant --dbname revenant --format=custom \
-  > backups/revenant-0.1.0.pgdump
-sha256sum backups/revenant-0.1.0.pgdump \
-  > backups/revenant-0.1.0.pgdump.sha256
+  > "backups/revenant-$backup_label.pgdump"
+sha256sum "backups/revenant-$backup_label.pgdump" \
+  > "backups/revenant-$backup_label.pgdump.sha256"
 ```
 
 Verify the file before relying on it:
 
 ```bash
-sha256sum --check backups/revenant-0.1.0.pgdump.sha256
+backup_label=0.2.0
+sha256sum --check "backups/revenant-$backup_label.pgdump.sha256"
 docker compose -f infra/docker-compose.yml exec -T postgres \
-  pg_restore --list < backups/revenant-0.1.0.pgdump
+  pg_restore --list < "backups/revenant-$backup_label.pgdump"
 ```
 
 ## Restore drill
@@ -28,11 +30,12 @@ docker compose -f infra/docker-compose.yml exec -T postgres \
 Restoration overwrites database objects, so perform the first drill into a separate database rather than the active `revenant` database:
 
 ```bash
+backup_label=0.2.0
 docker compose -f infra/docker-compose.yml exec -T postgres \
   createdb --username revenant revenant_restore_test
 docker compose -f infra/docker-compose.yml exec -T postgres \
   pg_restore --username revenant --dbname revenant_restore_test \
-  --clean --if-exists < backups/revenant-0.1.0.pgdump
+  --clean --if-exists < "backups/revenant-$backup_label.pgdump"
 docker compose -f infra/docker-compose.yml exec -T postgres \
   psql --username revenant --dbname revenant_restore_test \
   --command='SELECT COUNT(*) FROM characters;'

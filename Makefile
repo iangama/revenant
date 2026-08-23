@@ -20,7 +20,7 @@ audit:
 	bash scripts/audit-secrets.sh
 
 release:
-	bash scripts/release.sh 0.1.0
+	bash scripts/release.sh 0.2.0
 
 smoke:
 	bash tests/smoke.sh

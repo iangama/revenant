@@ -89,7 +89,7 @@ func _run_handshake() -> void:
 		"type": "ClientHello",
 		"protocol_version": PROTOCOL_VERSION,
 		"client_name": "revenant-godot",
-		"client_build": "0.1.0",
+		"client_build": "0.2.0",
 	}
 	if not _send_message(hello):
 		_fail("ClientHello send failed")
