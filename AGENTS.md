@@ -6,6 +6,6 @@ Before changing code: inspect the repository, identify the current milestone, ru
 
 The server is authoritative. Keep protocol parsing outside domain systems, prefer composition and explicit observable state, avoid premature services and abstractions, and do not use third-party proprietary code, assets, private protocols, or data.
 
-M0-M20 are complete and version 0.1.0 is published. Version 0.2.0 packages M17-M20 as the next recoverable baseline while preserving every previous acceptance and compatibility flow. Stop before M21.
+M0-M20 are complete and version 0.2.0 is published as the recoverable M17-M20 baseline while preserving every previous acceptance and compatibility flow. Stop before M21.
 
 For M20, validate ownership and equipability server-side, keep cooldowns authoritative across weapon switches, retain all previous smoke coverage, and do not modify frozen V1 artifacts. Do not begin armor, upgrades, random modifiers, trading, level effects, or M21 work. Do not create a commit without explicit owner authorization.

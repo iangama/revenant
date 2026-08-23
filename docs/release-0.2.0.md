@@ -1,6 +1,6 @@
 # Revenant 0.2.0 release baseline
 
-Release status: prepared and validated; publication awaits explicit owner authorization.
+Release status: published as the stable `v0.2.0` baseline.
 
 This release packages milestones M17 through M20 on top of the published 0.1.0 baseline. It makes `relay_awakening` manually playable, activates authoritative loot and inventory, adds deterministic persisted progression, and introduces one persisted weapon slot backed by server-owned weapon profiles.
 
@@ -52,4 +52,4 @@ This release does not add armor, extra equipment slots, upgrades, random modifie
 
 ## Publication checkpoint
 
-Commit, push, pull request, merge, annotated `v0.2.0` tag, and public release creation each remain subject to explicit owner authorization. The tag must point to a clean, fully validated `main` commit and must not include `.env`, `.tooling`, build outputs, database dumps, or local release artifacts.
+The immutable checkpoint is an annotated `v0.2.0` tag on the clean, fully validated `main` commit. The release does not include `.env`, `.tooling`, build outputs, database dumps, or local release artifacts.
