@@ -27,8 +27,8 @@ jobs:
           --health-timeout 5s
           --health-retries 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 20
           cache: npm
@@ -85,7 +85,7 @@ jobs:
           REVENANT_GAME_ADDR=127.0.0.1:17016 bin/revenant-client-v1
           wait "$reconstruction_pid"
           grep -q 'without revenant-gateway' "$reconstruction_log"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: revenant-0.2.0-linux-x86_64
           path: |
