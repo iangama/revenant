@@ -1,19 +1,35 @@
-name: CI
+name: Release
 
 on:
   push:
-    branches:
-      - "**"
-  pull_request:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing release tag to validate
+        required: true
+        default: v0.2.0
+        type: string
+      publish:
+        description: Publish the GitHub release after validation
+        required: true
+        default: false
+        type: boolean
 
 permissions:
-  contents: read
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}-${{ inputs.release_tag }}
+  cancel-in-progress: false
 
 jobs:
-  rust:
+  release:
     runs-on: ubuntu-latest
     env:
       DATABASE_URL: postgres://revenant:revenant_local@127.0.0.1:5432/revenant
+      RELEASE_TAG: ${{ github.event_name == 'push' && github.ref_name || inputs.release_tag }}
     services:
       postgres:
         image: postgres:16-alpine
@@ -38,6 +54,21 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy,rustfmt
+      - name: Validate release tag
+        run: |
+          if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "release tag must use vMAJOR.MINOR.PATCH" >&2
+            exit 1
+          fi
+          release_version="${RELEASE_TAG#v}"
+          workspace_version="$(sed -n 's/^version = "\([0-9][0-9.]*\)"$/\1/p' Cargo.toml | head -1)"
+          inspector_version="$(sed -n 's/^[[:space:]]*"version": "\([0-9][0-9.]*\)",$/\1/p' web/control-panel/package.json | head -1)"
+          if [[ "$release_version" != "$workspace_version" || "$release_version" != "$inspector_version" ]]; then
+            echo "tag $RELEASE_TAG does not match Rust ($workspace_version) and Inspector ($inspector_version)" >&2
+            exit 1
+          fi
+          test -f "docs/release-$release_version.md"
+          echo "RELEASE_VERSION=$release_version" >> "$GITHUB_ENV"
       - name: Audit repository for secrets
         run: bash scripts/audit-secrets.sh
       - name: Format
@@ -64,14 +95,14 @@ jobs:
         run: bash tests/smoke.sh
         env:
           GODOT_BIN: /tmp/godot/Godot_v4.7.1-stable_linux.x86_64
-      - name: Package release 0.2.0
-        run: bash scripts/release.sh 0.2.0 "$RUNNER_TEMP/release"
+      - name: Package release
+        run: bash scripts/release.sh "$RELEASE_VERSION" "$RUNNER_TEMP/release"
       - name: Verify clean extraction
         run: |
           mkdir "$RUNNER_TEMP/install"
-          tar -xzf "$RUNNER_TEMP/release/revenant-0.2.0-linux-x86_64.tar.gz" \
+          tar -xzf "$RUNNER_TEMP/release/revenant-$RELEASE_VERSION-linux-x86_64.tar.gz" \
             -C "$RUNNER_TEMP/install"
-          cd "$RUNNER_TEMP/install/revenant-0.2.0-linux-x86_64"
+          cd "$RUNNER_TEMP/install/revenant-$RELEASE_VERSION-linux-x86_64"
           sha256sum --check SHA256SUMS
           reconstruction_log="$RUNNER_TEMP/reconstruction.log"
           REVENANT_RECONSTRUCTION_ADDR=127.0.0.1:17016 \
@@ -89,8 +120,25 @@ jobs:
           grep -q 'without revenant-gateway' "$reconstruction_log"
       - uses: actions/upload-artifact@v6
         with:
-          name: revenant-0.2.0-linux-x86_64
+          name: revenant-${{ env.RELEASE_VERSION }}-linux-x86_64
           path: |
-            ${{ runner.temp }}/release/revenant-0.2.0-linux-x86_64.tar.gz
-            ${{ runner.temp }}/release/revenant-0.2.0-linux-x86_64.tar.gz.sha256
+            ${{ runner.temp }}/release/revenant-${{ env.RELEASE_VERSION }}-linux-x86_64.tar.gz
+            ${{ runner.temp }}/release/revenant-${{ env.RELEASE_VERSION }}-linux-x86_64.tar.gz.sha256
           if-no-files-found: error
+      - name: Publish GitHub release
+        if: github.event_name == 'push' || inputs.publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "release already exists: $RELEASE_TAG" >&2
+            exit 1
+          fi
+          gh release create "$RELEASE_TAG" \
+            "$RUNNER_TEMP/release/revenant-$RELEASE_VERSION-linux-x86_64.tar.gz" \
+            "$RUNNER_TEMP/release/revenant-$RELEASE_VERSION-linux-x86_64.tar.gz.sha256" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "Revenant $RELEASE_TAG" \
+            --notes-file "docs/release-$RELEASE_VERSION.md" \
+            --verify-tag \
+            --latest

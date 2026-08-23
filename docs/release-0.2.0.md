@@ -53,3 +53,5 @@ This release does not add armor, extra equipment slots, upgrades, random modifie
 ## Publication checkpoint
 
 The immutable checkpoint is an annotated `v0.2.0` tag on the clean, fully validated `main` commit. The release does not include `.env`, `.tooling`, build outputs, database dumps, or local release artifacts.
+
+Future annotated version tags are handled by the release workflow, which validates version consistency, runs the complete acceptance suite, verifies a clean extraction, uploads the build artifact, and publishes the corresponding GitHub release. A manual dry run performs the same validation without publishing.
