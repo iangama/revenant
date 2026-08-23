@@ -51,6 +51,8 @@ Create the local 0.2.0 distribution with `make release`; see `docs/release-0.2.0
 
 Future stable releases are validated and published by `.github/workflows/release.yml` when an annotated `vMAJOR.MINOR.PATCH` tag is pushed. Its manual dry-run mode executes the same validation and produces an artifact without publishing a release.
 
+`VERSION` is the canonical product version. `scripts/check-version.sh` verifies the required Cargo, npm lockfile, and Godot representations, and both local and CI release packaging derive artifact paths from that canonical value.
+
 ## Run locally
 
 ```bash

@@ -9,7 +9,6 @@ on:
       release_tag:
         description: Existing release tag to validate
         required: true
-        default: v0.2.0
         type: string
       publish:
         description: Publish the GitHub release after validation
@@ -56,15 +55,15 @@ jobs:
           components: clippy,rustfmt
       - name: Validate release tag
         run: |
+          bash scripts/check-version.sh
           if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "release tag must use vMAJOR.MINOR.PATCH" >&2
             exit 1
           fi
           release_version="${RELEASE_TAG#v}"
-          workspace_version="$(sed -n 's/^version = "\([0-9][0-9.]*\)"$/\1/p' Cargo.toml | head -1)"
-          inspector_version="$(sed -n 's/^[[:space:]]*"version": "\([0-9][0-9.]*\)",$/\1/p' web/control-panel/package.json | head -1)"
-          if [[ "$release_version" != "$workspace_version" || "$release_version" != "$inspector_version" ]]; then
-            echo "tag $RELEASE_TAG does not match Rust ($workspace_version) and Inspector ($inspector_version)" >&2
+          canonical_version="$(tr -d '[:space:]' < VERSION)"
+          if [[ "$release_version" != "$canonical_version" ]]; then
+            echo "tag $RELEASE_TAG does not match VERSION ($canonical_version)" >&2
             exit 1
           fi
           test -f "docs/release-$release_version.md"

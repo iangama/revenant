@@ -1,4 +1,7 @@
-.PHONY: format lint test build inspector audit release smoke check
+.PHONY: version format lint test build inspector audit release smoke check
+
+version:
+	bash scripts/check-version.sh
 
 format:
 	cargo fmt --all --check
@@ -20,9 +23,9 @@ audit:
 	bash scripts/audit-secrets.sh
 
 release:
-	bash scripts/release.sh 0.2.0
+	bash scripts/release.sh
 
 smoke:
 	bash tests/smoke.sh
 
-check: format lint test build inspector audit smoke
+check: version format lint test build inspector audit smoke
