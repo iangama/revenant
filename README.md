@@ -49,6 +49,8 @@ The command checks Rust formatting/lint/tests/build, the Inspector TypeScript/bu
 
 Create the local 0.2.0 distribution with `make release`; see `docs/release-0.2.0.md`. PostgreSQL backup and safe restore-drill commands are documented in `docs/operations/postgresql-backup.md`.
 
+Future stable releases are validated and published by `.github/workflows/release.yml` when an annotated `vMAJOR.MINOR.PATCH` tag is pushed. Its manual dry-run mode executes the same validation and produces an artifact without publishing a release.
+
 ## Run locally
 
 ```bash
