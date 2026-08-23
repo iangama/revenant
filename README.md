@@ -2,7 +2,7 @@
 
 Revenant is an original game-engineering and software-preservation project. It will evolve into a small online game, an authoritative client-server runtime, and eventually a controlled compatibility laboratory for old builds of Revenant itself.
 
-The repository currently implements **M20 — Authoritative Equipment and Loadout** on top of the published 0.1.0 baseline. The playable `relay_awakening` slice now persists a selected weapon, applies server-owned weapon profiles to combat, and presents inventory, progression, and loadout state in Godot while retaining the complete automated acceptance flow.
+The repository currently implements **M20 — Authoritative Equipment and Loadout** and is preparing the 0.2.0 baseline containing M17 through M20. The playable `relay_awakening` slice now persists a selected weapon, applies server-owned weapon profiles to combat, and presents inventory, progression, and loadout state in Godot while retaining the complete automated acceptance flow.
 
 ## Repository map
 
@@ -47,7 +47,7 @@ make check
 
 The command checks Rust formatting/lint/tests/build, the Inspector TypeScript/build, a two-bot shared activity, the complete Godot flow, persistence, replay reconstruction, Inspector API responses, V1 compatibility, and the isolated M15 reconstruction experiment. PostgreSQL must be available through `DATABASE_URL`.
 
-Create the local 0.1.0 distribution with `make release`; see `docs/release-0.1.0.md`. PostgreSQL backup and safe restore-drill commands are documented in `docs/operations/postgresql-backup.md`.
+Create the local 0.2.0 distribution with `make release`; see `docs/release-0.2.0.md`. PostgreSQL backup and safe restore-drill commands are documented in `docs/operations/postgresql-backup.md`.
 
 ## Run locally
 

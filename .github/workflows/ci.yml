@@ -62,14 +62,14 @@ jobs:
         run: bash tests/smoke.sh
         env:
           GODOT_BIN: /tmp/godot/Godot_v4.7.1-stable_linux.x86_64
-      - name: Package release baseline
-        run: bash scripts/release.sh 0.1.0 "$RUNNER_TEMP/release"
+      - name: Package release 0.2.0
+        run: bash scripts/release.sh 0.2.0 "$RUNNER_TEMP/release"
       - name: Verify clean extraction
         run: |
           mkdir "$RUNNER_TEMP/install"
-          tar -xzf "$RUNNER_TEMP/release/revenant-0.1.0-linux-x86_64.tar.gz" \
+          tar -xzf "$RUNNER_TEMP/release/revenant-0.2.0-linux-x86_64.tar.gz" \
             -C "$RUNNER_TEMP/install"
-          cd "$RUNNER_TEMP/install/revenant-0.1.0-linux-x86_64"
+          cd "$RUNNER_TEMP/install/revenant-0.2.0-linux-x86_64"
           sha256sum --check SHA256SUMS
           reconstruction_log="$RUNNER_TEMP/reconstruction.log"
           REVENANT_RECONSTRUCTION_ADDR=127.0.0.1:17016 \
@@ -87,8 +87,8 @@ jobs:
           grep -q 'without revenant-gateway' "$reconstruction_log"
       - uses: actions/upload-artifact@v4
         with:
-          name: revenant-0.1.0-linux-x86_64
+          name: revenant-0.2.0-linux-x86_64
           path: |
-            ${{ runner.temp }}/release/revenant-0.1.0-linux-x86_64.tar.gz
-            ${{ runner.temp }}/release/revenant-0.1.0-linux-x86_64.tar.gz.sha256
+            ${{ runner.temp }}/release/revenant-0.2.0-linux-x86_64.tar.gz
+            ${{ runner.temp }}/release/revenant-0.2.0-linux-x86_64.tar.gz.sha256
           if-no-files-found: error

@@ -2,9 +2,10 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-version="${1:-0.1.0}"
+version="${1:-0.2.0}"
 output_root="${2:-$repo_root/release}"
 release_dir="$output_root/revenant-$version-linux-x86_64"
+release_notes="$repo_root/docs/release-$version.md"
 
 if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
   echo "release version must use MAJOR.MINOR.PATCH" >&2
@@ -14,6 +15,10 @@ workspace_version="$(sed -n 's/^version = "\([0-9][0-9.]*\)"$/\1/p' Cargo.toml |
 inspector_version="$(sed -n 's/^[[:space:]]*"version": "\([0-9][0-9.]*\)",$/\1/p' web/control-panel/package.json | head -1)"
 if [[ "$version" != "$workspace_version" || "$version" != "$inspector_version" ]]; then
   echo "release version $version does not match Rust ($workspace_version) and Inspector ($inspector_version)" >&2
+  exit 1
+fi
+if [[ ! -f "$release_notes" ]]; then
+  echo "release notes do not exist: $release_notes" >&2
   exit 1
 fi
 if [[ -e "$release_dir" || -e "$release_dir.tar.gz" ]]; then
@@ -43,7 +48,7 @@ cp target/release/revenant-reconstructed-v1 "$release_dir/bin/"
 cp -R web/control-panel/dist/. "$release_dir/inspector/"
 cp client/game/project.godot client/game/main.gd client/game/main.tscn "$release_dir/game/"
 cp scripts/activities/relay_awakening.lua "$release_dir/scripts/activities/"
-cp README.md docs/release-0.1.0.md docs/operations/postgresql-backup.md "$release_dir/docs/"
+cp README.md "$release_notes" docs/operations/postgresql-backup.md "$release_dir/docs/"
 
 # Normalize modes so packaging on NTFS, ext4, or a CI filesystem produces the same archive.
 find "$release_dir" -type d -exec chmod 0755 {} +
