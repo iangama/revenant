@@ -8,8 +8,10 @@ COPY runtime/combat runtime/combat
 COPY runtime/compatibility runtime/compatibility
 COPY runtime/gateway runtime/gateway
 COPY runtime/identity runtime/identity
+COPY runtime/inventory runtime/inventory
 COPY runtime/objectives runtime/objectives
 COPY runtime/persistence runtime/persistence
+COPY runtime/progression runtime/progression
 COPY runtime/protocol runtime/protocol
 COPY runtime/replay runtime/replay
 COPY runtime/world runtime/world
