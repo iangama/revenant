@@ -4,6 +4,18 @@ const PROTOCOL_VERSION := 2
 const MAX_FRAME_SIZE := 64 * 1024
 const DEFAULT_HOST := "127.0.0.1"
 const DEFAULT_PORT := 7000
+const OPERATOR_SCENE := preload("res://presentation/operator/operator.tscn")
+const RELAY_HUB_ROOM_SCENE := preload("res://presentation/environment/relay_hub_room.tscn")
+const RELAY_DRONE_SCENE := preload("res://presentation/enemies/relay_drone/relay_drone.tscn")
+const WARDEN_SCENE := preload("res://presentation/enemies/warden/warden.tscn")
+const COMBAT_VFX_SCENE := preload("res://presentation/combat/combat_vfx.tscn")
+const OPERATOR_HUD_SCENE := preload("res://presentation/hud/operator_hud.tscn")
+const PRESENTATION_POLISH_SCENE := preload("res://presentation/polish/presentation_polish.tscn")
+const M21_CAPTURE_FILENAMES := [
+	"01-relay-hub-overview.png",
+	"02-enemy-telegraphs.png",
+	"03-combat-feedback.png",
+]
 
 var _peer := StreamPeerTCP.new()
 var _receive_buffer := PackedByteArray()
@@ -21,10 +33,16 @@ var _progression := {"level": 1, "experience": 0, "experience_to_next_level": 50
 var _equipped_weapon_item_id := "pulse_rifle"
 var _weapon_profiles := {}
 var _camera: Camera3D
-var _door: MeshInstance3D
+var _environment: Node3D
+var _combat_vfx: Node3D
+var _hud_frame: Control
+var _presentation_polish: CanvasLayer
+var _door: Node3D
 var _status_label: Label
 var _health_label: Label
 var _enemy_health_label: Label
+var _player_health_bar: ProgressBar
+var _enemy_health_bar: ProgressBar
 var _position_label: Label
 var _objective_label: Label
 var _controls_label: Label
@@ -205,6 +223,7 @@ func _run_handshake() -> void:
 			return
 
 	_current_enemy_id = enemy_id
+	_update_enemy_proximity()
 	if not _should_exit_after_flow():
 		_status_label.text = "COMBAT ACTIVE  •  AIM AND FIRE"
 		_set_guidance("STEP 1  •  CLEAR THE DRONE", "Move with WASD. Aim the orange crosshair at the red drone, then click or press Space three times.")
@@ -338,34 +357,43 @@ func _read_available() -> PackedByteArray:
 
 
 func _render_actor(actor: Dictionary) -> void:
-	var instance := MeshInstance3D.new()
-	instance.name = "Actor_%s" % actor.get("actor_id")
-	if actor.get("actor_kind") == "enemy":
-		instance.mesh = BoxMesh.new()
-		instance.material_override = _material(Color("e8505b") if actor.get("archetype") != "warden" else Color("a855f7"))
+	var instance: Node3D
+	if actor.get("actor_kind") == "player":
+		instance = OPERATOR_SCENE.instantiate()
+	elif actor.get("archetype") == "warden":
+		instance = WARDEN_SCENE.instantiate()
 	else:
-		instance.mesh = CapsuleMesh.new()
-		instance.material_override = _material(Color("35d0ba"))
+		instance = RELAY_DRONE_SCENE.instantiate()
+	instance.name = "Actor_%s" % actor.get("actor_id")
 	var position: Array = actor.get("position", [0, 0, 0])
 	instance.position = Vector3(position[0], position[1], position[2])
 	add_child(instance)
+	if actor.get("actor_kind") == "player":
+		instance.call("set_weapon", _equipped_weapon_item_id)
 	_actors[actor.get("actor_id")] = instance
 	_actor_health[actor.get("actor_id")] = actor.get("health", 100)
 	_actor_max_health[actor.get("actor_id")] = actor.get("max_health", 100)
+	_update_enemy_proximity()
 	if actor.get("actor_kind") == "enemy" and _enemy_health_label != null:
 		_enemy_health_label.text = "ENEMY  %s  •  %03d / %03d HP" % [str(actor.get("archetype")).to_upper(), actor.get("health"), actor.get("max_health")]
+		_enemy_health_bar.max_value = actor.get("max_health", 100)
+		_enemy_health_bar.value = actor.get("health", 100)
 	print("rendered %s actor %d (%s)" % [actor.get("actor_kind"), actor.get("actor_id"), actor.get("archetype")])
 
 
 func _destroy_actor(actor_id: int) -> void:
 	var actor: Node = _actors.get(actor_id)
 	if actor != null:
-		actor.queue_free()
 		_actors.erase(actor_id)
+		if actor.has_method("retire"):
+			actor.call("retire")
+		else:
+			actor.queue_free()
 	_actor_health.erase(actor_id)
 	_actor_max_health.erase(actor_id)
 	if actor_id == _current_enemy_id and _enemy_health_label != null:
 		_enemy_health_label.text = "ENEMY  •  DEFEATED"
+		_enemy_health_bar.value = 0
 	print("enemy actor %d destroyed" % actor_id)
 
 
@@ -374,7 +402,11 @@ func _update_actor(update: Dictionary) -> void:
 	if actor == null:
 		return
 	var position: Array = update.get("position", [0, 0, 0])
+	var previous_position := actor.position
 	actor.position = Vector3(position[0], position[1], position[2])
+	if actor.has_method("play_authoritative_move"):
+		actor.call("play_authoritative_move", previous_position - actor.position)
+	_update_enemy_proximity()
 	if update.get("actor_id") == _player_actor_id and _position_label != null:
 		var door_distance := maxi(0, 6 - int(position[0]))
 		_position_label.text = "POSITION  [%d, %d]  •  DOOR %d STEPS" % [position[0], position[2], door_distance]
@@ -394,6 +426,7 @@ func _run_manual_activity() -> void:
 func _handle_manual_input() -> void:
 	var now := Time.get_ticks_msec()
 	_crosshair.position = get_viewport().get_mouse_position() - (_crosshair.size * 0.5)
+	_update_target_highlight()
 	var movement := _ui_movement if _ui_movement != Vector2.ZERO else Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	if movement.length() > 0.2 and now >= _next_move_at:
 		var player: Node3D = _actors.get(_player_actor_id)
@@ -416,6 +449,10 @@ func _handle_manual_input() -> void:
 			_status_label.text = "ATTACK SENT  •  TARGET %d" % target_id if sent else "ATTACK FAILED  •  CONNECTION ERROR"
 			_append_input_log("AttackIntent target %d %s" % [target_id, "sent" if sent else "FAILED"])
 			_next_attack_at = now + 260
+			if sent:
+				var player: Node3D = _actors.get(_player_actor_id)
+				if player != null:
+					_combat_vfx.call("play_local_cooldown", player.global_position, 260)
 		else:
 			_append_input_log("Attack blocked: aim at active enemy")
 	elif _attack_requested:
@@ -441,10 +478,12 @@ func _handle_manual_message(message: Dictionary) -> void:
 			_render_actor(message)
 			if message.get("actor_kind") == "enemy":
 				_current_enemy_id = message.get("actor_id")
+				_update_enemy_proximity()
 				_status_label.text = "BOSS ONLINE  •  WARDEN"
 				_set_guidance("STEP 3  •  DEFEAT THE WARDEN", "Aim at the purple Warden and attack until its HP reaches zero.")
 		"ActivityComplete":
 			_activity_complete = true
+			_presentation_polish.call("play_authoritative_completion")
 			_status_label.text = "ACTIVITY COMPLETE  •  RELAY AWAKENED"
 			_objective_label.text = "OBJECTIVE  •  COMPLETE"
 			_controls_label.text = "RELAY_AWAKENING COMPLETED"
@@ -481,20 +520,50 @@ func _aimed_enemy() -> int:
 	var enemy: Node3D = _actors.get(_current_enemy_id)
 	if enemy == null or _camera.is_position_behind(enemy.global_position):
 		return 0
-	var cursor := get_viewport().get_mouse_position()
-	var enemy_screen := _camera.unproject_position(enemy.global_position)
-	if cursor.distance_to(enemy_screen) <= 110.0 or Input.is_key_pressed(KEY_SPACE):
+	if _is_enemy_aimed(enemy) or Input.is_key_pressed(KEY_SPACE):
 		return _current_enemy_id
 	_status_label.text = "AIM AT THE HIGHLIGHTED TARGET"
 	return 0
 
 
+func _is_enemy_aimed(enemy: Node3D) -> bool:
+	var cursor := get_viewport().get_mouse_position()
+	var enemy_screen := _camera.unproject_position(enemy.global_position)
+	return cursor.distance_to(enemy_screen) <= 110.0
+
+
+func _update_target_highlight() -> void:
+	if _current_enemy_id == 0:
+		return
+	var enemy: Node3D = _actors.get(_current_enemy_id)
+	if enemy != null and enemy.has_method("set_targeted"):
+		enemy.call("set_targeted", not _camera.is_position_behind(enemy.global_position) and _is_enemy_aimed(enemy))
+
+
+func _update_enemy_proximity() -> void:
+	if _current_enemy_id == 0 or _player_actor_id == 0:
+		return
+	var enemy: Node3D = _actors.get(_current_enemy_id)
+	var player: Node3D = _actors.get(_player_actor_id)
+	if enemy != null and player != null and enemy.has_method("set_danger_close"):
+		enemy.call("set_danger_close", enemy.position.distance_to(player.position) <= 2.05)
+
+
 func _handle_damage_feedback(message: Dictionary) -> void:
+	var source_id: int = message.get("source_actor_id")
 	var target_id: int = message.get("target_actor_id")
 	var remaining: int = message.get("remaining_health")
 	_actor_health[target_id] = remaining
+	var source_actor: Node = _actors.get(source_id)
+	var target_actor: Node3D = _actors.get(target_id)
+	if source_actor != null and source_actor.has_method("play_confirmed_attack"):
+		source_actor.call("play_confirmed_attack")
+	if source_actor is Node3D and target_actor != null:
+		_combat_vfx.call("play_confirmed_exchange", source_actor, target_actor, target_id == _player_actor_id)
 	if target_id == _player_actor_id:
 		_player_health = remaining
+		_presentation_polish.call("play_confirmed_player_damage")
+		_player_health_bar.value = remaining
 		_health_label.text = "HP  %03d / 100  •  STABLE" % _player_health
 		_health_label.modulate = Color("ff6b6b")
 		var health_tween := create_tween()
@@ -504,13 +573,20 @@ func _handle_damage_feedback(message: Dictionary) -> void:
 		if _enemy_health_label != null:
 			var maximum: int = _actor_max_health.get(target_id, remaining)
 			_enemy_health_label.text = "ENEMY  •  %03d / %03d HP" % [remaining, maximum]
+			_enemy_health_bar.max_value = maximum
+			_enemy_health_bar.value = remaining
 		_append_input_log("Server confirmed %d damage" % message.get("damage"))
-	var actor: MeshInstance3D = _actors.get(target_id)
+	var actor: Node3D = target_actor
 	if actor != null:
-		var original := actor.scale
-		actor.scale = original * 1.25
-		var hit_tween := create_tween()
-		hit_tween.tween_property(actor, "scale", original, 0.12)
+		if actor.has_method("play_confirmed_hit"):
+			actor.call("play_confirmed_hit")
+			if remaining <= 0 and actor.has_method("play_defeat"):
+				actor.call("play_defeat")
+		else:
+			var original := actor.scale
+			actor.scale = original * 1.25
+			var hit_tween := create_tween()
+			hit_tween.tween_property(actor, "scale", original, 0.12)
 
 
 func _update_objective_hud(objective: Dictionary) -> void:
@@ -570,6 +646,7 @@ func _apply_equipment_snapshot(message: Dictionary) -> void:
 	for weapon in message.get("weapons", []):
 		_weapon_profiles[weapon.get("item_id", "unknown")] = weapon
 	_equipped_weapon_item_id = message.get("equipped_weapon_item_id", "pulse_rifle")
+	_update_operator_weapon()
 	_update_equipment_hud()
 
 
@@ -578,6 +655,7 @@ func _apply_equipment_change(message: Dictionary) -> void:
 		_status_label.text = "EQUIP REJECTED  •  %s" % message.get("message", "SERVER REJECTED ITEM")
 		return
 	_equipped_weapon_item_id = message.get("equipped_weapon_item_id", _equipped_weapon_item_id)
+	_update_operator_weapon()
 	_update_equipment_hud()
 	_status_label.text = "WEAPON EQUIPPED  •  %s" % _equipped_weapon_item_id.replace("_", " ").to_upper()
 	print("authoritative weapon equipped: %s" % _equipped_weapon_item_id)
@@ -593,85 +671,64 @@ func _update_equipment_hud() -> void:
 	]
 
 
+func _update_operator_weapon() -> void:
+	var player: Node = _actors.get(_player_actor_id)
+	if player != null and player.has_method("set_weapon"):
+		player.call("set_weapon", _equipped_weapon_item_id)
+
+
 func _set_door_open(open: bool) -> void:
-	_door.visible = not open
+	_environment.call("set_core_door_open", open, true)
 	_status_label.text = "RELAY CORE OPEN  •  WARDEN INBOUND" if open else "RELAY CORE SEALED"
 	if open:
 		_set_guidance("CORE OPEN", "The Warden is spawning. Get ready to aim and attack.")
 
 
 func _build_playable_scene() -> void:
+	_environment = RELAY_HUB_ROOM_SCENE.instantiate()
+	add_child(_environment)
+	_door = _environment.call("get_core_door")
+	_combat_vfx = COMBAT_VFX_SCENE.instantiate()
+	add_child(_combat_vfx)
+	_presentation_polish = PRESENTATION_POLISH_SCENE.instantiate()
+	add_child(_presentation_polish)
+
 	_camera = Camera3D.new()
 	_camera.name = "GameplayCamera"
 	_camera.position = Vector3(8, 13, 15)
 	add_child(_camera)
 	_camera.look_at_from_position(_camera.position, Vector3(4, 0, 0), Vector3.UP)
 
-	var light := DirectionalLight3D.new()
-	light.rotation_degrees = Vector3(-55, -25, 0)
-	light.light_energy = 1.4
-	add_child(light)
-
-	var ground := MeshInstance3D.new()
-	var ground_mesh := PlaneMesh.new()
-	ground_mesh.size = Vector2(26, 26)
-	ground.mesh = ground_mesh
-	ground.material_override = _material(Color("101927"))
-	add_child(ground)
-
-	_door = MeshInstance3D.new()
-	_door.name = "RelayCoreDoor"
-	var door_mesh := BoxMesh.new()
-	door_mesh.size = Vector3(0.6, 3.5, 5.0)
-	_door.mesh = door_mesh
-	_door.position = Vector3(6.5, 1.75, 0)
-	_door.material_override = _material(Color("f5a524"))
-	add_child(_door)
-
 	var canvas := CanvasLayer.new()
 	canvas.name = "HUD"
 	add_child(canvas)
-	var panel := ColorRect.new()
-	panel.color = Color(0.025, 0.045, 0.075, 0.92)
-	panel.position = Vector2(24, 24)
-	panel.size = Vector2(620, 198)
-	canvas.add_child(panel)
+	_hud_frame = OPERATOR_HUD_SCENE.instantiate()
+	canvas.add_child(_hud_frame)
+	_hud_frame.call("add_panel", Rect2(24, 24, 620, 210), "OPERATOR TELEMETRY", Color("35d0d0"))
 	_status_label = _hud_label(canvas, Vector2(44, 38), 22, Color("35d0ba"), "CONNECTING TO REVENANT CORE")
 	_health_label = _hud_label(canvas, Vector2(44, 72), 26, Color.WHITE, "HP  100 / 100")
-	_objective_label = _hud_label(canvas, Vector2(44, 112), 18, Color("f5a524"), "OBJECTIVE  •  WAITING FOR ACTIVITY")
-	_enemy_health_label = _hud_label(canvas, Vector2(44, 146), 18, Color("ff6b6b"), "ENEMY  •  WAITING FOR ENCOUNTER")
-	_position_label = _hud_label(canvas, Vector2(44, 176), 16, Color("a9b8cc"), "POSITION  [0, 0]  •  DOOR 6 STEPS")
+	_player_health_bar = _hud_frame.call("make_bar", Rect2(410, 82, 210, 8), Color("35d0d0"))
+	_objective_label = _hud_label(canvas, Vector2(44, 116), 18, Color("f5a524"), "OBJECTIVE  •  WAITING FOR ACTIVITY")
+	_enemy_health_label = _hud_label(canvas, Vector2(44, 152), 18, Color("e8505b"), "ENEMY  •  WAITING FOR ENCOUNTER")
+	_enemy_health_bar = _hud_frame.call("make_bar", Rect2(410, 160, 210, 8), Color("d93678"))
+	_position_label = _hud_label(canvas, Vector2(44, 194), 16, Color("a9b8cc"), "POSITION  [0, 0]  •  DOOR 6 STEPS")
 	_controls_label = _hud_label(canvas, Vector2(24, 674), 16, Color("a9b8cc"), "CONNECTING...")
 	_crosshair = _hud_label(canvas, Vector2(632, 344), 28, Color("f5a524"), "+")
 	_crosshair.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
-	var briefing := ColorRect.new()
-	briefing.color = Color(0.025, 0.045, 0.075, 0.92)
-	briefing.position = Vector2(894, 24)
-	briefing.size = Vector2(362, 170)
-	canvas.add_child(briefing)
+	_hud_frame.call("add_panel", Rect2(894, 24, 362, 170), "MISSION GUIDE", Color("f5a524"))
 	_hud_label(canvas, Vector2(918, 42), 16, Color("f5a524"), "MISSION GUIDE")
 	_guidance_label = _hud_label(canvas, Vector2(918, 72), 18, Color.WHITE, "CONNECTING\n\nWait for the relay-hub connection.")
 	_guidance_label.size = Vector2(314, 104)
 	_guidance_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 
-	var input_console := ColorRect.new()
-	input_console.color = Color(0.025, 0.045, 0.075, 0.92)
-	input_console.position = Vector2(894, 214)
-	input_console.size = Vector2(362, 188)
-	input_console.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	canvas.add_child(input_console)
+	_hud_frame.call("add_panel", Rect2(894, 214, 362, 188), "INPUT MONITOR", Color("35d0d0"))
 	_hud_label(canvas, Vector2(918, 232), 16, Color("35d0ba"), "INPUT MONITOR")
 	_input_log_label = _hud_label(canvas, Vector2(918, 262), 14, Color("a9b8cc"), "Click inside the game window.\nWaiting for keyboard or mouse input...")
 	_input_log_label.size = Vector2(314, 126)
 	_input_log_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 
-	var inventory_panel := ColorRect.new()
-	inventory_panel.color = Color(0.025, 0.045, 0.075, 0.92)
-	inventory_panel.position = Vector2(894, 422)
-	inventory_panel.size = Vector2(362, 176)
-	inventory_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	canvas.add_child(inventory_panel)
+	_hud_frame.call("add_panel", Rect2(894, 422, 362, 176), "INVENTORY", Color("a9b8cc"))
 	_inventory_label = _hud_label(canvas, Vector2(918, 440), 16, Color("a9b8cc"), "INVENTORY\nWAITING FOR SERVER")
 	_inventory_label.size = Vector2(314, 82)
 	_progression_label = _hud_label(canvas, Vector2(918, 516), 15, Color("35d0ba"), "PROGRESSION  •  WAITING FOR SERVER")
@@ -688,6 +745,7 @@ func _build_playable_scene() -> void:
 	_attack_button.position = Vector2(1090, 610)
 	_attack_button.size = Vector2(150, 54)
 	_attack_button.add_theme_font_size_override("font_size", 18)
+	_hud_frame.call("style_button", _attack_button, Color("d93678"), false)
 	_attack_button.pressed.connect(_request_ui_attack)
 	canvas.add_child(_attack_button)
 	_create_weapon_button(canvas, "RIFLE", "pulse_rifle", Vector2(280, 642))
@@ -710,6 +768,7 @@ func _create_control_button(parent: Node, text: String, position: Vector2, size:
 	button.position = position
 	button.size = size
 	button.add_theme_font_size_override("font_size", 20)
+	_hud_frame.call("style_button", button, Color("35d0d0"), true)
 	button.button_down.connect(_set_ui_movement.bind(direction))
 	button.button_up.connect(_clear_ui_movement)
 	parent.add_child(button)
@@ -736,6 +795,7 @@ func _create_weapon_button(parent: Node, text: String, item_id: String, position
 	button.text = text
 	button.position = position
 	button.size = Vector2(108, 40)
+	_hud_frame.call("style_button", button, Color("f5a524"), true)
 	button.pressed.connect(_request_weapon.bind(item_id))
 	parent.add_child(button)
 	_weapon_buttons.append(button)
@@ -845,6 +905,10 @@ func _validate_playable_slice() -> void:
 		or _inventory_label == null
 		or _progression_label == null
 		or _equipment_label == null
+		or _hud_frame == null
+		or _presentation_polish == null
+		or _player_health_bar == null
+		or _enemy_health_bar == null
 		or _movement_buttons.size() != 4
 		or _attack_button == null
 		or _weapon_buttons.size() != 2
@@ -853,15 +917,218 @@ func _validate_playable_slice() -> void:
 		_fail("M17 playable scene composition is incomplete")
 		get_tree().quit(1)
 		return
+	_presentation_polish.call("play_confirmed_player_damage")
+	_presentation_polish.call("play_authoritative_completion")
+	var polish_state: Dictionary = _presentation_polish.call("presentation_state")
+	if (
+		polish_state.get("confirmed_damage_cues", 0) != 1
+		or polish_state.get("completion_cues", 0) != 1
+		or polish_state.get("edge_overlays", 0) != 4
+		or polish_state.get("maximum_screen_coverage", 1.0) > 0.06
+	):
+		_fail("M21 polished slice exceeds its visual consistency or performance budget")
+		get_tree().quit(1)
+		return
+	var hud_state: Dictionary = _hud_frame.call("presentation_state")
+	if (
+		hud_state.get("panel_count", 0) != 4
+		or hud_state.get("semantic_accent_count", 0) < 4
+		or not hud_state.get("mouse_passthrough", false)
+		or _player_health_bar.value != 100.0
+		or _enemy_health_bar.value != 100.0
+	):
+		_fail("M21 Operator HUD does not preserve its hierarchy, semantic roles or authoritative health state")
+		get_tree().quit(1)
+		return
 	if _encode_array([-12, 0, 12]) != PackedByteArray([0x93, 0xf4, 0x00, 0x0c]):
 		_fail("M17 movement encoder does not support signed relay-hub coordinates")
 		get_tree().quit(1)
 		return
+	var environment_state: Dictionary = _environment.call("presentation_state")
+	var closed_door_state: Dictionary = environment_state.get("door", {})
+	if (
+		environment_state.get("visual_bounds") != 12.0
+		or environment_state.get("door_position") != Vector3(6.5, 0.0, 0.0)
+		or not environment_state.get("terminal_present", false)
+		or environment_state.get("terminal_interactive", true)
+		or not environment_state.get("damaged_section_present", false)
+		or environment_state.get("mesh_count", 0) > 60
+		or environment_state.get("material_count", 0) > 6
+		or environment_state.get("light_count", 0) != 5
+		or environment_state.get("shadow_light_count", 1) != 0
+		or closed_door_state.get("open", true)
+	):
+		_fail("M21 relay-hub modular environment exceeds its composition or performance contract")
+		get_tree().quit(1)
+		return
+	_environment.call("set_core_door_open", true, false)
+	var open_door_state: Dictionary = _environment.call("presentation_state").get("door", {})
+	if not open_door_state.get("open", false) or open_door_state.get("amber_visible", true):
+		_fail("M21 relay-core door does not expose its authoritative open state")
+		get_tree().quit(1)
+		return
+	_environment.call("set_core_door_open", false, false)
+	var operator: Node3D = OPERATOR_SCENE.instantiate()
+	operator.name = "OperatorValidation"
+	add_child(operator)
+	await get_tree().process_frame
+	var operator_state: Dictionary = operator.call("presentation_state")
+	if (
+		operator_state.get("equipped_weapon") != "pulse_rifle"
+		or operator_state.get("last_animation") != "idle"
+		or not operator_state.get("pulse_rifle_visible", false)
+		or operator_state.get("arc_sidearm_visible", true)
+		or operator_state.get("part_count", 0) < 15
+	):
+		_fail("M21 Operator initial presentation is incomplete")
+		get_tree().quit(1)
+		return
+	operator.call("set_weapon", "arc_sidearm")
+	operator_state = operator.call("presentation_state")
+	if operator_state.get("equipped_weapon") != "arc_sidearm" or not operator_state.get("arc_sidearm_visible", false):
+		_fail("M21 Operator weapon silhouettes do not follow authoritative equipment")
+		get_tree().quit(1)
+		return
+	var drone: Node3D = RELAY_DRONE_SCENE.instantiate()
+	drone.name = "RelayDroneValidation"
+	drone.position = Vector3(-2.0, 0.0, 2.5)
+	add_child(drone)
+	var warden: Node3D = WARDEN_SCENE.instantiate()
+	warden.name = "WardenValidation"
+	warden.position = Vector3(3.0, 0.0, 2.5)
+	add_child(warden)
+	await get_tree().process_frame
+	var drone_state: Dictionary = drone.call("presentation_state")
+	var warden_state: Dictionary = warden.call("presentation_state")
+	if (
+		drone_state.get("family") != "relay_drone"
+		or drone_state.get("mesh_count", 0) > 12
+		or drone_state.get("material_count", 0) > 3
+		or warden_state.get("family") != "warden"
+		or warden_state.get("mesh_count", 0) > 18
+		or warden_state.get("material_count", 0) > 4
+		or warden_state.get("mesh_count", 0) <= drone_state.get("mesh_count", 0)
+	):
+		_fail("M21 enemy families are not distinct or exceed their presentation budgets")
+		get_tree().quit(1)
+		return
+	var capture_directory := OS.get_environment("REVENANT_CAPTURE_M21_DIR")
+	if not capture_directory.is_empty():
+		var overview_error := await _save_review_capture(capture_directory.path_join(M21_CAPTURE_FILENAMES[0]))
+		if overview_error != OK:
+			_fail("M21 overview capture could not be saved")
+			get_tree().quit(1)
+			return
+	drone.call("set_targeted", true)
+	drone.call("set_danger_close", false)
+	drone_state = drone.call("presentation_state")
+	if not drone_state.get("targeted", false) or drone_state.get("danger_close", true):
+		_fail("M21 enemy target and danger telegraphs are not independent")
+		get_tree().quit(1)
+		return
+	drone.call("set_danger_close", true)
+	if not capture_directory.is_empty():
+		var telegraph_error := await _save_review_capture(capture_directory.path_join(M21_CAPTURE_FILENAMES[1]))
+		if telegraph_error != OK:
+			_fail("M21 telegraph capture could not be saved")
+			get_tree().quit(1)
+			return
+	operator.call("play_authoritative_move", Vector3(-1.0, 0.0, 0.0))
+	operator.call("play_confirmed_attack")
+	operator.call("play_confirmed_hit")
+	operator.call("play_defeat")
+	operator_state = operator.call("presentation_state")
+	if operator_state.get("last_animation") != "defeat" or not operator_state.get("defeated", false):
+		_fail("M21 Operator authoritative animation states are incomplete")
+		get_tree().quit(1)
+		return
+	drone.call("play_authoritative_move", Vector3(-1.0, 0.0, -1.0))
+	drone.call("play_confirmed_attack")
+	drone.call("play_confirmed_hit")
+	drone.call("retire")
+	warden.call("play_confirmed_attack")
+	warden.call("play_confirmed_hit")
+	warden.call("retire")
+	_combat_vfx.call("play_local_cooldown", operator.global_position, 260)
+	_combat_vfx.call("play_confirmed_exchange", operator, drone, false)
+	_combat_vfx.call("play_confirmed_exchange", warden, operator, true)
+	var vfx_state: Dictionary = _combat_vfx.call("presentation_state")
+	if (
+		vfx_state.get("confirmed_exchanges", 0) != 2
+		or vfx_state.get("cooldown_cues", 0) != 1
+		or vfx_state.get("active_effects", 0) <= 0
+		or vfx_state.get("active_effects", 0) > vfx_state.get("maximum_active_effects", 0)
+		or vfx_state.get("permanent_particles", 1) != 0
+	):
+		_fail("M21 combat VFX does not preserve its bounded authoritative feedback contract")
+		get_tree().quit(1)
+		return
+	drone_state = drone.call("presentation_state")
+	warden_state = warden.call("presentation_state")
+	if not drone_state.get("retired", false) or not warden_state.get("retired", false):
+		_fail("M21 enemy defeat does not retire confirmed targets")
+		get_tree().quit(1)
+		return
+	var scene_budget: Dictionary = _presentation_polish.call("scene_budget", self)
+	if (
+		scene_budget.get("meshes", 0) > 120
+		or scene_budget.get("materials", 0) > 32
+		or scene_budget.get("lights", 0) != 5
+		or scene_budget.get("shadow_lights", 1) != 0
+		or scene_budget.get("particles", 1) != 0
+		or scene_budget.get("audio_nodes", 1) != 0
+	):
+		_fail("M21 representative combat peak exceeds its whole-scene performance budget")
+		get_tree().quit(1)
+		return
+	print("M21 scene budget measured: %d meshes, %d materials, %d lights, %d particles, %d audio nodes" % [
+		scene_budget.get("meshes", 0),
+		scene_budget.get("materials", 0),
+		scene_budget.get("lights", 0),
+		scene_budget.get("particles", 0),
+		scene_budget.get("audio_nodes", 0),
+	])
+	if not capture_directory.is_empty():
+		var combat_error := await _save_review_capture(capture_directory.path_join(M21_CAPTURE_FILENAMES[2]))
+		if combat_error != OK:
+			_fail("M21 combat capture could not be saved")
+			get_tree().quit(1)
+			return
+	var capture_path := OS.get_environment("REVENANT_CAPTURE_SLICE")
+	if not capture_path.is_empty():
+		await get_tree().process_frame
+		await get_tree().process_frame
+		var capture_image := get_viewport().get_texture().get_image()
+		if capture_image == null:
+			_fail("M21 visual validation capture requires a graphical renderer")
+			get_tree().quit(1)
+			return
+		var capture_error := capture_image.save_png(capture_path)
+		if capture_error != OK:
+			_fail("M21 visual validation capture could not be saved")
+			get_tree().quit(1)
+			return
+	operator.queue_free()
 	print("M17 playable slice validated: camera, HUD, movement, aiming and attack inputs are ready")
 	print("M18 inventory HUD validated: authoritative snapshot and loot presentation are ready")
 	print("M19 progression HUD validated: authoritative experience and level presentation are ready")
 	print("M20 loadout HUD validated: authoritative weapon selection and profiles are ready")
+	print("M21 Operator validated: modular silhouette, distinct weapons and authoritative animation states are ready")
+	print("M21 relay-hub environment validated: modular room, semantic lighting and authoritative door are ready")
+	print("M21 enemies validated: distinct families and honest authoritative telegraphs are ready")
+	print("M21 combat VFX validated: bounded shot, trail, impact, damage, cooldown and corruption feedback are ready")
+	print("M21 Operator HUD validated: complete M17-M20 state, semantic hierarchy and redundant health feedback are ready")
+	print("M21 presentation polish validated: consistent confirmed feedback and bounded scene budgets are ready")
+	print("M21 presentation captures validated: reproducible overview, telegraph and combat shots are ready")
 	get_tree().quit(0)
+
+
+func _save_review_capture(path: String) -> Error:
+	await get_tree().process_frame
+	var capture_image := get_viewport().get_texture().get_image()
+	if capture_image == null:
+		return ERR_CANT_CREATE
+	return capture_image.save_png(path)
 
 
 func _encode_map(value: Dictionary) -> PackedByteArray:

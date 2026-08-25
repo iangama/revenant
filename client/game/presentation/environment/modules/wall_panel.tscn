@@ -1,0 +1,13 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource path="res://presentation/environment/materials/graphite.tres" type="Material" id="1_graphite"]
+
+[sub_resource type="BoxMesh" id="WallMesh"]
+size = Vector3(5.82, 3.2, 0.28)
+
+[node name="WallPanel" type="Node3D"]
+
+[node name="Wall" type="MeshInstance3D" parent="."]
+position = Vector3(0, 1.6, 0)
+mesh = SubResource("WallMesh")
+material_override = ExtResource("1_graphite")

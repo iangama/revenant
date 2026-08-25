@@ -1,0 +1,50 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource path="res://presentation/environment/materials/damaged_metal.tres" type="Material" id="1_damaged"]
+[ext_resource path="res://presentation/environment/materials/threat_magenta.tres" type="Material" id="2_magenta"]
+
+[sub_resource type="BoxMesh" id="SlabMesh"]
+size = Vector3(3.2, 0.28, 1.2)
+
+[sub_resource type="CylinderMesh" id="CableMesh"]
+top_radius = 0.07
+bottom_radius = 0.07
+height = 2.4
+
+[sub_resource type="SphereMesh" id="NodeMesh"]
+radius = 0.18
+height = 0.36
+
+[sub_resource type="BoxMesh" id="ShardMesh"]
+size = Vector3(0.5, 0.16, 0.9)
+
+[node name="DamagedSection" type="Node3D"]
+
+[node name="BrokenSlab" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.18, 0)
+rotation_degrees = Vector3(0, 14, -7)
+mesh = SubResource("SlabMesh")
+material_override = ExtResource("1_damaged")
+
+[node name="CableLeft" type="MeshInstance3D" parent="."]
+position = Vector3(-0.65, 0.32, 0)
+rotation_degrees = Vector3(90, 0, 22)
+mesh = SubResource("CableMesh")
+material_override = ExtResource("2_magenta")
+
+[node name="CableRight" type="MeshInstance3D" parent="."]
+position = Vector3(0.5, 0.3, 0.1)
+rotation_degrees = Vector3(90, 0, -28)
+mesh = SubResource("CableMesh")
+material_override = ExtResource("2_magenta")
+
+[node name="CorruptionNode" type="MeshInstance3D" parent="."]
+position = Vector3(0.15, 0.46, -0.1)
+mesh = SubResource("NodeMesh")
+material_override = ExtResource("2_magenta")
+
+[node name="Shard" type="MeshInstance3D" parent="."]
+position = Vector3(1.35, 0.15, 0.55)
+rotation_degrees = Vector3(0, -18, 12)
+mesh = SubResource("ShardMesh")
+material_override = ExtResource("1_damaged")

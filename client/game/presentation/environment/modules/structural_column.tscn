@@ -1,0 +1,22 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource path="res://presentation/environment/materials/blue_petrol.tres" type="Material" id="1_petrol"]
+[ext_resource path="res://presentation/environment/materials/graphite.tres" type="Material" id="2_graphite"]
+
+[sub_resource type="BoxMesh" id="ColumnMesh"]
+size = Vector3(0.7, 3.8, 0.7)
+
+[sub_resource type="BoxMesh" id="FootMesh"]
+size = Vector3(1.05, 0.35, 1.05)
+
+[node name="StructuralColumn" type="Node3D"]
+
+[node name="Column" type="MeshInstance3D" parent="."]
+position = Vector3(0, 1.9, 0)
+mesh = SubResource("ColumnMesh")
+material_override = ExtResource("1_petrol")
+
+[node name="Foot" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.175, 0)
+mesh = SubResource("FootMesh")
+material_override = ExtResource("2_graphite")

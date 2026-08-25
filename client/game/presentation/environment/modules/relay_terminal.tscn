@@ -1,0 +1,42 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource path="res://presentation/environment/materials/graphite.tres" type="Material" id="1_graphite"]
+[ext_resource path="res://presentation/environment/materials/blue_petrol.tres" type="Material" id="2_petrol"]
+[ext_resource path="res://presentation/environment/materials/objective_amber.tres" type="Material" id="3_amber"]
+
+[sub_resource type="BoxMesh" id="BaseMesh"]
+size = Vector3(1.5, 0.35, 1.1)
+
+[sub_resource type="BoxMesh" id="StemMesh"]
+size = Vector3(0.65, 1.25, 0.6)
+
+[sub_resource type="BoxMesh" id="ConsoleMesh"]
+size = Vector3(1.35, 0.16, 0.82)
+
+[sub_resource type="BoxMesh" id="ScreenMesh"]
+size = Vector3(0.92, 0.035, 0.48)
+
+[node name="RelayTerminal" type="Node3D"]
+
+[node name="Base" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.175, 0)
+mesh = SubResource("BaseMesh")
+material_override = ExtResource("1_graphite")
+
+[node name="Stem" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.82, 0.18)
+rotation_degrees = Vector3(-12, 0, 0)
+mesh = SubResource("StemMesh")
+material_override = ExtResource("2_petrol")
+
+[node name="Console" type="MeshInstance3D" parent="."]
+position = Vector3(0, 1.38, -0.12)
+rotation_degrees = Vector3(-18, 0, 0)
+mesh = SubResource("ConsoleMesh")
+material_override = ExtResource("1_graphite")
+
+[node name="Screen" type="MeshInstance3D" parent="."]
+position = Vector3(0, 1.43, -0.53)
+rotation_degrees = Vector3(-18, 0, 0)
+mesh = SubResource("ScreenMesh")
+material_override = ExtResource("3_amber")
