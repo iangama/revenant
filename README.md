@@ -2,7 +2,7 @@
 
 Revenant is an original game-engineering and software-preservation project. It will evolve into a small online game, an authoritative client-server runtime, and eventually a controlled compatibility laboratory for old builds of Revenant itself.
 
-The repository currently implements **M20 — Authoritative Equipment and Loadout** in the published 0.2.0 baseline containing M17 through M20. The playable `relay_awakening` slice now persists a selected weapon, applies server-owned weapon profiles to combat, and presents inventory, progression, and loadout state in Godot while retaining the complete automated acceptance flow.
+The repository currently implements **M21 — Visual Identity Vertical Slice** on top of the published 0.2.0 baseline containing M17 through M20. The playable `relay_awakening` slice retains its server-authoritative inventory, progression, loadout, combat, and activity flow while the Godot client presents the original Operator, enemy families, modular relay hub, combat feedback, and reorganized HUD. M21 does not change the published version or create a release.
 
 ## Repository map
 
