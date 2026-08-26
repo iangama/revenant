@@ -347,6 +347,7 @@ func _run_handshake(username: String, host: String, port: int) -> void:
 	if boss_complete.get("state") != "Completed" or loot.get("type") != "LootGranted" or progression_grant.get("type") != "ProgressionGranted" or activity_complete.get("type") != "ActivityComplete":
 		_fail("activity did not complete after boss death")
 		return
+	_audio_director.call("play_completion")
 	_apply_loot_grant(loot)
 	_apply_progression(progression_grant)
 	print("activity %s completed" % activity_complete.get("activity_id"))
@@ -425,6 +426,8 @@ func _render_actor(actor: Dictionary) -> void:
 	_actor_health[actor.get("actor_id")] = actor.get("health", 100)
 	_actor_max_health[actor.get("actor_id")] = actor.get("max_health", 100)
 	_update_enemy_proximity()
+	if actor.get("actor_kind") == "enemy":
+		_audio_director.call("play_enemy_presence", actor.get("archetype", "relay-drone"), instance.global_position)
 	if actor.get("actor_kind") == "enemy" and _enemy_health_label != null:
 		_enemy_health_label.text = "ENEMY  %s  •  %03d / %03d HP" % [str(actor.get("archetype")).to_upper(), actor.get("health"), actor.get("max_health")]
 		_enemy_health_bar.max_value = actor.get("max_health", 100)
@@ -435,6 +438,8 @@ func _render_actor(actor: Dictionary) -> void:
 func _destroy_actor(actor_id: int) -> void:
 	var actor: Node = _actors.get(actor_id)
 	if actor != null:
+		if actor is Node3D and actor_id != _player_actor_id:
+			_audio_director.call("play_confirmed_defeat", (actor as Node3D).global_position)
 		_actors.erase(actor_id)
 		if actor.has_method("retire"):
 			actor.call("retire")
@@ -457,6 +462,8 @@ func _update_actor(update: Dictionary) -> void:
 	actor.position = Vector3(position[0], position[1], position[2])
 	if actor.has_method("play_authoritative_move"):
 		actor.call("play_authoritative_move", previous_position - actor.position)
+	if update.get("actor_id") == _player_actor_id and previous_position.distance_to(actor.position) > 0.01:
+		_audio_director.call("play_confirmed_move", actor.global_position)
 	_update_enemy_proximity()
 	if update.get("actor_id") == _player_actor_id and _position_label != null:
 		_onboarding.call("confirm", "movement")
@@ -508,6 +515,7 @@ func _handle_manual_input() -> void:
 				var player: Node3D = _actors.get(_player_actor_id)
 				if player != null:
 					_combat_vfx.call("play_local_cooldown", player.global_position, 260)
+				_audio_director.call("play_cooldown_acknowledgement")
 		else:
 			_append_input_log("Attack blocked: aim at active enemy")
 	elif _attack_requested:
@@ -544,6 +552,7 @@ func _handle_manual_message(message: Dictionary) -> void:
 			_refresh_onboarding()
 			_activity_complete = true
 			_presentation_polish.call("play_authoritative_completion")
+			_audio_director.call("play_completion")
 			_status_label.text = "ACTIVITY COMPLETE  •  RELAY AWAKENED"
 			_objective_label.text = "OBJECTIVE  •  COMPLETE"
 			_controls_label.text = "RELAY_AWAKENING COMPLETED"
@@ -611,6 +620,12 @@ func _update_enemy_proximity() -> void:
 		enemy.call("set_danger_close", enemy.position.distance_to(player.position) <= 2.05)
 
 
+func _actor_family(actor: Node) -> String:
+	if actor != null and actor.has_method("presentation_state"):
+		return actor.call("presentation_state").get("family", "relay-drone")
+	return "relay-drone"
+
+
 func _handle_damage_feedback(message: Dictionary) -> void:
 	if message.get("source_actor_id") == _player_actor_id:
 		_onboarding.call("confirm", "damage")
@@ -621,11 +636,19 @@ func _handle_damage_feedback(message: Dictionary) -> void:
 	_actor_health[target_id] = remaining
 	var source_actor: Node = _actors.get(source_id)
 	var target_actor: Node3D = _actors.get(target_id)
+	if source_actor is Node3D:
+		if source_id == _player_actor_id:
+			_audio_director.call("play_confirmed_attack", _equipped_weapon_item_id, (source_actor as Node3D).global_position)
+		else:
+			_audio_director.call("play_enemy_attack", _actor_family(source_actor), (source_actor as Node3D).global_position)
+	if target_actor != null:
+		_audio_director.call("play_confirmed_impact", target_actor.global_position)
 	if source_actor != null and source_actor.has_method("play_confirmed_attack"):
 		source_actor.call("play_confirmed_attack")
 	if source_actor is Node3D and target_actor != null:
 		_combat_vfx.call("play_confirmed_exchange", source_actor, target_actor, target_id == _player_actor_id)
 	if target_id == _player_actor_id:
+		_audio_director.call("play_player_damage")
 		_player_health = remaining
 		_presentation_polish.call("play_confirmed_player_damage")
 		_player_health_bar.value = remaining
@@ -1026,11 +1049,14 @@ func _append_input_log(message: String) -> void:
 func _validate_playable_slice() -> void:
 	var initial_audio_state: Dictionary = _audio_director.call("presentation_state")
 	if (
-		initial_audio_state.get("fixed_nodes") != 4
-		or initial_audio_state.get("maximum_voices") != 4
-		or initial_audio_state.get("decoded_bytes") != 476160
+		initial_audio_state.get("fixed_nodes") != 14
+		or initial_audio_state.get("maximum_voices") != 14
+		or initial_audio_state.get("foundation_voices") != 4
+		or initial_audio_state.get("combat_voices") != 8
+		or initial_audio_state.get("interface_critical_voices") != 4
+		or initial_audio_state.get("decoded_bytes") != 741120
 		or not initial_audio_state.get("ambience_looping", false)
-		or initial_audio_state.get("routes") != {"ambience": "Ambience", "door": "Effects", "system": "Interface"}
+		or initial_audio_state.get("routes") != {"ambience": "Ambience", "door": "Effects", "system": "Interface", "combat": "Effects"}
 	):
 		_fail("M22 audio foundation is not fixed, bounded or loop-ready: %s" % initial_audio_state)
 		get_tree().quit(1)
@@ -1039,10 +1065,15 @@ func _validate_playable_slice() -> void:
 	_audio_director.call("play_system_ready")
 	_audio_director.call("apply_door_state", false, Vector3.ZERO)
 	_audio_director.call("apply_door_state", true, Vector3.ZERO)
+	_audio_director.call("play_cooldown_acknowledgement")
+	_audio_director.call("play_confirmed_attack", "pulse_rifle", Vector3.ZERO)
+	_audio_director.call("play_enemy_presence", "warden", Vector3.ZERO)
+	_audio_director.call("play_player_damage")
+	_audio_director.call("play_completion")
 	var silent_audio_state: Dictionary = _audio_director.call("presentation_state")
 	if (
 		silent_audio_state.get("active_voices") != 0
-		or silent_audio_state.get("suppressed", 0) < 2
+		or silent_audio_state.get("suppressed", 0) < 7
 		or silent_audio_state.get("requests", {}).get("door_unlock") != 1
 	):
 		_fail("M22 silent mode permits audible or queued cues")
@@ -1051,9 +1082,24 @@ func _validate_playable_slice() -> void:
 	_audio_director.call("set_silent", false)
 	_audio_director.call("play_system_ready")
 	_audio_director.call("apply_door_state", true, _door.global_position)
+	_audio_director.call("play_cooldown_acknowledgement")
+	var local_ack_state: Dictionary = _audio_director.call("presentation_state")
+	if local_ack_state.get("played", {}).get("cooldown") != 1 or local_ack_state.get("played", {}).get("pulse_rifle") != 0:
+		_fail("M22 local attack acknowledgement manufactures a confirmed combat cue")
+		get_tree().quit(1)
+		return
+	_audio_director.call("play_confirmed_move", Vector3.ZERO)
+	_audio_director.call("play_confirmed_attack", "pulse_rifle", Vector3.ZERO)
+	_audio_director.call("play_confirmed_attack", "arc_sidearm", Vector3.ZERO)
+	_audio_director.call("play_enemy_presence", "relay-drone", Vector3.ZERO)
+	_audio_director.call("play_enemy_presence", "warden", Vector3.ZERO)
+	_audio_director.call("play_confirmed_impact", Vector3.ZERO)
+	_audio_director.call("play_confirmed_defeat", Vector3.ZERO)
+	_audio_director.call("play_player_damage")
+	_audio_director.call("play_completion")
 	var audible_audio_state: Dictionary = _audio_director.call("presentation_state")
-	if audible_audio_state.get("active_voices", 0) > 4:
-		_fail("M22 audio foundation exceeds its voice budget")
+	if audible_audio_state.get("active_voices", 0) > 14:
+		_fail("M22 audio presentation exceeds its voice budget")
 		get_tree().quit(1)
 		return
 	var onboarding_validation := ONBOARDING_CONTROLLER.new()
@@ -1397,7 +1443,7 @@ func _validate_playable_slice() -> void:
 		or scene_budget.get("lights", 0) != 5
 		or scene_budget.get("shadow_lights", 1) != 0
 		or scene_budget.get("particles", 1) != 0
-		or scene_budget.get("audio_nodes", 0) != 4
+		or scene_budget.get("audio_nodes", 0) != 14
 	):
 		_fail("M21 representative combat peak exceeds its whole-scene performance budget")
 		get_tree().quit(1)
@@ -1445,7 +1491,8 @@ func _validate_playable_slice() -> void:
 	print("M22 settings validated: local persistence, buses, display, guidance and reduced flash are ready")
 	print("M22 onboarding validated: local attempts, authoritative progress and revisitable guidance are ready")
 	print("M22 audio foundation validated: original ambience, bounded cues, routing and silent mode are ready")
-	_audio_director.call("set_silent", true)
+	print("M22 combat audio validated: Operator, weapons, enemies, confirmed damage, defeat and interface cues are ready")
+	_audio_director.call("shutdown")
 	_audio_director.queue_free()
 	_audio_director = null
 	await get_tree().process_frame
@@ -1592,7 +1639,7 @@ func _fail(message: String) -> void:
 
 func _quit_client(exit_code: int) -> void:
 	if _audio_director != null:
-		_audio_director.call("set_silent", true)
+		_audio_director.call("shutdown")
 		_audio_director.queue_free()
 		_audio_director = null
 	await get_tree().process_frame

@@ -1,6 +1,6 @@
 # M22 experience and audio direction
 
-Status: Block 1 direction accepted; Block 5 foundation assets and runtime provenance recorded below.
+Status: Block 1 direction accepted; Block 5 foundation and Block 6 combat assets have complete runtime provenance below.
 
 ## Client experience map
 
@@ -148,3 +148,22 @@ Run `python3 docs/audio/m22/synthesis/generate_block5.py` from the repository ro
 | `relay_door_unlock.wav` | Authoritative spatial door-open cue / Effects | Decaying low mechanism body, seeded dry-noise latch, and restrained 240 Hz relay tail | 0.60 s | 57,644 | `65ee10226e704d8afeb0a9deb902ba0f5010a9d913105af6fd4c5630c0811276` |
 
 The packaged source total is 476,292 bytes and the decoded mono PCM estimate is 476,160 bytes. The fixed runtime allocation is four nodes with a four-voice ceiling: one ambience, one spatial door, and two pooled system players. The Block 5 validation reaches three simultaneous voices because the 500 ms system retrigger interval exceeds the 360 ms chirp. Master mute stops every active player and suppresses rather than queues requests. Block 7 retains responsibility for representative graphical output-level and frame-time measurements.
+
+## Block 6 original synthesis record
+
+The cumulative deterministic recipe also renders the following original character, enemy, combat, and critical/interface families. Authorship, date, tools, inputs, license posture, PCM format, runtime loading, and non-imitation declaration are identical to the Block 5 record. Seeded noise uses separate fixed seeds for Operator, relay drone, and Warden identity layers.
+
+| File | Purpose / bus | Duration | Bytes | SHA-256 |
+| --- | --- | ---: | ---: | --- |
+| `operator_servo.wav` | Confirmed Operator movement / Effects spatial | 0.16 s | 15,404 | `0a738b578a9269aad32a283361b9dbdf1aebf6a2aaf121f8e17b7f025e180a9b` |
+| `pulse_rifle_confirmed.wav` | Confirmed pulse-rifle damage / Effects spatial | 0.28 s | 26,924 | `e54381ac42f14fa630168d5d5c6301f6765ae0c353d28864257c0148e20952c7` |
+| `arc_sidearm_confirmed.wav` | Confirmed arc-sidearm damage / Effects spatial | 0.20 s | 19,244 | `5a7aca0367bb341ced104532dd2e13572579ed9a343b1991b76face130e3ca0e` |
+| `confirmed_impact.wav` | Confirmed target impact / Effects spatial | 0.14 s | 13,484 | `6c9bdb9c890bb7e96cab862084e3b812b4705605cea1c079c77be6993b574a77` |
+| `relay_drone_cue.wav` | Confirmed drone presence/action / Effects spatial | 0.30 s | 28,844 | `d139755112200a17d551b924555e5aa98f98bd8ebdb5209143e0b8d143240cae` |
+| `warden_cue.wav` | Confirmed Warden presence/action / Effects spatial | 0.45 s | 43,244 | `311addb79641de966c60a9065f8117db121b83efc3fc0a993b80aa24efe9e6c3` |
+| `enemy_defeat.wav` | Confirmed enemy destruction / Effects spatial | 0.35 s | 33,644 | `1e60caee72b422b6d1cf71c01c85d2b136761ec83ea56686fdb5b3abcc07b767` |
+| `player_damage.wav` | Confirmed player damage / Effects non-spatial | 0.20 s | 19,244 | `7d46a9f798aad2bd2ea77f1a2d07c9a013c6fdb2d29a6ec36a13fe38a7066311` |
+| `cooldown_tick.wav` | Accepted local cooldown acknowledgement / Interface | 0.08 s | 7,724 | `868342b61b3f8864cd4167e3c09d87955b11b55f244b60425b68dcfc3fefedf6` |
+| `completion.wav` | Confirmed activity completion / Effects non-spatial | 0.60 s | 57,644 | `7a4d739d2f2928e2e7b48c7ae94db147130f1137325683cc2634f1f25d6d437d` |
+
+Block 6 adds 265,400 packaged bytes and 264,960 decoded PCM bytes. The cumulative M22 audio totals are 741,692 packaged bytes and 741,120 decoded bytes across 13 sources. Runtime capacity is 14 fixed voices: four foundation, eight combat, and two additional critical players; the combined Interface/player-critical allocation remains four.
