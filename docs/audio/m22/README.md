@@ -1,6 +1,6 @@
 # M22 experience and audio direction
 
-Status: Block 1 direction and baseline prepared for review; no runtime audio asset is included.
+Status: Block 1 direction accepted; Block 5 foundation assets and runtime provenance recorded below.
 
 ## Client experience map
 
@@ -134,3 +134,17 @@ Generated audio is not automatically acceptable. Its provider terms, model/tool,
 ## Block 1 acceptance
 
 Block 1 is accepted when the state map, navigation contract, onboarding sequence, sound vocabulary, voice allocation, provenance requirements, M21 baseline, frozen hashes, scope exclusions, and Block 2 handoff are explicitly reviewed. Approval authorizes only the entry-shell implementation in Block 2.
+
+## Block 5 original synthesis record
+
+All three exports were created for Revenant on 2026-08-26 by deterministic synthesis implemented by OpenAI Codex under Ian Gama's project direction. The editable source is `docs/audio/m22/synthesis/generate_block5.py`, using only Python standard-library oscillators, envelopes, seeded pseudorandom noise, PCM packing, and WAV writing. There are no recordings, samples, models, prompts, third-party source inputs, or external audio libraries. The work neither imitates nor derives from proprietary game audio or any known protected work.
+
+Run `python3 docs/audio/m22/synthesis/generate_block5.py` from the repository root to reproduce the files exactly. Exports are mono, signed 16-bit PCM WAV at 48 kHz with no destructive normalization. The client reads their PCM payload directly into `AudioStreamWAV`, avoiding editor-import cache dependencies in clean headless checkouts. Runtime looping is enabled only for the ambience; short cues are one-shot.
+
+| File | Purpose / bus | Synthesis and processing | Duration | Bytes | SHA-256 |
+| --- | --- | --- | ---: | ---: | --- |
+| `relay_hub_ambience.wav` | Sparse local machinery bed / Ambience | Phase-continuous 55, 110, and 220 Hz layers with slow integer-cycle modulation; seamless four-second boundary | 4.00 s | 384,044 | `a555aad62ae6fbd1f615ef664b4819848b27cfabd4b93a52701aed6b88eab0f4` |
+| `system_ready.wav` | Confirmed healthy relay state / Interface | 660 and 990 Hz relay chirp under a squared-sine envelope | 0.36 s | 34,604 | `fa18b52e9a6f84e2ba0c59986d1e6310e7f1136ce815afc29b491766ada5a615` |
+| `relay_door_unlock.wav` | Authoritative spatial door-open cue / Effects | Decaying low mechanism body, seeded dry-noise latch, and restrained 240 Hz relay tail | 0.60 s | 57,644 | `65ee10226e704d8afeb0a9deb902ba0f5010a9d913105af6fd4c5630c0811276` |
+
+The packaged source total is 476,292 bytes and the decoded mono PCM estimate is 476,160 bytes. The fixed runtime allocation is four nodes with a four-voice ceiling: one ambience, one spatial door, and two pooled system players. The Block 5 validation reaches three simultaneous voices because the 500 ms system retrigger interval exceeds the 360 ms chirp. Master mute stops every active player and suppresses rather than queues requests. Block 7 retains responsibility for representative graphical output-level and frame-time measurements.

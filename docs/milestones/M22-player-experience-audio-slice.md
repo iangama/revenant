@@ -1,6 +1,6 @@
 # M22 — Player Experience and Audio Slice
 
-Status: Blocks 1 through 4 implemented and validated locally; Block 5 awaits separate authorization.
+Status: Blocks 1 through 5 implemented and validated locally; Block 6 awaits separate authorization.
 
 ## Objective
 
@@ -161,3 +161,11 @@ Block 4 adds a passive onboarding controller under `client/game/presentation/onb
 Full, Compact, and Off modes reuse the Block 3 preference. Guidance can be hidden and revisited with `H` without resetting or altering the activity. Critical status, objectives, exact values, controls, and completion remain independently visible in the HUD.
 
 Deterministic validation proves local attempts do not manufacture progress, confirmed evidence advances the sequence, and dismissal/revisit is reversible. The canonical smoke requires the M22 onboarding marker. Block 4 changes no server, protocol, persistence, mechanic, frozen V1 artifact, version, tag, or release.
+
+## Block 5 checkpoint
+
+Block 5 adds a fixed four-player audio director: one looping relay-hub ambience voice, one spatial relay-door voice, and a two-player non-spatial system pool. No playback path creates nodes or queues work at runtime. The four foundation voices remain at the accepted ambience/system ceiling and leave character, enemy, and combat families to Block 6.
+
+The original mono 48 kHz PCM sources are rendered by the deterministic recipe under `docs/audio/m22/synthesis`. Ambience starts as local scene presentation, the healthy-system cue follows the confirmed Waiting state, and the spatial door cue follows only an authoritative open `DoorState`. Every cue retains its existing visual and textual counterpart.
+
+Mute stops all players immediately, suppresses new requests without queuing them, and restarts only the optional ambience after unmute. Deterministic headless validation covers the fixed node count, looping, routing-ready buses, four-voice ceiling, cue suppression, and zero active voices in silent mode. Block 5 changes no server, protocol, persistence, mechanic, frozen V1 artifact, visual budget, version, tag, or release.
