@@ -12,6 +12,8 @@ const COMBAT_VFX_SCENE := preload("res://presentation/combat/combat_vfx.tscn")
 const OPERATOR_HUD_SCENE := preload("res://presentation/hud/operator_hud.tscn")
 const PRESENTATION_POLISH_SCENE := preload("res://presentation/polish/presentation_polish.tscn")
 const ENTRY_SHELL_SCENE := preload("res://presentation/entry/entry_shell.tscn")
+const SETTINGS_PANEL_SCENE := preload("res://presentation/settings/settings_panel.tscn")
+const SETTINGS_STORE := preload("res://presentation/settings/settings_store.gd")
 const M21_CAPTURE_FILENAMES := [
 	"01-relay-hub-overview.png",
 	"02-enemy-telegraphs.png",
@@ -64,11 +66,16 @@ var _weapon_buttons: Array[Button] = []
 var _hud_canvas: CanvasLayer
 var _entry_shell: Control
 var _connection_started := false
+var _settings_store: RefCounted
+var _settings := {}
+var _settings_panel: Control
+var _guidance_mode := "Full"
 
 
 func _ready() -> void:
 	_build_playable_scene()
 	_build_entry_shell()
+	_build_settings()
 	if OS.get_environment("REVENANT_VALIDATE_SLICE") == "1":
 		call_deferred("_validate_playable_slice")
 		return
@@ -77,6 +84,13 @@ func _ready() -> void:
 
 
 func _input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
+		if _settings_panel != null and _settings_panel.visible:
+			return
+		if _entry_shell != null and not _entry_shell.visible:
+			_open_settings(null)
+			get_viewport().set_input_as_handled()
+			return
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.physical_keycode in [KEY_W, KEY_A, KEY_S, KEY_D, KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT]:
 			_append_input_log("KEY %s detected" % event.as_text_physical_keycode())
@@ -788,6 +802,39 @@ func _build_entry_shell() -> void:
 	canvas.add_child(_entry_shell)
 	_entry_shell.call("configure_endpoint", _connection_host(), _connection_port())
 	_entry_shell.connect("connect_requested", _begin_connection)
+	_entry_shell.connect("settings_requested", _open_settings)
+
+
+func _build_settings() -> void:
+	_settings_store = SETTINGS_STORE.new()
+	_settings = _settings_store.call("load_settings")
+	_apply_settings(_settings, false)
+	var canvas := CanvasLayer.new()
+	canvas.name = "Settings"
+	canvas.layer = 20
+	add_child(canvas)
+	_settings_panel = SETTINGS_PANEL_SCENE.instantiate()
+	canvas.add_child(_settings_panel)
+	_settings_panel.connect("settings_applied", _on_settings_applied)
+
+
+func _open_settings(focus_source: Control) -> void:
+	_settings_panel.call("open", _settings, focus_source)
+
+
+func _on_settings_applied(settings: Dictionary) -> void:
+	_apply_settings(settings, true)
+
+
+func _apply_settings(settings: Dictionary, persist: bool) -> void:
+	_settings = _settings_store.call("apply", settings)
+	_guidance_mode = _settings.get("guidance_mode", "Full")
+	if _presentation_polish != null:
+		_presentation_polish.call("set_reduced_flash", _settings.get("reduced_flash", false))
+	if persist:
+		var save_error: Error = _settings_store.call("save_settings", _settings)
+		if save_error != OK:
+			push_warning("Revenant settings could not be saved: %s" % error_string(save_error))
 
 
 func _hud_label(parent: Node, position: Vector2, size: int, color: Color, text: String) -> Label:
@@ -910,7 +957,12 @@ func _material(color: Color) -> StandardMaterial3D:
 
 
 func _set_guidance(title: String, instructions: String) -> void:
-	_guidance_label.text = "%s\n\n%s" % [title, instructions]
+	if _guidance_mode == "Compact":
+		_guidance_label.text = title
+	elif _guidance_mode == "Off":
+		_guidance_label.text = title if title in ["WHAT HAPPENED?", "MISSION COMPLETE"] else "GUIDANCE OFF"
+	else:
+		_guidance_label.text = "%s\n\n%s" % [title, instructions]
 
 
 func _append_input_log(message: String) -> void:
@@ -957,8 +1009,100 @@ func _validate_playable_slice() -> void:
 		_fail("M22 entry shell does not provide a keyboard-reachable retry state")
 		get_tree().quit(1)
 		return
+	var sanitized_settings: Dictionary = _settings_store.call("sanitize", {
+		"master_volume": 4.0,
+		"ambience_volume": -2.0,
+		"effects_volume": "invalid",
+		"interface_volume": 0.35,
+		"muted": "invalid",
+		"display_mode": "Borderless",
+		"reduced_flash": true,
+		"guidance_mode": "Unknown",
+	})
+	if (
+		sanitized_settings.get("master_volume") != 1.0
+		or sanitized_settings.get("ambience_volume") != 0.0
+		or sanitized_settings.get("effects_volume") != 0.85
+		or sanitized_settings.get("interface_volume") != 0.35
+		or sanitized_settings.get("muted") != false
+		or sanitized_settings.get("display_mode") != "Windowed"
+		or sanitized_settings.get("reduced_flash") != true
+		or sanitized_settings.get("guidance_mode") != "Full"
+	):
+		_fail("M22 settings do not recover deterministic safe defaults")
+		get_tree().quit(1)
+		return
+	var validation_settings_path := "user://m22-settings-validation.cfg"
+	var persisted_candidate := sanitized_settings.duplicate(true)
+	persisted_candidate["guidance_mode"] = "Off"
+	if _settings_store.call("save_settings", persisted_candidate, validation_settings_path) != OK:
+		_fail("M22 settings cannot persist local validated values")
+		get_tree().quit(1)
+		return
+	var persisted_settings: Dictionary = _settings_store.call("load_settings", validation_settings_path)
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(validation_settings_path))
+	if persisted_settings.get("guidance_mode") != "Off" or persisted_settings.get("master_volume") != 1.0:
+		_fail("M22 settings persistence does not round-trip validated values")
+		get_tree().quit(1)
+		return
+	var settings_focus_source: Control = _entry_shell.call("settings_focus_source")
+	_open_settings(settings_focus_source)
+	var settings_capture_path := OS.get_environment("REVENANT_CAPTURE_M22_SETTINGS")
+	if not settings_capture_path.is_empty():
+		await get_tree().process_frame
+		await get_tree().process_frame
+		var settings_capture_error := await _save_review_capture(settings_capture_path)
+		if settings_capture_error != OK:
+			_fail("M22 settings validation capture could not be saved")
+			get_tree().quit(1)
+			return
+	var settings_state: Dictionary = _settings_panel.call("presentation_state")
+	if (
+		not settings_state.get("visible", false)
+		or settings_state.get("slider_count", 0) != 4
+		or not settings_state.get("has_mute", false)
+		or not settings_state.get("has_reduced_flash", false)
+		or settings_state.get("display_options", 0) != 2
+		or settings_state.get("guidance_options", 0) != 3
+		or not settings_state.get("mouse_captured", false)
+		or settings_state.get("focus_owner") != "Apply"
+	):
+		_fail("M22 settings panel is incomplete or not keyboard reachable")
+		get_tree().quit(1)
+		return
+	_settings_panel.call("close_panel")
+	entry_state = _entry_shell.call("presentation_state")
+	if entry_state.get("focus_owner") != "Settings":
+		_fail("M22 settings do not restore focus to their invoking control")
+		get_tree().quit(1)
+		return
 	_entry_shell.call("dismiss")
 	_hud_canvas.visible = true
+	_apply_settings({
+		"master_volume": 0.6,
+		"ambience_volume": 0.5,
+		"effects_volume": 0.7,
+		"interface_volume": 0.4,
+		"muted": true,
+		"display_mode": "Windowed",
+		"reduced_flash": true,
+		"guidance_mode": "Compact",
+	}, false)
+	var audio_state: Dictionary = _settings_store.call("audio_state")
+	var buses: Dictionary = audio_state.get("buses", {})
+	if (
+		not buses.get("Master", {}).get("present", false)
+		or not buses.get("Master", {}).get("muted", false)
+		or not buses.get("Ambience", {}).get("present", false)
+		or not buses.get("Effects", {}).get("present", false)
+		or not buses.get("Interface", {}).get("present", false)
+		or _guidance_mode != "Compact"
+		or not _presentation_polish.call("presentation_state").get("reduced_flash", false)
+	):
+		_fail("M22 local settings do not apply bounded buses and accessibility state")
+		get_tree().quit(1)
+		return
+	_apply_settings(_settings_store.call("defaults"), false)
 	var required_actions := ["move_forward", "move_back", "move_left", "move_right", "attack"]
 	for action in required_actions:
 		if not InputMap.has_action(action):
@@ -1195,6 +1339,7 @@ func _validate_playable_slice() -> void:
 	print("M21 presentation polish validated: consistent confirmed feedback and bounded scene budgets are ready")
 	print("M21 presentation captures validated: reproducible overview, telegraph and combat shots are ready")
 	print("M22 entry shell validated: explicit connection, safe identity, focus and retry states are ready")
+	print("M22 settings validated: local persistence, buses, display, guidance and reduced flash are ready")
 	get_tree().quit(0)
 
 

@@ -1,6 +1,6 @@
 # M22 — Player Experience and Audio Slice
 
-Status: Blocks 1 and 2 implemented and validated locally; Block 3 awaits separate authorization.
+Status: Blocks 1 through 3 implemented and validated locally; Block 4 awaits separate authorization.
 
 ## Objective
 
@@ -141,3 +141,15 @@ The client exposes Connecting, Negotiating, Authenticating, Joining, Waiting, Pl
 Deterministic validation checks the initial Entry composition, accepted and rejected username forms, mouse capture, duplicate-connect protection, and retry availability before continuing through every M17-M21 scene assertion. The canonical smoke requires the M22 entry-shell marker, and release packaging already includes the complete presentation tree.
 
 Block 2 changes no server, protocol, persistence, mechanic, frozen V1 artifact, version, tag, or release. Settings remain deliberately disabled until Block 3 is separately authorized.
+
+## Block 3 checkpoint
+
+Block 3 adds a local settings store and keyboard-accessible overlay under `client/game/presentation/settings`. Values are validated on load and before application; missing, malformed, wrong-type, or out-of-range values recover to deterministic defaults. The ConfigFile remains under Godot user data and is never transmitted or treated as server state.
+
+The overlay controls Master, Ambience, Effects, and Interface volumes, global mute, Windowed/Fullscreen presentation, reduced flash, and Full/Compact/Off guidance density. It opens from the entry shell or with Escape during the playable view, closes with Apply, Cancel, or Escape, and restores focus to its invoking control when one exists. Settings has no authority over connection, activity, input acceptance, health, combat, inventory, progression, equipment, rewards, or persistence.
+
+The client creates the three bounded child buses under Master before any audio asset exists. Reduced Flash lowers the alpha and duration of peripheral damage/completion pulses while retaining textual state. Guidance density reorganizes local instructional text while status, objectives, exact values, and authoritative outcomes remain visible independently.
+
+Deterministic validation covers corrupt-value recovery, four bounded volume values, mute, both display choices, three guidance modes, reduced flash, settings composition, modal input capture, bus creation, and accessibility application. The canonical smoke requires the M22 settings marker. No audio player or shipping audio asset is added by Block 3, so the M21 zero-audio-node baseline remains intact.
+
+Block 3 changes no server, protocol, persistence, mechanic, frozen V1 artifact, version, tag, or release. Contextual onboarding remains Block 4 and requires separate authorization.
