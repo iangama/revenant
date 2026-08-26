@@ -1,14 +1,16 @@
 extends Node3D
 
-const AMBIENCE := preload("res://audio/m22/relay_hub_ambience.wav")
-const SYSTEM_READY := preload("res://audio/m22/system_ready.wav")
-const DOOR_UNLOCK := preload("res://audio/m22/relay_door_unlock.wav")
+const AMBIENCE_PATH := "res://audio/m22/relay_hub_ambience.wav"
+const SYSTEM_READY_PATH := "res://audio/m22/system_ready.wav"
+const DOOR_UNLOCK_PATH := "res://audio/m22/relay_door_unlock.wav"
 const SYSTEM_POOL_SIZE := 2
 const MAX_VOICES := 4
 const MIN_SYSTEM_RETRIGGER_MS := 500
 
 var _ambience: AudioStreamPlayer
 var _ambience_stream: AudioStreamWAV
+var _system_stream: AudioStreamWAV
+var _door_stream: AudioStreamWAV
 var _door: AudioStreamPlayer3D
 var _system_pool: Array[AudioStreamPlayer] = []
 var _next_system_player := 0
@@ -23,7 +25,7 @@ func _ready() -> void:
 	_ambience = AudioStreamPlayer.new()
 	_ambience.name = "RelayHubAmbience"
 	_ambience.bus = "Ambience"
-	_ambience_stream = AMBIENCE.duplicate()
+	_ambience_stream = _load_pcm_wav(AMBIENCE_PATH)
 	_ambience_stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
 	_ambience.stream = _ambience_stream
 	add_child(_ambience)
@@ -31,16 +33,18 @@ func _ready() -> void:
 	_door = AudioStreamPlayer3D.new()
 	_door.name = "RelayDoorCue"
 	_door.bus = "Effects"
-	_door.stream = DOOR_UNLOCK
+	_door_stream = _load_pcm_wav(DOOR_UNLOCK_PATH)
+	_door.stream = _door_stream
 	_door.max_distance = 24.0
 	_door.unit_size = 5.0
 	add_child(_door)
 
+	_system_stream = _load_pcm_wav(SYSTEM_READY_PATH)
 	for index in range(SYSTEM_POOL_SIZE):
 		var player := AudioStreamPlayer.new()
 		player.name = "SystemCue%d" % index
 		player.bus = "Interface"
-		player.stream = SYSTEM_READY
+		player.stream = _system_stream
 		add_child(player)
 		_system_pool.append(player)
 
@@ -105,6 +109,7 @@ func presentation_state() -> Dictionary:
 		"active_voices": active_voices,
 		"silent": _silent,
 		"ambience_looping": _ambience_stream.loop_mode == AudioStreamWAV.LOOP_FORWARD,
+		"decoded_bytes": _ambience_stream.data.size() + _door_stream.data.size() + _system_stream.data.size(),
 		"routes": {"ambience": str(_ambience.bus), "door": str(_door.bus), "system": str(_system_pool[0].bus)},
 		"requests": _requests.duplicate(true),
 		"played": _played.duplicate(true),
@@ -117,3 +122,13 @@ func _stop_all() -> void:
 	_door.stop()
 	for player in _system_pool:
 		player.stop()
+
+
+func _load_pcm_wav(path: String) -> AudioStreamWAV:
+	var bytes := FileAccess.get_file_as_bytes(path)
+	var stream := AudioStreamWAV.new()
+	stream.format = AudioStreamWAV.FORMAT_16_BITS
+	stream.mix_rate = 48000
+	stream.stereo = false
+	stream.data = bytes.slice(44) if bytes.size() >= 44 else PackedByteArray()
+	return stream

@@ -1028,6 +1028,7 @@ func _validate_playable_slice() -> void:
 	if (
 		initial_audio_state.get("fixed_nodes") != 4
 		or initial_audio_state.get("maximum_voices") != 4
+		or initial_audio_state.get("decoded_bytes") != 476160
 		or not initial_audio_state.get("ambience_looping", false)
 		or initial_audio_state.get("routes") != {"ambience": "Ambience", "door": "Effects", "system": "Interface"}
 	):
@@ -1445,6 +1446,9 @@ func _validate_playable_slice() -> void:
 	print("M22 onboarding validated: local attempts, authoritative progress and revisitable guidance are ready")
 	print("M22 audio foundation validated: original ambience, bounded cues, routing and silent mode are ready")
 	_audio_director.call("set_silent", true)
+	_audio_director.queue_free()
+	_audio_director = null
+	await get_tree().process_frame
 	get_tree().quit(0)
 
 

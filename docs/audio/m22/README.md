@@ -139,7 +139,7 @@ Block 1 is accepted when the state map, navigation contract, onboarding sequence
 
 All three exports were created for Revenant on 2026-08-26 by deterministic synthesis implemented by OpenAI Codex under Ian Gama's project direction. The editable source is `docs/audio/m22/synthesis/generate_block5.py`, using only Python standard-library oscillators, envelopes, seeded pseudorandom noise, PCM packing, and WAV writing. There are no recordings, samples, models, prompts, third-party source inputs, or external audio libraries. The work neither imitates nor derives from proprietary game audio or any known protected work.
 
-Run `python3 docs/audio/m22/synthesis/generate_block5.py` from the repository root to reproduce the files exactly. Exports are mono, signed 16-bit PCM WAV at 48 kHz with no destructive normalization. Godot imports them losslessly. Runtime looping is enabled only for the ambience; short cues are one-shot.
+Run `python3 docs/audio/m22/synthesis/generate_block5.py` from the repository root to reproduce the files exactly. Exports are mono, signed 16-bit PCM WAV at 48 kHz with no destructive normalization. The client reads their PCM payload directly into `AudioStreamWAV`, avoiding editor-import cache dependencies in clean headless checkouts. Runtime looping is enabled only for the ambience; short cues are one-shot.
 
 | File | Purpose / bus | Synthesis and processing | Duration | Bytes | SHA-256 |
 | --- | --- | --- | ---: | ---: | --- |
