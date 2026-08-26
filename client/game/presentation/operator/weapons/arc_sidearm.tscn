@@ -1,0 +1,10 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource path="res://presentation/operator/weapons/weapon_visual.gd" type="Script" id="1_weapon"]
+
+[node name="ArcSidearm" type="Node3D"]
+script = ExtResource("1_weapon")
+weapon_id = "arc_sidearm"
+body_length = 0.62
+body_height = 0.16
+grip_offset = 0.08

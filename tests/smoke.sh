@@ -128,6 +128,13 @@ if wait_for_gateway; then
       [[ "$slice_output" == *"M18 inventory HUD validated"* ]]
       [[ "$slice_output" == *"M19 progression HUD validated"* ]]
       [[ "$slice_output" == *"M20 loadout HUD validated"* ]]
+      [[ "$slice_output" == *"M21 Operator validated"* ]]
+      [[ "$slice_output" == *"M21 relay-hub environment validated"* ]]
+      [[ "$slice_output" == *"M21 enemies validated"* ]]
+      [[ "$slice_output" == *"M21 combat VFX validated"* ]]
+      [[ "$slice_output" == *"M21 Operator HUD validated"* ]]
+      [[ "$slice_output" == *"M21 presentation polish validated"* ]]
+      [[ "$slice_output" == *"M21 presentation captures validated"* ]]
     fi
 
     kill "$server_pid"

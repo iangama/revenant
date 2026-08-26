@@ -1,0 +1,50 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource path="res://presentation/environment/modules/relay_core_door.gd" type="Script" id="1_script"]
+[ext_resource path="res://presentation/environment/materials/graphite.tres" type="Material" id="2_graphite"]
+[ext_resource path="res://presentation/environment/materials/blue_petrol.tres" type="Material" id="3_petrol"]
+[ext_resource path="res://presentation/environment/materials/objective_amber.tres" type="Material" id="4_amber"]
+
+[sub_resource type="BoxMesh" id="PanelMesh"]
+size = Vector3(0.5, 3.25, 2.16)
+
+[sub_resource type="BoxMesh" id="FrameMesh"]
+size = Vector3(0.75, 3.8, 0.5)
+
+[sub_resource type="BoxMesh" id="StripMesh"]
+size = Vector3(0.62, 0.14, 1.65)
+
+[node name="RelayCoreDoor" type="Node3D"]
+script = ExtResource("1_script")
+
+[node name="LeftPanel" type="MeshInstance3D" parent="."]
+position = Vector3(0, 1.625, -1.12)
+mesh = SubResource("PanelMesh")
+material_override = ExtResource("2_graphite")
+
+[node name="RightPanel" type="MeshInstance3D" parent="."]
+position = Vector3(0, 1.625, 1.12)
+mesh = SubResource("PanelMesh")
+material_override = ExtResource("2_graphite")
+
+[node name="FrameLeft" type="MeshInstance3D" parent="."]
+position = Vector3(0, 1.9, -2.65)
+mesh = SubResource("FrameMesh")
+material_override = ExtResource("3_petrol")
+
+[node name="FrameRight" type="MeshInstance3D" parent="."]
+position = Vector3(0, 1.9, 2.65)
+mesh = SubResource("FrameMesh")
+material_override = ExtResource("3_petrol")
+
+[node name="AmberStrips" type="Node3D" parent="."]
+
+[node name="Left" type="MeshInstance3D" parent="AmberStrips"]
+position = Vector3(-0.27, 1.65, -1.12)
+mesh = SubResource("StripMesh")
+material_override = ExtResource("4_amber")
+
+[node name="Right" type="MeshInstance3D" parent="AmberStrips"]
+position = Vector3(-0.27, 1.65, 1.12)
+mesh = SubResource("StripMesh")
+material_override = ExtResource("4_amber")
