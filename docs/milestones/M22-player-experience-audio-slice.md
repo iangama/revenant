@@ -1,6 +1,6 @@
 # M22 — Player Experience and Audio Slice
 
-Status: Block 1 prepared and validated locally; runtime implementation has not started.
+Status: Blocks 1 and 2 implemented and validated locally; Block 3 awaits separate authorization.
 
 ## Objective
 
@@ -131,3 +131,13 @@ Block 1 is represented by [`docs/audio/m22/README.md`](../audio/m22/README.md). 
 The baseline was measured from `main` commit `289489de38506cd21eff430ecc095ed8e369df06` with Godot 4.7.1 deterministic slice validation. It remains 109 meshes, 25 materials, five non-shadowing lights, zero permanent particles, zero audio nodes, zero shipping audio files, zero packaged audio bytes, zero decoded audio memory, and zero audible voices. Every M17-M21 validation marker passed, and both frozen V1 hashes remain unchanged.
 
 Block 1 adds no runtime dependency and changes no client, server, protocol, persistence, mechanic, version, tag, or release. Completion of this checkpoint may authorize only Block 2 after separate review.
+
+## Block 2 checkpoint
+
+Block 2 adds an original entry shell under `client/game/presentation/entry`. Normal launches now begin in an explicit Entry state with an editable local username, visible relay endpoint, keyboard focus, format guidance, Connect action, disabled future Settings action, and Quit. No socket is opened until the player activates Connect. Existing deterministic smoke and manual-control paths retain environment-driven auto-connect so automation remains non-interactive.
+
+The client exposes Connecting, Negotiating, Authenticating, Joining, Waiting, Playing, and Failed presentation states around the unchanged Protocol V2 flow. Busy states prevent duplicate connection attempts. Failure returns to a focused Retry action without manufacturing recovery, while test exits retain their non-zero failure behavior. Username format mirrors the existing server rule for early feedback, but `AuthResponse` remains authoritative.
+
+Deterministic validation checks the initial Entry composition, accepted and rejected username forms, mouse capture, duplicate-connect protection, and retry availability before continuing through every M17-M21 scene assertion. The canonical smoke requires the M22 entry-shell marker, and release packaging already includes the complete presentation tree.
+
+Block 2 changes no server, protocol, persistence, mechanic, frozen V1 artifact, version, tag, or release. Settings remain deliberately disabled until Block 3 is separately authorized.

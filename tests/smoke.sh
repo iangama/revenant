@@ -135,6 +135,7 @@ if wait_for_gateway; then
       [[ "$slice_output" == *"M21 Operator HUD validated"* ]]
       [[ "$slice_output" == *"M21 presentation polish validated"* ]]
       [[ "$slice_output" == *"M21 presentation captures validated"* ]]
+      [[ "$slice_output" == *"M22 entry shell validated"* ]]
     fi
 
     kill "$server_pid"
