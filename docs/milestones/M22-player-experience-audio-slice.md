@@ -1,6 +1,6 @@
 # M22 — Player Experience and Audio Slice
 
-Status: Blocks 1 through 3 implemented and validated locally; Block 4 awaits separate authorization.
+Status: Blocks 1 through 4 implemented and validated locally; Block 5 awaits separate authorization.
 
 ## Objective
 
@@ -153,3 +153,11 @@ The client creates the three bounded child buses under Master before any audio a
 Deterministic validation covers corrupt-value recovery, four bounded volume values, mute, both display choices, three guidance modes, reduced flash, settings composition, modal input capture, bus creation, and accessibility application. The canonical smoke requires the M22 settings marker. No audio player or shipping audio asset is added by Block 3, so the M21 zero-audio-node baseline remains intact.
 
 Block 3 changes no server, protocol, persistence, mechanic, frozen V1 artifact, version, tag, or release. Contextual onboarding remains Block 4 and requires separate authorization.
+
+## Block 4 checkpoint
+
+Block 4 adds a passive onboarding controller under `client/game/presentation/onboarding`. Movement, attack, loadout, relay-door, Warden, and completion guidance form an explicit sequence. Local movement and attack attempts are observable but cannot advance steps that claim success; authoritative actor, damage, equipment, objective, spawn, and completion evidence owns those transitions.
+
+Full, Compact, and Off modes reuse the Block 3 preference. Guidance can be hidden and revisited with `H` without resetting or altering the activity. Critical status, objectives, exact values, controls, and completion remain independently visible in the HUD.
+
+Deterministic validation proves local attempts do not manufacture progress, confirmed evidence advances the sequence, and dismissal/revisit is reversible. The canonical smoke requires the M22 onboarding marker. Block 4 changes no server, protocol, persistence, mechanic, frozen V1 artifact, version, tag, or release.
