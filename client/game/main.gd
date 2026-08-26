@@ -15,6 +15,7 @@ const ENTRY_SHELL_SCENE := preload("res://presentation/entry/entry_shell.tscn")
 const SETTINGS_PANEL_SCENE := preload("res://presentation/settings/settings_panel.tscn")
 const SETTINGS_STORE := preload("res://presentation/settings/settings_store.gd")
 const ONBOARDING_CONTROLLER := preload("res://presentation/onboarding/onboarding_controller.gd")
+const AUDIO_DIRECTOR := preload("res://presentation/audio/audio_director.gd")
 const M21_CAPTURE_FILENAMES := [
 	"01-relay-hub-overview.png",
 	"02-enemy-telegraphs.png",
@@ -72,6 +73,7 @@ var _settings := {}
 var _settings_panel: Control
 var _guidance_mode := "Full"
 var _onboarding: RefCounted
+var _audio_director: Node3D
 
 
 func _ready() -> void:
@@ -349,7 +351,7 @@ func _run_handshake(username: String, host: String, port: int) -> void:
 	_apply_progression(progression_grant)
 	print("activity %s completed" % activity_complete.get("activity_id"))
 	if _should_exit_after_flow():
-		get_tree().quit(0)
+		_quit_client(0)
 
 
 func _send_message(value: Dictionary) -> bool:
@@ -746,6 +748,7 @@ func _update_operator_weapon() -> void:
 func _set_door_open(open: bool) -> void:
 	_environment.call("set_core_door_open", open, true)
 	_status_label.text = "RELAY CORE OPEN  •  WARDEN INBOUND" if open else "RELAY CORE SEALED"
+	_audio_director.call("apply_door_state", open, _door.global_position)
 	if open:
 		_set_guidance("CORE OPEN", "The Warden is spawning. Get ready to aim and attack.")
 
@@ -758,6 +761,9 @@ func _build_playable_scene() -> void:
 	add_child(_combat_vfx)
 	_presentation_polish = PRESENTATION_POLISH_SCENE.instantiate()
 	add_child(_presentation_polish)
+	_audio_director = AUDIO_DIRECTOR.new()
+	_audio_director.name = "AudioDirector"
+	add_child(_audio_director)
 
 	_camera = Camera3D.new()
 	_camera.name = "GameplayCamera"
@@ -861,6 +867,9 @@ func _apply_settings(settings: Dictionary, persist: bool) -> void:
 		_refresh_onboarding()
 	if _presentation_polish != null:
 		_presentation_polish.call("set_reduced_flash", _settings.get("reduced_flash", false))
+	if _audio_director != null:
+		_audio_director.call("configure_routes")
+		_audio_director.call("set_silent", _settings.get("muted", false))
 	if persist:
 		var save_error: Error = _settings_store.call("save_settings", _settings)
 		if save_error != OK:
@@ -970,12 +979,12 @@ func _drive_manual_activity() -> void:
 		_driver_fail("relay_awakening did not complete through manual controls")
 		return
 	print("M17 manual controls completed relay_awakening without user input")
-	get_tree().quit(0)
+	_quit_client(0)
 
 
 func _driver_fail(message: String) -> void:
 	_fail(message)
-	get_tree().quit(1)
+	_quit_client(1)
 
 
 func _material(color: Color) -> StandardMaterial3D:
@@ -1015,6 +1024,37 @@ func _append_input_log(message: String) -> void:
 
 
 func _validate_playable_slice() -> void:
+	var initial_audio_state: Dictionary = _audio_director.call("presentation_state")
+	if (
+		initial_audio_state.get("fixed_nodes") != 4
+		or initial_audio_state.get("maximum_voices") != 4
+		or not initial_audio_state.get("ambience_looping", false)
+		or initial_audio_state.get("routes") != {"ambience": "Ambience", "door": "Effects", "system": "Interface"}
+	):
+		_fail("M22 audio foundation is not fixed, bounded or loop-ready: %s" % initial_audio_state)
+		get_tree().quit(1)
+		return
+	_audio_director.call("set_silent", true)
+	_audio_director.call("play_system_ready")
+	_audio_director.call("apply_door_state", false, Vector3.ZERO)
+	_audio_director.call("apply_door_state", true, Vector3.ZERO)
+	var silent_audio_state: Dictionary = _audio_director.call("presentation_state")
+	if (
+		silent_audio_state.get("active_voices") != 0
+		or silent_audio_state.get("suppressed", 0) < 2
+		or silent_audio_state.get("requests", {}).get("door_unlock") != 1
+	):
+		_fail("M22 silent mode permits audible or queued cues")
+		get_tree().quit(1)
+		return
+	_audio_director.call("set_silent", false)
+	_audio_director.call("play_system_ready")
+	_audio_director.call("apply_door_state", true, _door.global_position)
+	var audible_audio_state: Dictionary = _audio_director.call("presentation_state")
+	if audible_audio_state.get("active_voices", 0) > 4:
+		_fail("M22 audio foundation exceeds its voice budget")
+		get_tree().quit(1)
+		return
 	var onboarding_validation := ONBOARDING_CONTROLLER.new()
 	onboarding_validation.call("reset", "Full")
 	onboarding_validation.call("note_local", "movement")
@@ -1356,7 +1396,7 @@ func _validate_playable_slice() -> void:
 		or scene_budget.get("lights", 0) != 5
 		or scene_budget.get("shadow_lights", 1) != 0
 		or scene_budget.get("particles", 1) != 0
-		or scene_budget.get("audio_nodes", 1) != 0
+		or scene_budget.get("audio_nodes", 0) != 4
 	):
 		_fail("M21 representative combat peak exceeds its whole-scene performance budget")
 		get_tree().quit(1)
@@ -1403,6 +1443,8 @@ func _validate_playable_slice() -> void:
 	print("M22 entry shell validated: explicit connection, safe identity, focus and retry states are ready")
 	print("M22 settings validated: local persistence, buses, display, guidance and reduced flash are ready")
 	print("M22 onboarding validated: local attempts, authoritative progress and revisitable guidance are ready")
+	print("M22 audio foundation validated: original ambience, bounded cues, routing and silent mode are ready")
+	_audio_director.call("set_silent", true)
 	get_tree().quit(0)
 
 
@@ -1541,7 +1583,16 @@ func _fail(message: String) -> void:
 	if _guidance_label != null:
 		_set_guidance("WHAT HAPPENED?", "This gateway already has an active run. Try again after the current players leave.")
 	if _should_exit_after_flow():
-		get_tree().quit(1)
+		_quit_client(1)
+
+
+func _quit_client(exit_code: int) -> void:
+	if _audio_director != null:
+		_audio_director.call("set_silent", true)
+		_audio_director.queue_free()
+		_audio_director = null
+	await get_tree().process_frame
+	get_tree().quit(exit_code)
 
 
 func _should_exit_after_flow() -> bool:
@@ -1570,3 +1621,5 @@ func _connection_port() -> int:
 func _set_connection_state(state: String, detail: String) -> void:
 	if _entry_shell != null:
 		_entry_shell.call("set_connection_state", state, detail)
+	if state == "Waiting" and _audio_director != null:
+		_audio_director.call("play_system_ready")

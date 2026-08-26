@@ -135,7 +135,7 @@ func _build_panel() -> void:
 	_guidance.add_item("Off")
 	panel.add_child(_guidance)
 
-	var note := _label(panel, "Volumes and mute are ready before audio assets arrive.\nReduced Flash preserves text and state while lowering peripheral pulses.", Vector2(40, 430), 14, NEUTRAL)
+	var note := _label(panel, "Volumes and mute apply immediately to the bounded audio layer.\nReduced Flash preserves text and state while lowering peripheral pulses.", Vector2(40, 430), 14, NEUTRAL)
 	note.size = Vector2(580, 58)
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 
