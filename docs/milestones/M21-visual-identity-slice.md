@@ -1,6 +1,8 @@
 # M21 — Visual Identity Vertical Slice
 
-Status: Blocks 1 through 8 implemented and validated locally; M21 awaits final integration authorization.
+Status: complete, integrated into `main`, and validated locally and in CI.
+
+Integration: PR [#10](https://github.com/iangama/revenant/pull/10) merged as `b62b6dd363537d937a9d52d7728513ebb4b0ff18` on 2026-08-26. The pull-request and post-merge CI runs passed, including formatting, lint, tests, builds, Godot smoke coverage, `0.2.0` packaging, clean extraction, and artifact upload. No tag or release was created.
 
 ## Objective
 
@@ -223,4 +225,4 @@ Block 8 provides three deterministic 1280×720 runtime shots: relay-hub overview
 
 The selected images, reproduction command, 35–45 second narration, performance evidence, disclosure language, and future PR checklist live in `docs/presentation/M21-visual-slice.md`. Captures come directly from the implemented GL Compatibility scene; concept images remain clearly separated documentation references.
 
-Completion of this block closes M21 implementation scope but does not authorize commit, push, PR, merge, tag, release, or version change. Final integration must retain all test evidence, frozen V1 hashes, asset provenance, and the Dockerfile repair as a separately explained operational change.
+Completion of this block closed M21 implementation scope. Final integration retained the test evidence, frozen V1 hashes, asset provenance, and the Dockerfile repair as a separately explained operational change. `VERSION` remains `0.2.0`; no tag or release was created.
