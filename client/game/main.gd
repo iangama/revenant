@@ -14,6 +14,7 @@ const PRESENTATION_POLISH_SCENE := preload("res://presentation/polish/presentati
 const ENTRY_SHELL_SCENE := preload("res://presentation/entry/entry_shell.tscn")
 const SETTINGS_PANEL_SCENE := preload("res://presentation/settings/settings_panel.tscn")
 const SETTINGS_STORE := preload("res://presentation/settings/settings_store.gd")
+const ONBOARDING_CONTROLLER := preload("res://presentation/onboarding/onboarding_controller.gd")
 const M21_CAPTURE_FILENAMES := [
 	"01-relay-hub-overview.png",
 	"02-enemy-telegraphs.png",
@@ -70,12 +71,15 @@ var _settings_store: RefCounted
 var _settings := {}
 var _settings_panel: Control
 var _guidance_mode := "Full"
+var _onboarding: RefCounted
 
 
 func _ready() -> void:
 	_build_playable_scene()
 	_build_entry_shell()
 	_build_settings()
+	_onboarding = ONBOARDING_CONTROLLER.new()
+	_onboarding.call("reset", _guidance_mode)
 	if OS.get_environment("REVENANT_VALIDATE_SLICE") == "1":
 		call_deferred("_validate_playable_slice")
 		return
@@ -84,6 +88,10 @@ func _ready() -> void:
 
 
 func _input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_H:
+		_onboarding.call("toggle")
+		_refresh_onboarding()
+		return
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
 		if _settings_panel != null and _settings_panel.visible:
 			return
@@ -228,6 +236,8 @@ func _run_handshake(username: String, host: String, port: int) -> void:
 		_fail("expected active initial objective")
 		return
 	print("activity %s started with objective %s" % [activity.get("activity_id"), initial_objective.get("objective_id")])
+	_onboarding.call("reset", _guidance_mode)
+	_refresh_onboarding()
 	_set_connection_state("Playing", "Authoritative activity state received.")
 	_entry_shell.call("dismiss")
 	_update_objective_hud(initial_objective)
@@ -447,6 +457,8 @@ func _update_actor(update: Dictionary) -> void:
 		actor.call("play_authoritative_move", previous_position - actor.position)
 	_update_enemy_proximity()
 	if update.get("actor_id") == _player_actor_id and _position_label != null:
+		_onboarding.call("confirm", "movement")
+		_refresh_onboarding()
 		var door_distance := maxi(0, 6 - int(position[0]))
 		_position_label.text = "POSITION  [%d, %d]  •  DOOR %d STEPS" % [position[0], position[2], door_distance]
 	print("actor %d moved to %s" % [update.get("actor_id"), position])
@@ -468,6 +480,7 @@ func _handle_manual_input() -> void:
 	_update_target_highlight()
 	var movement := _ui_movement if _ui_movement != Vector2.ZERO else Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	if movement.length() > 0.2 and now >= _next_move_at:
+		_onboarding.call("note_local", "movement")
 		var player: Node3D = _actors.get(_player_actor_id)
 		if player != null:
 			var step := Vector3(roundi(movement.x), 0, roundi(movement.y))
@@ -479,6 +492,7 @@ func _handle_manual_input() -> void:
 			_append_input_log("MoveIntent %s %s" % [position, "sent" if sent else "FAILED"])
 			_next_move_at = now + 120
 	if (_attack_requested or Input.is_action_just_pressed("attack")) and now >= _next_attack_at:
+		_onboarding.call("note_local", "attack")
 		var use_active_target := _ui_attack_requested
 		_attack_requested = false
 		_ui_attack_requested = false
@@ -517,10 +531,15 @@ func _handle_manual_message(message: Dictionary) -> void:
 			_render_actor(message)
 			if message.get("actor_kind") == "enemy":
 				_current_enemy_id = message.get("actor_id")
+				if message.get("archetype") == "warden":
+					_onboarding.call("confirm", "warden_spawn")
+					_refresh_onboarding()
 				_update_enemy_proximity()
 				_status_label.text = "BOSS ONLINE  •  WARDEN"
 				_set_guidance("STEP 3  •  DEFEAT THE WARDEN", "Aim at the purple Warden and attack until its HP reaches zero.")
 		"ActivityComplete":
+			_onboarding.call("confirm", "completion")
+			_refresh_onboarding()
 			_activity_complete = true
 			_presentation_polish.call("play_authoritative_completion")
 			_status_label.text = "ACTIVITY COMPLETE  •  RELAY AWAKENED"
@@ -534,6 +553,8 @@ func _handle_manual_message(message: Dictionary) -> void:
 			_apply_progression(message)
 		"EquipmentChanged":
 			_apply_equipment_change(message)
+			_onboarding.call("confirm", "equipment")
+			_refresh_onboarding()
 		_:
 			_fail("unexpected manual gameplay message: %s" % message.get("type"))
 
@@ -589,6 +610,9 @@ func _update_enemy_proximity() -> void:
 
 
 func _handle_damage_feedback(message: Dictionary) -> void:
+	if message.get("source_actor_id") == _player_actor_id:
+		_onboarding.call("confirm", "damage")
+		_refresh_onboarding()
 	var source_id: int = message.get("source_actor_id")
 	var target_id: int = message.get("target_actor_id")
 	var remaining: int = message.get("remaining_health")
@@ -629,6 +653,9 @@ func _handle_damage_feedback(message: Dictionary) -> void:
 
 
 func _update_objective_hud(objective: Dictionary) -> void:
+	if objective.get("objective_type") == "ReachArea" and objective.get("state") == "Active":
+		_onboarding.call("confirm", "door_objective")
+		_refresh_onboarding()
 	var label := str(objective.get("objective_id", "unknown")).replace("_", " ").to_upper()
 	var progress: int = objective.get("progress", 0)
 	var target: int = objective.get("target", 0)
@@ -829,6 +856,9 @@ func _on_settings_applied(settings: Dictionary) -> void:
 func _apply_settings(settings: Dictionary, persist: bool) -> void:
 	_settings = _settings_store.call("apply", settings)
 	_guidance_mode = _settings.get("guidance_mode", "Full")
+	if _onboarding != null:
+		_onboarding.call("set_mode", _guidance_mode)
+		_refresh_onboarding()
 	if _presentation_polish != null:
 		_presentation_polish.call("set_reduced_flash", _settings.get("reduced_flash", false))
 	if persist:
@@ -965,6 +995,16 @@ func _set_guidance(title: String, instructions: String) -> void:
 		_guidance_label.text = "%s\n\n%s" % [title, instructions]
 
 
+func _refresh_onboarding() -> void:
+	if _onboarding == null or _guidance_label == null:
+		return
+	var guidance: Dictionary = _onboarding.call("guidance")
+	if not guidance.get("visible", false):
+		_guidance_label.text = "GUIDANCE OFF" if _guidance_mode == "Off" else "GUIDANCE HIDDEN\n\nPress H to review this step."
+	else:
+		_guidance_label.text = guidance.get("title", "") if guidance.get("compact", false) else "%s\n\n%s" % [guidance.get("title", ""), guidance.get("instructions", "")]
+
+
 func _append_input_log(message: String) -> void:
 	if _input_log_label == null:
 		return
@@ -975,6 +1015,28 @@ func _append_input_log(message: String) -> void:
 
 
 func _validate_playable_slice() -> void:
+	var onboarding_validation := ONBOARDING_CONTROLLER.new()
+	onboarding_validation.call("reset", "Full")
+	onboarding_validation.call("note_local", "movement")
+	onboarding_validation.call("note_local", "attack")
+	var onboarding_state: Dictionary = onboarding_validation.call("presentation_state")
+	if onboarding_state.get("step") != "Movement":
+		_fail("M22 local onboarding attempts manufacture authoritative progress")
+		get_tree().quit(1)
+		return
+	onboarding_validation.call("confirm", "movement")
+	onboarding_validation.call("confirm", "damage")
+	onboarding_validation.call("confirm", "equipment")
+	onboarding_validation.call("confirm", "door_objective")
+	onboarding_validation.call("confirm", "warden_spawn")
+	onboarding_validation.call("toggle")
+	onboarding_validation.call("toggle")
+	onboarding_validation.call("confirm", "completion")
+	onboarding_state = onboarding_validation.call("presentation_state")
+	if onboarding_state.get("step") != "Completion" or onboarding_state.get("dismissed", true):
+		_fail("M22 onboarding does not follow confirmed evidence or revisitable guidance")
+		get_tree().quit(1)
+		return
 	var entry_state: Dictionary = _entry_shell.call("presentation_state")
 	if (
 		entry_state.get("state") != "Entry"
@@ -1340,6 +1402,7 @@ func _validate_playable_slice() -> void:
 	print("M21 presentation captures validated: reproducible overview, telegraph and combat shots are ready")
 	print("M22 entry shell validated: explicit connection, safe identity, focus and retry states are ready")
 	print("M22 settings validated: local persistence, buses, display, guidance and reduced flash are ready")
+	print("M22 onboarding validated: local attempts, authoritative progress and revisitable guidance are ready")
 	get_tree().quit(0)
 
 

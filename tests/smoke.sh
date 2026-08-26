@@ -137,6 +137,7 @@ if wait_for_gateway; then
       [[ "$slice_output" == *"M21 presentation captures validated"* ]]
       [[ "$slice_output" == *"M22 entry shell validated"* ]]
       [[ "$slice_output" == *"M22 settings validated"* ]]
+      [[ "$slice_output" == *"M22 onboarding validated"* ]]
     fi
 
     kill "$server_pid"
