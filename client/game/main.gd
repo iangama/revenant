@@ -11,6 +11,7 @@ const WARDEN_SCENE := preload("res://presentation/enemies/warden/warden.tscn")
 const COMBAT_VFX_SCENE := preload("res://presentation/combat/combat_vfx.tscn")
 const OPERATOR_HUD_SCENE := preload("res://presentation/hud/operator_hud.tscn")
 const PRESENTATION_POLISH_SCENE := preload("res://presentation/polish/presentation_polish.tscn")
+const ENTRY_SHELL_SCENE := preload("res://presentation/entry/entry_shell.tscn")
 const M21_CAPTURE_FILENAMES := [
 	"01-relay-hub-overview.png",
 	"02-enemy-telegraphs.png",
@@ -60,14 +61,19 @@ var _ui_movement := Vector2.ZERO
 var _movement_buttons: Array[Button] = []
 var _attack_button: Button
 var _weapon_buttons: Array[Button] = []
+var _hud_canvas: CanvasLayer
+var _entry_shell: Control
+var _connection_started := false
 
 
 func _ready() -> void:
 	_build_playable_scene()
+	_build_entry_shell()
 	if OS.get_environment("REVENANT_VALIDATE_SLICE") == "1":
 		call_deferred("_validate_playable_slice")
 		return
-	call_deferred("_run_handshake")
+	if _should_auto_connect():
+		call_deferred("_begin_connection", _default_username())
 
 
 func _input(event: InputEvent) -> void:
@@ -82,12 +88,23 @@ func _input(event: InputEvent) -> void:
 		_append_input_log("LEFT CLICK detected")
 
 
-func _run_handshake() -> void:
+func _begin_connection(username: String) -> void:
+	if _connection_started:
+		return
+	_connection_started = true
+	_peer = StreamPeerTCP.new()
+	_receive_buffer.clear()
 	var host := OS.get_environment("REVENANT_GAME_HOST")
 	if host.is_empty():
 		host = DEFAULT_HOST
 	var port_text := OS.get_environment("REVENANT_GAME_PORT")
 	var port := DEFAULT_PORT if port_text.is_empty() else int(port_text)
+	_entry_shell.call("configure_endpoint", host, port)
+	_set_connection_state("Connecting", "Opening a local relay connection to %s:%d." % [host, port])
+	call_deferred("_run_handshake", username, host, port)
+
+
+func _run_handshake(username: String, host: String, port: int) -> void:
 
 	var connect_error := _peer.connect_to_host(host, port)
 	if connect_error != OK:
@@ -103,6 +120,7 @@ func _run_handshake() -> void:
 		_fail("connection to %s:%d timed out" % [host, port])
 		return
 
+	_set_connection_state("Negotiating", "Relay transport connected. Verifying Protocol V2 compatibility.")
 	var hello := {
 		"type": "ClientHello",
 		"protocol_version": PROTOCOL_VERSION,
@@ -126,7 +144,8 @@ func _run_handshake() -> void:
 
 	print("handshake accepted by %s using protocol v%d" % [server_hello.get("server_name"), PROTOCOL_VERSION])
 
-	if not _send_message({"type": "AuthRequest", "username": "revenant-godot"}):
+	_set_connection_state("Authenticating", "Protocol accepted. Requesting the local Operator identity.")
+	if not _send_message({"type": "AuthRequest", "username": username}):
 		_fail("AuthRequest send failed")
 		return
 	var auth_response := await _receive_message(Time.get_ticks_msec() + 5000)
@@ -138,6 +157,7 @@ func _run_handshake() -> void:
 		return
 	print("authenticated local account %s" % auth_response.get("account_id"))
 
+	_set_connection_state("Joining", "Identity accepted. Loading the server-owned character and relay state.")
 	if not _send_message({"type": "CharacterListRequest"}):
 		_fail("CharacterListRequest send failed")
 		return
@@ -179,6 +199,9 @@ func _run_handshake() -> void:
 		_fail("expected EquipmentSnapshot")
 		return
 	_apply_equipment_snapshot(equipment_snapshot)
+	_set_connection_state("Waiting", "Relay joined. Waiting for the server to begin the activity.")
+	_entry_shell.call("dismiss")
+	_hud_canvas.visible = true
 	_status_label.text = "CONNECTED  •  RELAY-HUB"
 	_controls_label.text = "WAITING FOR THE RELAY ACTIVITY..."
 	_set_guidance("GETTING READY", "The server is preparing your encounter. This should take only a moment.")
@@ -191,6 +214,8 @@ func _run_handshake() -> void:
 		_fail("expected active initial objective")
 		return
 	print("activity %s started with objective %s" % [activity.get("activity_id"), initial_objective.get("objective_id")])
+	_set_connection_state("Playing", "Authoritative activity state received.")
+	_entry_shell.call("dismiss")
 	_update_objective_hud(initial_objective)
 
 	var enemy_id := 0
@@ -702,6 +727,7 @@ func _build_playable_scene() -> void:
 	var canvas := CanvasLayer.new()
 	canvas.name = "HUD"
 	add_child(canvas)
+	_hud_canvas = canvas
 	_hud_frame = OPERATOR_HUD_SCENE.instantiate()
 	canvas.add_child(_hud_frame)
 	_hud_frame.call("add_panel", Rect2(24, 24, 620, 210), "OPERATOR TELEMETRY", Color("35d0d0"))
@@ -750,6 +776,18 @@ func _build_playable_scene() -> void:
 	canvas.add_child(_attack_button)
 	_create_weapon_button(canvas, "RIFLE", "pulse_rifle", Vector2(280, 642))
 	_create_weapon_button(canvas, "SIDEARM", "arc_sidearm", Vector2(400, 642))
+	_hud_canvas.visible = false
+
+
+func _build_entry_shell() -> void:
+	var canvas := CanvasLayer.new()
+	canvas.name = "Entry"
+	canvas.layer = 10
+	add_child(canvas)
+	_entry_shell = ENTRY_SHELL_SCENE.instantiate()
+	canvas.add_child(_entry_shell)
+	_entry_shell.call("configure_endpoint", _connection_host(), _connection_port())
+	_entry_shell.connect("connect_requested", _begin_connection)
 
 
 func _hud_label(parent: Node, position: Vector2, size: int, color: Color, text: String) -> Label:
@@ -885,6 +923,42 @@ func _append_input_log(message: String) -> void:
 
 
 func _validate_playable_slice() -> void:
+	var entry_state: Dictionary = _entry_shell.call("presentation_state")
+	if (
+		entry_state.get("state") != "Entry"
+		or not entry_state.get("username_valid", false)
+		or not entry_state.get("connect_enabled", false)
+		or not entry_state.get("mouse_captured", false)
+		or not _entry_shell.call("is_username_valid", "Echo.Runner-1")
+		or _entry_shell.call("is_username_valid", "bad user")
+		or _entry_shell.call("is_username_valid", "")
+	):
+		_fail("M22 entry shell does not expose a safe explicit connection state")
+		get_tree().quit(1)
+		return
+	var entry_capture_path := OS.get_environment("REVENANT_CAPTURE_M22_ENTRY")
+	if not entry_capture_path.is_empty():
+		await get_tree().process_frame
+		await get_tree().process_frame
+		var entry_capture_error := await _save_review_capture(entry_capture_path)
+		if entry_capture_error != OK:
+			_fail("M22 entry shell validation capture could not be saved")
+			get_tree().quit(1)
+			return
+	_entry_shell.call("set_connection_state", "Connecting", "Validation")
+	entry_state = _entry_shell.call("presentation_state")
+	if entry_state.get("state") != "Connecting" or entry_state.get("connect_enabled", true):
+		_fail("M22 entry shell does not prevent duplicate connection actions")
+		get_tree().quit(1)
+		return
+	_entry_shell.call("show_failure", "Validation failure")
+	entry_state = _entry_shell.call("presentation_state")
+	if entry_state.get("state") != "Failed" or not entry_state.get("connect_enabled", false):
+		_fail("M22 entry shell does not provide a keyboard-reachable retry state")
+		get_tree().quit(1)
+		return
+	_entry_shell.call("dismiss")
+	_hud_canvas.visible = true
 	var required_actions := ["move_forward", "move_back", "move_left", "move_right", "attack"]
 	for action in required_actions:
 		if not InputMap.has_action(action):
@@ -1120,6 +1194,7 @@ func _validate_playable_slice() -> void:
 	print("M21 Operator HUD validated: complete M17-M20 state, semantic hierarchy and redundant health feedback are ready")
 	print("M21 presentation polish validated: consistent confirmed feedback and bounded scene budgets are ready")
 	print("M21 presentation captures validated: reproducible overview, telegraph and combat shots are ready")
+	print("M22 entry shell validated: explicit connection, safe identity, focus and retry states are ready")
 	get_tree().quit(0)
 
 
@@ -1244,6 +1319,10 @@ func _decode_string(bytes: PackedByteArray, offset: int, length: int) -> Array:
 
 func _fail(message: String) -> void:
 	push_error("Revenant handshake failed: %s" % message)
+	_connection_started = false
+	if _entry_shell != null and not _should_exit_after_flow():
+		_hud_canvas.visible = false
+		_entry_shell.call("show_failure", message)
 	if _status_label != null:
 		_status_label.text = "SESSION UNAVAILABLE  •  RECONNECT REQUIRED"
 		_status_label.modulate = Color("ff6b6b")
@@ -1259,3 +1338,27 @@ func _fail(message: String) -> void:
 
 func _should_exit_after_flow() -> bool:
 	return OS.get_environment("REVENANT_EXIT_AFTER_FLOW") == "1"
+
+
+func _should_auto_connect() -> bool:
+	return _should_exit_after_flow() or OS.get_environment("REVENANT_VALIDATE_MANUAL_FLOW") == "1"
+
+
+func _default_username() -> String:
+	var username := OS.get_environment("REVENANT_GAME_USERNAME")
+	return "revenant-godot" if username.is_empty() else username
+
+
+func _connection_host() -> String:
+	var host := OS.get_environment("REVENANT_GAME_HOST")
+	return DEFAULT_HOST if host.is_empty() else host
+
+
+func _connection_port() -> int:
+	var port_text := OS.get_environment("REVENANT_GAME_PORT")
+	return DEFAULT_PORT if port_text.is_empty() else int(port_text)
+
+
+func _set_connection_state(state: String, detail: String) -> void:
+	if _entry_shell != null:
+		_entry_shell.call("set_connection_state", state, detail)
