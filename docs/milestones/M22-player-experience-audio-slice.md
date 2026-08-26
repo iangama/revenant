@@ -1,6 +1,6 @@
 # M22 — Player Experience and Audio Slice
 
-Status: planning; implementation has not started.
+Status: Block 1 prepared and validated locally; runtime implementation has not started.
 
 ## Objective
 
@@ -123,3 +123,11 @@ M22 is done when a first-time player can launch the client, understand and initi
 ## Delivery strategy
 
 Planning uses `docs/m22-player-experience-audio-plan`. Runtime work should move to a dedicated `feat/m22-player-experience-audio-slice` branch only after this plan is approved and integrated. Prefer block-aligned commits that keep entry/settings, onboarding, audio assets, and operational fixes reviewable. `VERSION` remains `0.2.0`, and every commit, push, PR, merge, tag, or release remains separately authorized.
+
+## Block 1 checkpoint
+
+Block 1 is represented by [`docs/audio/m22/README.md`](../audio/m22/README.md). It maps the current implicit connection flow into explicit Entry, Connecting, Negotiating, Authenticating, Joining, Waiting, Playing, Completed, and Failed presentation states; defines keyboard/pointer navigation and authoritative onboarding evidence; establishes the sparse mechanical sound vocabulary, proposed bus hierarchy, priority and voice rules; and records provenance requirements.
+
+The baseline was measured from `main` commit `289489de38506cd21eff430ecc095ed8e369df06` with Godot 4.7.1 deterministic slice validation. It remains 109 meshes, 25 materials, five non-shadowing lights, zero permanent particles, zero audio nodes, zero shipping audio files, zero packaged audio bytes, zero decoded audio memory, and zero audible voices. Every M17-M21 validation marker passed, and both frozen V1 hashes remain unchanged.
+
+Block 1 adds no runtime dependency and changes no client, server, protocol, persistence, mechanic, version, tag, or release. Completion of this checkpoint may authorize only Block 2 after separate review.
