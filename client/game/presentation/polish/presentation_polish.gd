@@ -7,6 +7,7 @@ const EDGE_DEPTH := 10.0
 var _edge_bars: Array[ColorRect] = []
 var _confirmed_damage_cues := 0
 var _completion_cues := 0
+var _reduced_flash := false
 
 
 func _ready() -> void:
@@ -22,6 +23,10 @@ func play_confirmed_player_damage() -> void:
 func play_authoritative_completion() -> void:
 	_completion_cues += 1
 	_pulse_edges(INTACT_CYAN, 0.58, 0.55)
+
+
+func set_reduced_flash(enabled: bool) -> void:
+	_reduced_flash = enabled
 
 
 func scene_budget(root: Node) -> Dictionary:
@@ -45,6 +50,7 @@ func presentation_state() -> Dictionary:
 		"completion_cues": _completion_cues,
 		"edge_overlays": _edge_bars.size(),
 		"maximum_screen_coverage": 0.06,
+		"reduced_flash": _reduced_flash,
 	}
 
 
@@ -67,6 +73,9 @@ func _build_edge_feedback() -> void:
 
 
 func _pulse_edges(color: Color, peak_alpha: float, duration: float) -> void:
+	if _reduced_flash:
+		peak_alpha = minf(peak_alpha, 0.18)
+		duration = minf(duration, 0.18)
 	for bar in _edge_bars:
 		bar.color = Color(color, peak_alpha)
 		var tween := create_tween()

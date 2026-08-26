@@ -1,6 +1,7 @@
 extends Control
 
 signal connect_requested(username: String)
+signal settings_requested(focus_source: Control)
 
 const GRAPHITE := Color("10151d")
 const BLUE_PETROL := Color("12313a")
@@ -90,6 +91,10 @@ func presentation_state() -> Dictionary:
 	}
 
 
+func settings_focus_source() -> Control:
+	return _settings_button
+
+
 func _build_shell() -> void:
 	var backdrop := ColorRect.new()
 	backdrop.name = "Backdrop"
@@ -143,8 +148,7 @@ func _build_shell() -> void:
 	_connect_button = _make_button("CONNECT TO RELAY", "Connect", Vector2(42, 374), Vector2(250, 54), CYAN)
 	_connect_button.pressed.connect(_request_connection)
 	_settings_button = _make_button("SETTINGS", "Settings", Vector2(306, 374), Vector2(132, 54), AMBER)
-	_settings_button.disabled = true
-	_settings_button.tooltip_text = "Settings arrive in M22 Block 3."
+	_settings_button.pressed.connect(_request_settings)
 	_quit_button = _make_button("QUIT", "Quit", Vector2(452, 374), Vector2(126, 54), NEUTRAL)
 	_quit_button.pressed.connect(get_tree().quit)
 
@@ -224,3 +228,7 @@ func _request_connection() -> void:
 		_validate_username()
 		return
 	connect_requested.emit(_username.text)
+
+
+func _request_settings() -> void:
+	settings_requested.emit(_settings_button)
