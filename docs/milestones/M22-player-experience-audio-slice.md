@@ -1,6 +1,6 @@
 # M22 — Player Experience and Audio Slice
 
-Status: Blocks 1 through 5 implemented and validated locally; Block 6 awaits separate authorization.
+Status: Blocks 1 through 6 implemented and validated locally; Block 7 awaits separate authorization.
 
 ## Objective
 
@@ -169,3 +169,11 @@ Block 5 adds a fixed four-player audio director: one looping relay-hub ambience 
 The original mono 48 kHz PCM sources are rendered by the deterministic recipe under `docs/audio/m22/synthesis`. Ambience starts as local scene presentation, the healthy-system cue follows the confirmed Waiting state, and the spatial door cue follows only an authoritative open `DoorState`. Every cue retains its existing visual and textual counterpart.
 
 Mute stops all players immediately, suppresses new requests without queuing them, and restarts only the optional ambience after unmute. Deterministic headless validation covers the fixed node count, looping, routing-ready buses, four-voice ceiling, cue suppression, and zero active voices in silent mode. Block 5 changes no server, protocol, persistence, mechanic, frozen V1 artifact, visual budget, version, tag, or release.
+
+## Block 6 checkpoint
+
+Block 6 extends the fixed director to 14 nodes: the four foundation voices, eight reusable spatial combat voices, and two protected non-spatial critical voices. Together with the two foundation system players, interface/player-critical capacity remains four; no cue creates nodes or queues playback at runtime.
+
+Authoritative `ActorUpdate`, `ActorSpawn`, `DamageApplied`, `ActorDestroy`, and `ActivityComplete` evidence drives Operator movement, enemy identity/action, weapon-specific discharge, impact, player damage, defeat, and completion cues. A locally accepted attack intent may play only the short Interface cooldown acknowledgement; deterministic validation proves it cannot manufacture a weapon, impact, damage, defeat, reward, enemy, or completion sound.
+
+Ten additional original mono 48 kHz PCM sources and their hashes are recorded in `docs/audio/m22/README.md` and reproduced by the existing deterministic recipe. Headless validation covers all cue families, routing, silent suppression, decoded bytes, fixed pools, and the 14-voice overall ceiling. Block 6 changes no server, protocol, persistence, mechanic, frozen V1 artifact, visual budget, version, tag, or release.
