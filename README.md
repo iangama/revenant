@@ -26,7 +26,7 @@ The repository has completed **M22 — Player Experience and Audio Slice** on to
 - `archive/clients/v1`: frozen, author-controlled Protocol V1 client and evidence
 - `tools/reconstruction-server`: isolated Protocol V1 backend reconstructed from frozen evidence
 - `client/game`: Godot 4 project skeleton
-- `client/game/protocol`: Godot wire codec and incremental client transport boundary
+- `client/game/protocol`: Godot wire codec and bounded framed TCP transport
 - `infra`: local PostgreSQL and gateway containers
 - `docs`: architecture, protocol, and milestone records
 - `tests`: canonical smoke flow

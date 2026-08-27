@@ -50,3 +50,9 @@ Protocol and transport code must not access HUD nodes, audio players, settings, 
 ## Block 2 result
 
 The codec extraction creates the first enforced dependency seam. It reduces `main.gd` by 98 net lines after the new boundary assertion while adding no node, socket, timer, signal, singleton, or runtime allocation beyond one `RefCounted` codec instance owned for the scene lifetime.
+
+## Block 3 result
+
+The framed transport creates the second dependency seam and is the sole owner of the TCP peer and receive buffer. `main.gd` retains connection-state presentation, handshake ordering, and one-line wrappers for send, awaited receive, and nonblocking receive; it no longer knows how frames are assembled, buffered, decoded, or read from the socket.
+
+The node boundary preserves the existing asynchronous model rather than introducing signals or a background loop. This keeps deadlines tied to the same monotonic clock and scene frames while preventing transport code from reaching into session or presentation state.
