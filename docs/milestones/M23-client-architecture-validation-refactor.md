@@ -53,5 +53,4 @@ Transport is deliberately deferred. Although framing is cohesive, it owns socket
 
 `client/game/protocol/messagepack_codec.gd` owns map/array/string/integer encoding, supported value decoding, and codec-local failure state. `main.gd` now depends on one explicit codec instance and no longer implements wire primitives or owns `_encode_failed`.
 
-The extraction preserves the existing error text, supported markers, signed fixint representation, byte order, map/array behavior, and empty-result failure contract. The isolated Godot slice passes every M17–M22 marker with no `ObjectDB` warnings. `main.gd` is reduced from 1,763 to 1,652 lines. No server, protocol schema, message ordering, persistence, mechanic, presentation asset, frozen artifact, version, tag, or release changes.
-
+The extraction preserves the existing error text, supported markers, signed fixint representation, byte order, map/array behavior, and empty-result failure contract. The isolated Godot slice passes every M17–M23 marker with no `ObjectDB` warnings. `main.gd` is reduced from 1,763 to 1,665 lines after adding the codec-specific validation. No server, protocol schema, message ordering, persistence, mechanic, presentation asset, frozen artifact, version, tag, or release changes.

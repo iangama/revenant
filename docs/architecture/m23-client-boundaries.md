@@ -49,4 +49,4 @@ Protocol and transport code must not access HUD nodes, audio players, settings, 
 
 ## Block 2 result
 
-The codec extraction creates the first enforced dependency seam. It reduces `main.gd` by 111 net lines while adding no node, socket, timer, signal, singleton, or runtime allocation beyond one `RefCounted` codec instance owned for the scene lifetime.
+The codec extraction creates the first enforced dependency seam. It reduces `main.gd` by 98 net lines after the new boundary assertion while adding no node, socket, timer, signal, singleton, or runtime allocation beyond one `RefCounted` codec instance owned for the scene lifetime.
