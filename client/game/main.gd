@@ -16,6 +16,7 @@ const SETTINGS_PANEL_SCENE := preload("res://presentation/settings/settings_pane
 const SETTINGS_STORE := preload("res://presentation/settings/settings_store.gd")
 const ONBOARDING_CONTROLLER := preload("res://presentation/onboarding/onboarding_controller.gd")
 const AUDIO_DIRECTOR := preload("res://presentation/audio/audio_director.gd")
+const MESSAGEPACK_CODEC := preload("res://protocol/messagepack_codec.gd")
 const M21_CAPTURE_FILENAMES := [
 	"01-relay-hub-overview.png",
 	"02-enemy-telegraphs.png",
@@ -60,7 +61,7 @@ var _equipment_label: Label
 var _input_events: Array[String] = []
 var _attack_requested := false
 var _ui_attack_requested := false
-var _encode_failed := false
+var _messagepack: RefCounted = MESSAGEPACK_CODEC.new()
 var _ui_movement := Vector2.ZERO
 var _movement_buttons: Array[Button] = []
 var _attack_button: Button
@@ -356,9 +357,8 @@ func _run_handshake(username: String, host: String, port: int) -> void:
 
 
 func _send_message(value: Dictionary) -> bool:
-	_encode_failed = false
-	var payload := _encode_map(value)
-	if _encode_failed or payload.is_empty():
+	var payload: PackedByteArray = _messagepack.call("encode_map", value)
+	if _messagepack.call("has_failed") or payload.is_empty():
 		_append_input_log("Protocol encode FAILED: %s" % value.get("type", "unknown"))
 		return false
 	var frame := PackedByteArray([
@@ -389,7 +389,7 @@ func _receive_message(deadline: int) -> Dictionary:
 	if _receive_buffer.size() < payload_size + 4:
 		return {}
 
-	var decoded := _decode_value(_receive_buffer.slice(4, payload_size + 4), 0)
+	var decoded: Array = _messagepack.call("decode_value", _receive_buffer.slice(4, payload_size + 4))
 	_receive_buffer = _receive_buffer.slice(payload_size + 4)
 	if decoded.is_empty() or not (decoded[0] is Dictionary):
 		return {}
@@ -578,7 +578,7 @@ func _try_receive_message() -> Dictionary:
 	var payload_size := (_receive_buffer[0] << 24) | (_receive_buffer[1] << 16) | (_receive_buffer[2] << 8) | _receive_buffer[3]
 	if payload_size > MAX_FRAME_SIZE or _receive_buffer.size() < payload_size + 4:
 		return {}
-	var decoded := _decode_value(_receive_buffer.slice(4, payload_size + 4), 0)
+	var decoded: Array = _messagepack.call("decode_value", _receive_buffer.slice(4, payload_size + 4))
 	_receive_buffer = _receive_buffer.slice(payload_size + 4)
 	if decoded.is_empty() or not (decoded[0] is Dictionary):
 		return {}
@@ -1317,8 +1317,20 @@ func _validate_playable_slice() -> void:
 		_fail("M21 Operator HUD does not preserve its hierarchy, semantic roles or authoritative health state")
 		get_tree().quit(1)
 		return
-	if _encode_array([-12, 0, 12]) != PackedByteArray([0x93, 0xf4, 0x00, 0x0c]):
+	if _messagepack.call("encode_array", [-12, 0, 12]) != PackedByteArray([0x93, 0xf4, 0x00, 0x0c]):
 		_fail("M17 movement encoder does not support signed relay-hub coordinates")
+		get_tree().quit(1)
+		return
+	var codec_fixture := {"type": "MoveIntent", "position": [6, 0, 0]}
+	var codec_payload: PackedByteArray = _messagepack.call("encode_map", codec_fixture)
+	var codec_decoded: Array = _messagepack.call("decode_value", codec_payload)
+	if (
+		_messagepack.call("has_failed")
+		or codec_decoded.is_empty()
+		or codec_decoded[0] != codec_fixture
+		or codec_decoded[1] != codec_payload.size()
+	):
+		_fail("M23 extracted MessagePack codec does not preserve the supported wire subset")
 		get_tree().quit(1)
 		return
 	var environment_state: Dictionary = _environment.call("presentation_state")
@@ -1528,6 +1540,7 @@ func _validate_playable_slice() -> void:
 	print("M22 audio foundation validated: original ambience, bounded cues, routing and silent mode are ready")
 	print("M22 combat audio validated: Operator, weapons, enemies, confirmed damage, defeat and interface cues are ready")
 	print("M22 integration evidence validated: mix measurement and reproducible review captures are ready")
+	print("M23 MessagePack boundary validated: exact signed bytes and supported round-trip are preserved")
 	_audio_director.call("shutdown")
 	_audio_director.queue_free()
 	_audio_director = null
@@ -1591,117 +1604,6 @@ func _save_review_capture(path: String) -> Error:
 	if capture_image == null:
 		return ERR_CANT_CREATE
 	return capture_image.save_png(path)
-
-
-func _encode_map(value: Dictionary) -> PackedByteArray:
-	var bytes := PackedByteArray([0x80 | value.size()])
-	for key in value:
-		bytes.append_array(_encode_string(key))
-		var item = value[key]
-		if item is String:
-			bytes.append_array(_encode_string(item))
-		elif item is int:
-			bytes.append_array(_encode_integer(item))
-		elif item is Array:
-			bytes.append_array(_encode_array(item))
-		else:
-			push_error("unsupported M1 MessagePack value")
-			_encode_failed = true
-	return bytes
-
-
-func _encode_array(value: Array) -> PackedByteArray:
-	var bytes := PackedByteArray([0x90 | value.size()])
-	for item in value:
-		if item is int:
-			bytes.append_array(_encode_integer(item))
-		else:
-			push_error("unsupported M8 MessagePack array value")
-			_encode_failed = true
-	return bytes
-
-
-func _encode_integer(value: int) -> PackedByteArray:
-	if value >= 0 and value <= 127:
-		return PackedByteArray([value])
-	if value >= -32 and value < 0:
-		return PackedByteArray([256 + value])
-	push_error("unsupported MessagePack integer value: %d" % value)
-	_encode_failed = true
-	return PackedByteArray()
-
-
-func _encode_string(value: String) -> PackedByteArray:
-	var utf8 := value.to_utf8_buffer()
-	var bytes := PackedByteArray()
-	if utf8.size() <= 31:
-		bytes.append(0xa0 | utf8.size())
-	else:
-		bytes.append(0xd9)
-		bytes.append(utf8.size())
-	bytes.append_array(utf8)
-	return bytes
-
-
-func _decode_value(bytes: PackedByteArray, offset: int) -> Array:
-	if offset >= bytes.size():
-		return []
-	var marker := bytes[offset]
-	if marker <= 0x7f:
-		return [marker, offset + 1]
-	if marker >= 0xa0 and marker <= 0xbf:
-		return _decode_string(bytes, offset + 1, marker & 0x1f)
-	if marker >= 0x80 and marker <= 0x8f:
-		var result := {}
-		var cursor := offset + 1
-		for _entry in range(marker & 0x0f):
-			var key := _decode_value(bytes, cursor)
-			if key.is_empty():
-				return []
-			cursor = key[1]
-			var item := _decode_value(bytes, cursor)
-			if item.is_empty():
-				return []
-			cursor = item[1]
-			result[key[0]] = item[0]
-		return [result, cursor]
-	if marker >= 0x90 and marker <= 0x9f:
-		var result := []
-		var cursor := offset + 1
-		for _entry in range(marker & 0x0f):
-			var item := _decode_value(bytes, cursor)
-			if item.is_empty():
-				return []
-			cursor = item[1]
-			result.append(item[0])
-		return [result, cursor]
-	if marker == 0xc2:
-		return [false, offset + 1]
-	if marker == 0xc3:
-		return [true, offset + 1]
-	if marker == 0xcc and offset + 1 < bytes.size():
-		return [bytes[offset + 1], offset + 2]
-	if marker == 0xcd and offset + 2 < bytes.size():
-		return [(bytes[offset + 1] << 8) | bytes[offset + 2], offset + 3]
-	if marker == 0xce and offset + 4 < bytes.size():
-		var value32 := 0
-		for index in range(1, 5):
-			value32 = (value32 << 8) | bytes[offset + index]
-		return [value32, offset + 5]
-	if marker == 0xcf and offset + 8 < bytes.size():
-		var value64 := 0
-		for index in range(1, 9):
-			value64 = (value64 << 8) | bytes[offset + index]
-		return [value64, offset + 9]
-	if marker == 0xd9 and offset + 1 < bytes.size():
-		return _decode_string(bytes, offset + 2, bytes[offset + 1])
-	return []
-
-
-func _decode_string(bytes: PackedByteArray, offset: int, length: int) -> Array:
-	if offset + length > bytes.size():
-		return []
-	return [bytes.slice(offset, offset + length).get_string_from_utf8(), offset + length]
 
 
 func _fail(message: String) -> void:

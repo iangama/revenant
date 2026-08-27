@@ -2,7 +2,7 @@
 
 Revenant is an original game-engineering and software-preservation project. It will evolve into a small online game, an authoritative client-server runtime, and eventually a controlled compatibility laboratory for old builds of Revenant itself.
 
-The repository currently implements **M22 — Player Experience and Audio Slice** on top of the published 0.2.0 baseline. The playable `relay_awakening` slice retains its server-authoritative inventory, progression, loadout, combat, and activity flow while the Godot client adds an explicit entry shell, local presentation settings, contextual onboarding, and a bounded original mechanical audio identity to the M21 visual presentation. M22 does not change the published version or create a release.
+The repository has completed **M22 — Player Experience and Audio Slice** on top of the published 0.2.0 baseline and has begun **M23 — Client Architecture and Validation Refactor**. The playable `relay_awakening` slice retains its server-authoritative inventory, progression, loadout, combat, and activity flow while M23 incrementally separates client protocol, transport, projection, input, presentation, and validation responsibilities without changing behavior or the published version.
 
 ## Repository map
 
@@ -26,7 +26,7 @@ The repository currently implements **M22 — Player Experience and Audio Slice*
 - `archive/clients/v1`: frozen, author-controlled Protocol V1 client and evidence
 - `tools/reconstruction-server`: isolated Protocol V1 backend reconstructed from frozen evidence
 - `client/game`: Godot 4 project skeleton
-- `client/protocol`: future client protocol boundary
+- `client/game/protocol`: Godot wire codec and incremental client transport boundary
 - `infra`: local PostgreSQL and gateway containers
 - `docs`: architecture, protocol, and milestone records
 - `tests`: canonical smoke flow
