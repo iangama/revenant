@@ -2,7 +2,7 @@
 
 Revenant is an original game-engineering and software-preservation project. It will evolve into a small online game, an authoritative client-server runtime, and eventually a controlled compatibility laboratory for old builds of Revenant itself.
 
-The repository currently implements **M21 — Visual Identity Vertical Slice** on top of the published 0.2.0 baseline containing M17 through M20. The playable `relay_awakening` slice retains its server-authoritative inventory, progression, loadout, combat, and activity flow while the Godot client presents the original Operator, enemy families, modular relay hub, combat feedback, and reorganized HUD. M21 does not change the published version or create a release.
+The repository currently implements **M22 — Player Experience and Audio Slice** on top of the published 0.2.0 baseline. The playable `relay_awakening` slice retains its server-authoritative inventory, progression, loadout, combat, and activity flow while the Godot client adds an explicit entry shell, local presentation settings, contextual onboarding, and a bounded original mechanical audio identity to the M21 visual presentation. M22 does not change the published version or create a release.
 
 ## Repository map
 
@@ -73,7 +73,7 @@ Do not commit `.env`; the checked-in example contains local-only defaults.
 
 Open `http://127.0.0.1:4173` for the Inspector. The container serves the static application and proxies its read-only `/api/inspector` requests to the gateway.
 
-Open `client/game/project.godot` with Godot 4.7.1 to play the vertical slice. Use WASD, arrow keys, or the on-screen directional pad to move; aim the cursor at the active enemy and click, press Space, or use the on-screen Attack button. After defeating the relay drone, move to `x=6` to open the relay core and fight the Warden. The HUD displays player/enemy HP, objective progress, position and door distance, connection/encounter guidance, input diagnostics, and completion feedback. The gateway prepares a fresh run automatically after all players leave the current session.
+Open `client/game/project.godot` with Godot 4.7.1 to play the vertical slice. The client opens on an explicit local identity and endpoint screen; Settings controls Master, Ambience, Effects, Interface, mute, display mode, guidance density, and reduced flash. Use WASD, arrow keys, or the on-screen directional pad to move; aim the cursor at the active enemy and click, press Space, or use the on-screen Attack button. Press H to revisit contextual guidance and Escape to open in-session settings. After defeating the relay drone, move to `x=6` to open the relay core and fight the Warden. Every audio cue remains optional and has a visual or textual counterpart. The gateway prepares a fresh run automatically after all players leave the current session.
 
 The inventory panel is read-only and reflects server messages. Each successful `relay_awakening` completion grants every participating character one persisted `relay_core_fragment`.
 

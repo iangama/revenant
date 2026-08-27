@@ -1,6 +1,6 @@
 # M22 experience and audio direction
 
-Status: Block 1 direction accepted; Block 5 foundation and Block 6 combat assets have complete runtime provenance below.
+Status: Blocks 1 through 8 accepted; foundation, combat, integration measurement, runtime provenance, and reproducible evidence are recorded.
 
 ## Client experience map
 
@@ -167,3 +167,15 @@ The cumulative deterministic recipe also renders the following original characte
 | `completion.wav` | Confirmed activity completion / Effects non-spatial | 0.60 s | 57,644 | `7a4d739d2f2928e2e7b48c7ae94db147130f1137325683cc2634f1f25d6d437d` |
 
 Block 6 adds 265,400 packaged bytes and 264,960 decoded PCM bytes. The cumulative M22 audio totals are 741,692 packaged bytes and 741,120 decoded bytes across 13 sources. Runtime capacity is 14 fixed voices: four foundation, eight combat, and two additional critical players; the combined Interface/player-critical allocation remains four.
+
+## Block 7 graphical measurement checkpoint
+
+Run `scripts/measure-m22.sh` from the repository root to exercise the representative combat mix through Godot's Master bus and print the combined level, captured sample count, peak voices, and graphical frame time. The measurement is opt-in and leaves the canonical headless smoke unchanged. It rejects an empty capture, a mixed peak above -3 dBFS, or more than 14 simultaneous voices.
+
+The 2026-08-27 run used Godot 4.7.1 GL Compatibility at 1280x720 on Mesa llvmpipe. Thirty rendered frames averaged 18.403 ms and reached 37.446 ms; this software-renderer number is an environment-specific review measurement, not a shipping hardware target. The representative mix captured 7,680 stereo frames, peaked at -17.44 dBFS, measured -26.93 dBFS RMS, and reached seven simultaneous voices. The result preserves substantial output headroom and stays below the fixed voice ceiling.
+
+PulseAudio and ALSA output were unavailable in the measurement environment, so Godot used its dummy output driver while the Master-bus capture continued to receive the mixed samples. Cue routing, mute behavior, concurrency, spatial configuration, transitions, visual/textual equivalence, and objective mixed level were validated there; subjective listening was completed separately through the Windows host.
+
+The earlier exit warnings were audio-thread teardown artifacts rather than retained scene nodes. Verbose diagnostics identified only stopped `AudioStreamWAV` and `AudioStreamPlaybackWAV` instances. Allowing the audio server 100 ms to drain after stream removal eliminated the warnings from the isolated slice and from both automatic and manual Godot smoke flows.
+
+The physical-output listening gate was accepted on 2026-08-27 after all 13 WAV families were reproduced through the Windows host. No subjective rebalancing request remained, so Block 7 closed without changing the deterministic source exports or their hashes.
