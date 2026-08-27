@@ -1,6 +1,6 @@
 # M22 — Player Experience and Audio Slice
 
-Status: Blocks 1 through 6 implemented and validated locally; Block 7 awaits separate authorization.
+Status: Blocks 1 through 8 implemented and validated; full-project gate passed locally on 2026-08-27.
 
 ## Objective
 
@@ -177,3 +177,17 @@ Block 6 extends the fixed director to 14 nodes: the four foundation voices, eigh
 Authoritative `ActorUpdate`, `ActorSpawn`, `DamageApplied`, `ActorDestroy`, and `ActivityComplete` evidence drives Operator movement, enemy identity/action, weapon-specific discharge, impact, player damage, defeat, and completion cues. A locally accepted attack intent may play only the short Interface cooldown acknowledgement; deterministic validation proves it cannot manufacture a weapon, impact, damage, defeat, reward, enemy, or completion sound.
 
 Ten additional original mono 48 kHz PCM sources and their hashes are recorded in `docs/audio/m22/README.md` and reproduced by the existing deterministic recipe. Headless validation covers all cue families, routing, silent suppression, decoded bytes, fixed pools, and the 14-voice overall ceiling. Block 6 changes no server, protocol, persistence, mechanic, frozen V1 artifact, visual budget, version, tag, or release.
+
+## Block 7 checkpoint
+
+Graphical integration measurement is reproducible through `scripts/measure-m22.sh`. The 2026-08-27 Mesa llvmpipe run measured 18.403 ms mean and 37.446 ms maximum frame time across 30 rendered frames. The representative Master-bus mix captured 7,680 stereo frames at -17.44 dBFS peak and -26.93 dBFS RMS with seven simultaneous voices, retaining both the accepted output headroom and the 14-voice ceiling.
+
+The harness validates non-empty mixed output, at least 3 dB of peak headroom, fixed concurrency, and deterministic teardown. The former `ObjectDB` exit warnings were stopped audio playback resources awaiting the audio thread, not retained scene nodes; a bounded 100 ms drain after stream removal eliminated them in the isolated, automatic, and manual flows. The graphical measurement environment had no physical PulseAudio or ALSA output and fell back to Godot's dummy driver, so its objective result was followed by a separate physical-output listening gate.
+
+Physical-output review of all 13 cue families was accepted on 2026-08-27 without a rebalancing request. Block 7 is complete.
+
+## Block 8 checkpoint
+
+`scripts/capture-m22.sh` reproducibly captures Entry, Settings, contextual onboarding, and representative combat runtime at 1280x720. The same run records a 46-frame, 1.53-second MJPEG/PCM AVI at 30 FPS and verifies SHA-256 for all five artifacts. Provenance, exact hashes, purposes, formats, and the documentation-only 4,071,503-byte evidence budget are recorded in `docs/art/m22/README.md`.
+
+The shipping presentation budget remains 109 representative meshes, 25 materials, five non-shadowing lights, zero permanent particles, 14 fixed audio nodes, 741,692 packaged audio bytes, 741,120 decoded bytes, and a measured peak of seven voices. `VERSION` remains `0.2.0`; Block 8 changes no server, protocol, persistence, mechanics, frozen V1 artifact, tag, or release. The M22 implementation blocks are complete, and the final `make check` gate passed locally on 2026-08-27.

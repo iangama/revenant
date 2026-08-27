@@ -1227,6 +1227,16 @@ func _validate_playable_slice() -> void:
 		return
 	_entry_shell.call("dismiss")
 	_hud_canvas.visible = true
+	_status_label.text = "RELAY READY  •  WAITING FOR ACTIVITY"
+	_controls_label.text = "WASD / ARROWS MOVE  •  AIM + CLICK / SPACE ATTACK  •  H HELP  •  ESC SETTINGS"
+	_refresh_onboarding()
+	var onboarding_capture_path := OS.get_environment("REVENANT_CAPTURE_M22_ONBOARDING")
+	if not onboarding_capture_path.is_empty():
+		var onboarding_capture_error := await _save_review_capture(onboarding_capture_path)
+		if onboarding_capture_error != OK:
+			_fail("M22 onboarding validation capture could not be saved")
+			get_tree().quit(1)
+			return
 	_apply_settings({
 		"master_volume": 0.6,
 		"ambience_volume": 0.5,
@@ -1461,6 +1471,20 @@ func _validate_playable_slice() -> void:
 			_fail("M21 combat capture could not be saved")
 			get_tree().quit(1)
 			return
+	var runtime_capture_path := OS.get_environment("REVENANT_CAPTURE_M22_RUNTIME")
+	if not runtime_capture_path.is_empty():
+		_status_label.text = "ENGAGED  •  CONFIRMED COMBAT FEEDBACK"
+		_objective_label.text = "OBJECTIVE  •  DEFEAT THE WARDEN"
+		_enemy_health_label.text = "ENEMY  WARDEN  •  020 / 120 HP"
+		_enemy_health_bar.max_value = 120
+		_enemy_health_bar.value = 20
+		_onboarding.call("confirm", "warden_spawn")
+		_refresh_onboarding()
+		var runtime_capture_error := await _save_review_capture(runtime_capture_path)
+		if runtime_capture_error != OK:
+			_fail("M22 runtime validation capture could not be saved")
+			get_tree().quit(1)
+			return
 	var capture_path := OS.get_environment("REVENANT_CAPTURE_SLICE")
 	if not capture_path.is_empty():
 		await get_tree().process_frame
@@ -1475,7 +1499,18 @@ func _validate_playable_slice() -> void:
 			_fail("M21 visual validation capture could not be saved")
 			get_tree().quit(1)
 			return
+	if OS.get_environment("REVENANT_MEASURE_M22") == "1":
+		var measurement := await _measure_m22_presentation(operator, drone, warden)
+		if (
+			measurement.get("captured_frames", 0) <= 0
+			or measurement.get("peak_dbfs", 0.0) > -3.0
+			or measurement.get("peak_voices", 0) > 14
+		):
+			_fail("M22 graphical presentation exceeds its measured output or voice budget: %s" % measurement)
+			get_tree().quit(1)
+			return
 	operator.queue_free()
+	await get_tree().process_frame
 	print("M17 playable slice validated: camera, HUD, movement, aiming and attack inputs are ready")
 	print("M18 inventory HUD validated: authoritative snapshot and loot presentation are ready")
 	print("M19 progression HUD validated: authoritative experience and level presentation are ready")
@@ -1492,11 +1527,62 @@ func _validate_playable_slice() -> void:
 	print("M22 onboarding validated: local attempts, authoritative progress and revisitable guidance are ready")
 	print("M22 audio foundation validated: original ambience, bounded cues, routing and silent mode are ready")
 	print("M22 combat audio validated: Operator, weapons, enemies, confirmed damage, defeat and interface cues are ready")
+	print("M22 integration evidence validated: mix measurement and reproducible review captures are ready")
 	_audio_director.call("shutdown")
 	_audio_director.queue_free()
 	_audio_director = null
 	await get_tree().process_frame
+	await get_tree().create_timer(0.1).timeout
 	get_tree().quit(0)
+
+
+func _measure_m22_presentation(operator: Node3D, drone: Node3D, warden: Node3D) -> Dictionary:
+	var master_bus := AudioServer.get_bus_index("Master")
+	var effect_index := AudioServer.get_bus_effect_count(master_bus)
+	var capture := AudioEffectCapture.new()
+	AudioServer.add_bus_effect(master_bus, capture, effect_index)
+	await get_tree().process_frame
+	capture.clear_buffer()
+	_audio_director.call("play_confirmed_move", operator.global_position)
+	_audio_director.call("play_confirmed_attack", "pulse_rifle", operator.global_position)
+	_audio_director.call("play_enemy_presence", "relay-drone", drone.global_position)
+	_audio_director.call("play_enemy_presence", "warden", warden.global_position)
+	_audio_director.call("play_confirmed_impact", drone.global_position)
+	_audio_director.call("play_player_damage")
+	_audio_director.call("play_completion")
+	var frame_times_ms: Array[float] = []
+	var peak_voices := 0
+	for _frame in range(30):
+		var started_at := Time.get_ticks_usec()
+		await get_tree().process_frame
+		frame_times_ms.append(float(Time.get_ticks_usec() - started_at) / 1000.0)
+		peak_voices = maxi(peak_voices, int(_audio_director.call("presentation_state").get("active_voices", 0)))
+	var captured_frames := capture.get_frames_available()
+	var samples := capture.get_buffer(captured_frames)
+	var peak := 0.0
+	var square_sum := 0.0
+	for sample in samples:
+		peak = maxf(peak, maxf(absf(sample.x), absf(sample.y)))
+		square_sum += sample.x * sample.x + sample.y * sample.y
+	AudioServer.remove_bus_effect(master_bus, effect_index)
+	var frame_sum := 0.0
+	var frame_max := 0.0
+	for frame_time in frame_times_ms:
+		frame_sum += frame_time
+		frame_max = maxf(frame_max, frame_time)
+	var rms := sqrt(square_sum / float(samples.size() * 2)) if not samples.is_empty() else 0.0
+	var mean_frame_ms := frame_sum / float(frame_times_ms.size())
+	var peak_dbfs := linear_to_db(peak) if peak > 0.0 else -80.0
+	var rms_dbfs := linear_to_db(rms) if rms > 0.0 else -80.0
+	print("M22 graphical presentation measured: mean %.3f ms/frame, max %.3f ms/frame, mixed peak %.2f dBFS, RMS %.2f dBFS, %d captured stereo frames, %d peak voices" % [mean_frame_ms, frame_max, peak_dbfs, rms_dbfs, captured_frames, peak_voices])
+	return {
+		"mean_frame_ms": mean_frame_ms,
+		"max_frame_ms": frame_max,
+		"peak_dbfs": peak_dbfs,
+		"rms_dbfs": rms_dbfs,
+		"captured_frames": captured_frames,
+		"peak_voices": peak_voices,
+	}
 
 
 func _save_review_capture(path: String) -> Error:
@@ -1643,6 +1729,7 @@ func _quit_client(exit_code: int) -> void:
 		_audio_director.queue_free()
 		_audio_director = null
 	await get_tree().process_frame
+	await get_tree().create_timer(0.1).timeout
 	get_tree().quit(exit_code)
 
 
