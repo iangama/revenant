@@ -1,6 +1,6 @@
 # M23 — Client Architecture and Validation Refactor
 
-Status: Blocks 1 and 2 implemented and validated locally; later blocks require separate review.
+Status: Blocks 1 through 3 implemented and validated locally; later blocks require separate review.
 
 ## Objective
 
@@ -54,3 +54,11 @@ Transport is deliberately deferred. Although framing is cohesive, it owns socket
 `client/game/protocol/messagepack_codec.gd` owns map/array/string/integer encoding, supported value decoding, and codec-local failure state. `main.gd` now depends on one explicit codec instance and no longer implements wire primitives or owns `_encode_failed`.
 
 The extraction preserves the existing error text, supported markers, signed fixint representation, byte order, map/array behavior, and empty-result failure contract. The isolated Godot slice passes every M17–M23 marker with no `ObjectDB` warnings. `main.gd` is reduced from 1,763 to 1,665 lines after adding the codec-specific validation. No server, protocol schema, message ordering, persistence, mechanic, presentation asset, frozen artifact, version, tag, or release changes.
+
+## Block 3 checkpoint
+
+`client/game/protocol/framed_transport.gd` now owns the `StreamPeerTCP`, receive buffer, four-byte big-endian length prefix, 64 KiB frame ceiling, socket polling, deadline waits, MessagePack dependency, complete-frame consumption, and nonblocking receive path. The scene coordinator retains thin send/receive wrappers so its existing input log and handshake/session sequencing remain unchanged.
+
+The transport is a child `Node` because deadline waits advance on `SceneTree.process_frame`; it has no presentation, actor, domain, settings, audio, or validation dependency. Its observable initial state records the fixed ceiling, empty buffer, and socket status for deterministic validation.
+
+The isolated Godot slice passes every M17–M23 marker with no leaks, and `main.gd` is reduced from 1,665 to 1,624 lines after adding the transport-specific assertion and marker. Message bytes, buffer consumption, deadlines, oversized-frame rejection, error-to-empty-result behavior, manual polling, and session message order remain unchanged. No server, protocol schema, persistence, mechanic, presentation, frozen artifact, version, tag, or release changes.

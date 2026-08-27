@@ -1,7 +1,6 @@
 extends Node
 
 const PROTOCOL_VERSION := 2
-const MAX_FRAME_SIZE := 64 * 1024
 const DEFAULT_HOST := "127.0.0.1"
 const DEFAULT_PORT := 7000
 const OPERATOR_SCENE := preload("res://presentation/operator/operator.tscn")
@@ -17,14 +16,14 @@ const SETTINGS_STORE := preload("res://presentation/settings/settings_store.gd")
 const ONBOARDING_CONTROLLER := preload("res://presentation/onboarding/onboarding_controller.gd")
 const AUDIO_DIRECTOR := preload("res://presentation/audio/audio_director.gd")
 const MESSAGEPACK_CODEC := preload("res://protocol/messagepack_codec.gd")
+const FRAMED_TRANSPORT := preload("res://protocol/framed_transport.gd")
 const M21_CAPTURE_FILENAMES := [
 	"01-relay-hub-overview.png",
 	"02-enemy-telegraphs.png",
 	"03-combat-feedback.png",
 ]
 
-var _peer := StreamPeerTCP.new()
-var _receive_buffer := PackedByteArray()
+var _transport: Node
 var _actors := {}
 var _actor_health := {}
 var _actor_max_health := {}
@@ -61,7 +60,6 @@ var _equipment_label: Label
 var _input_events: Array[String] = []
 var _attack_requested := false
 var _ui_attack_requested := false
-var _messagepack: RefCounted = MESSAGEPACK_CODEC.new()
 var _ui_movement := Vector2.ZERO
 var _movement_buttons: Array[Button] = []
 var _attack_button: Button
@@ -78,6 +76,9 @@ var _audio_director: Node3D
 
 
 func _ready() -> void:
+	_transport = FRAMED_TRANSPORT.new()
+	_transport.name = "FramedTransport"
+	add_child(_transport)
 	_build_playable_scene()
 	_build_entry_shell()
 	_build_settings()
@@ -117,8 +118,7 @@ func _begin_connection(username: String) -> void:
 	if _connection_started:
 		return
 	_connection_started = true
-	_peer = StreamPeerTCP.new()
-	_receive_buffer.clear()
+	_transport.call("reset_connection")
 	var host := OS.get_environment("REVENANT_GAME_HOST")
 	if host.is_empty():
 		host = DEFAULT_HOST
@@ -131,17 +131,17 @@ func _begin_connection(username: String) -> void:
 
 func _run_handshake(username: String, host: String, port: int) -> void:
 
-	var connect_error := _peer.connect_to_host(host, port)
+	var connect_error: Error = _transport.call("connect_to_host", host, port)
 	if connect_error != OK:
 		_fail("connection could not start: %s" % error_string(connect_error))
 		return
 
 	var deadline := Time.get_ticks_msec() + 5000
-	while _peer.get_status() == StreamPeerTCP.STATUS_CONNECTING and Time.get_ticks_msec() < deadline:
-		_peer.poll()
+	while _transport.call("connection_status") == StreamPeerTCP.STATUS_CONNECTING and Time.get_ticks_msec() < deadline:
+		_transport.call("poll")
 		await get_tree().process_frame
 
-	if _peer.get_status() != StreamPeerTCP.STATUS_CONNECTED:
+	if _transport.call("connection_status") != StreamPeerTCP.STATUS_CONNECTED:
 		_fail("connection to %s:%d timed out" % [host, port])
 		return
 
@@ -357,55 +357,14 @@ func _run_handshake(username: String, host: String, port: int) -> void:
 
 
 func _send_message(value: Dictionary) -> bool:
-	var payload: PackedByteArray = _messagepack.call("encode_map", value)
-	if _messagepack.call("has_failed") or payload.is_empty():
+	if not _transport.call("send_message", value):
 		_append_input_log("Protocol encode FAILED: %s" % value.get("type", "unknown"))
 		return false
-	var frame := PackedByteArray([
-		(payload.size() >> 24) & 0xff,
-		(payload.size() >> 16) & 0xff,
-		(payload.size() >> 8) & 0xff,
-		payload.size() & 0xff,
-	])
-	frame.append_array(payload)
-	return _peer.put_data(frame) == OK
+	return true
 
 
 func _receive_message(deadline: int) -> Dictionary:
-	while _receive_buffer.size() < 4 and Time.get_ticks_msec() < deadline:
-		_peer.poll()
-		_receive_buffer.append_array(_read_available())
-		await get_tree().process_frame
-	if _receive_buffer.size() < 4:
-		return {}
-
-	var payload_size := (_receive_buffer[0] << 24) | (_receive_buffer[1] << 16) | (_receive_buffer[2] << 8) | _receive_buffer[3]
-	if payload_size > MAX_FRAME_SIZE:
-		return {}
-	while _receive_buffer.size() < payload_size + 4 and Time.get_ticks_msec() < deadline:
-		_peer.poll()
-		_receive_buffer.append_array(_read_available())
-		await get_tree().process_frame
-	if _receive_buffer.size() < payload_size + 4:
-		return {}
-
-	var decoded: Array = _messagepack.call("decode_value", _receive_buffer.slice(4, payload_size + 4))
-	_receive_buffer = _receive_buffer.slice(payload_size + 4)
-	if decoded.is_empty() or not (decoded[0] is Dictionary):
-		return {}
-	return decoded[0]
-
-
-func _read_available() -> PackedByteArray:
-	if _peer.get_status() != StreamPeerTCP.STATUS_CONNECTED:
-		return PackedByteArray()
-	var available := _peer.get_available_bytes()
-	if available <= 0:
-		return PackedByteArray()
-	var result := _peer.get_data(available)
-	if result[0] != OK:
-		return PackedByteArray()
-	return result[1]
+	return await _transport.call("receive_message", deadline)
 
 
 func _render_actor(actor: Dictionary) -> void:
@@ -475,7 +434,7 @@ func _update_actor(update: Dictionary) -> void:
 
 func _run_manual_activity() -> void:
 	_controls_label.text = "WASD / ARROWS  MOVE    •    MOUSE / SPACE  ATTACK"
-	while not _activity_complete and _peer.get_status() == StreamPeerTCP.STATUS_CONNECTED:
+	while not _activity_complete and _transport.call("connection_status") == StreamPeerTCP.STATUS_CONNECTED:
 		_handle_manual_input()
 		var message := _try_receive_message()
 		if not message.is_empty():
@@ -571,18 +530,7 @@ func _handle_manual_message(message: Dictionary) -> void:
 
 
 func _try_receive_message() -> Dictionary:
-	_peer.poll()
-	_receive_buffer.append_array(_read_available())
-	if _receive_buffer.size() < 4:
-		return {}
-	var payload_size := (_receive_buffer[0] << 24) | (_receive_buffer[1] << 16) | (_receive_buffer[2] << 8) | _receive_buffer[3]
-	if payload_size > MAX_FRAME_SIZE or _receive_buffer.size() < payload_size + 4:
-		return {}
-	var decoded: Array = _messagepack.call("decode_value", _receive_buffer.slice(4, payload_size + 4))
-	_receive_buffer = _receive_buffer.slice(payload_size + 4)
-	if decoded.is_empty() or not (decoded[0] is Dictionary):
-		return {}
-	return decoded[0]
+	return _transport.call("try_receive_message")
 
 
 func _aimed_enemy() -> int:
@@ -1317,20 +1265,30 @@ func _validate_playable_slice() -> void:
 		_fail("M21 Operator HUD does not preserve its hierarchy, semantic roles or authoritative health state")
 		get_tree().quit(1)
 		return
-	if _messagepack.call("encode_array", [-12, 0, 12]) != PackedByteArray([0x93, 0xf4, 0x00, 0x0c]):
+	var codec_validation: RefCounted = MESSAGEPACK_CODEC.new()
+	if codec_validation.call("encode_array", [-12, 0, 12]) != PackedByteArray([0x93, 0xf4, 0x00, 0x0c]):
 		_fail("M17 movement encoder does not support signed relay-hub coordinates")
 		get_tree().quit(1)
 		return
 	var codec_fixture := {"type": "MoveIntent", "position": [6, 0, 0]}
-	var codec_payload: PackedByteArray = _messagepack.call("encode_map", codec_fixture)
-	var codec_decoded: Array = _messagepack.call("decode_value", codec_payload)
+	var codec_payload: PackedByteArray = codec_validation.call("encode_map", codec_fixture)
+	var codec_decoded: Array = codec_validation.call("decode_value", codec_payload)
 	if (
-		_messagepack.call("has_failed")
+		codec_validation.call("has_failed")
 		or codec_decoded.is_empty()
 		or codec_decoded[0] != codec_fixture
 		or codec_decoded[1] != codec_payload.size()
 	):
 		_fail("M23 extracted MessagePack codec does not preserve the supported wire subset")
+		get_tree().quit(1)
+		return
+	var transport_state: Dictionary = _transport.call("presentation_state")
+	if (
+		_transport.name != "FramedTransport"
+		or transport_state.get("maximum_frame_size") != 64 * 1024
+		or transport_state.get("buffered_bytes") != 0
+	):
+		_fail("M23 framed transport does not preserve its bounded initial state")
 		get_tree().quit(1)
 		return
 	var environment_state: Dictionary = _environment.call("presentation_state")
@@ -1541,6 +1499,7 @@ func _validate_playable_slice() -> void:
 	print("M22 combat audio validated: Operator, weapons, enemies, confirmed damage, defeat and interface cues are ready")
 	print("M22 integration evidence validated: mix measurement and reproducible review captures are ready")
 	print("M23 MessagePack boundary validated: exact signed bytes and supported round-trip are preserved")
+	print("M23 framed transport validated: socket, buffering, deadlines and 64 KiB ceiling are isolated")
 	_audio_director.call("shutdown")
 	_audio_director.queue_free()
 	_audio_director = null
