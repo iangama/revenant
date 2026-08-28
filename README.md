@@ -29,6 +29,7 @@ The repository has completed **M22 — Player Experience and Audio Slice** on to
 - `client/game/protocol`: Godot wire codec and bounded framed TCP transport
 - `client/game/session`: Protocol V2 connection and initial-session orchestration
 - `client/game/projection`: presentation-neutral authoritative client state
+- `client/game/input`: local movement and attack intent collection
 - `infra`: local PostgreSQL and gateway containers
 - `docs`: architecture, protocol, and milestone records
 - `tests`: canonical smoke flow

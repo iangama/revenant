@@ -1,6 +1,6 @@
 # M23 — Client Architecture and Validation Refactor
 
-Status: Blocks 1 through 5 implemented and validated locally; later blocks require separate review.
+Status: Blocks 1 through 6 implemented and validated locally; later blocks require separate review.
 
 ## Objective
 
@@ -74,3 +74,9 @@ The controller depends only on the framed transport and scene-frame timing. It d
 `client/game/projection/authoritative_state.gd` is now the presentation-neutral owner of server-confirmed player identity, actor records and health, inventory, progression, weapon profiles and selection, objective records, and activity completion. Its mutation surface accepts only the corresponding received messages. It has no scene tree, transport, HUD, input, audio, onboarding, settings, clock, or validation dependency.
 
 `main.gd` retains actor node instantiation and all visual, textual, audio, and guidance reactions; those presentation responsibilities remain deliberately ordered after state application and are deferred to Block 6. Nine authoritative state fields were removed from the coordinator. Its line count rises from 1,542 to 1,560 because each state transition is now explicit at the routing boundary and the deterministic fixture exercises every extracted domain. This is the documented line-budget exception: collapsing those calls into presentation helpers or moving the fixture into production code would obscure authority or prematurely mix Blocks 5 through 7. The complete local gate preserves both activity paths and all prior evidence with version `0.2.0`; no tag or release is part of this block.
+
+## Block 6 checkpoint
+
+`client/game/input/player_intent_controller.gd` now owns keyboard/on-screen movement sampling, attack request consumption, and the existing 120 ms movement and 260 ms attack attempt windows. It returns intent-neutral values to `main.gd`; only the coordinator can submit them to the session, and no local attempt mutates the authoritative projector. Target selection remains presentation-aware in the coordinator.
+
+`client/game/presentation/hud_projection.gd` owns deterministic objective, inventory, progression, and equipment text derived from the Block 5 read model. It has no node, transport, input, audio, or settings dependency. Scene composition and confirmed feedback remain in `main.gd`, which is reduced from 1,560 to 1,558 lines after adding the combined boundary fixture and marker. The complete gate preserves controls, cooldown acknowledgements, exact HUD semantics, both activity paths, prior markers, version `0.2.0`, and frozen evidence; no tag or release is part of this block.
