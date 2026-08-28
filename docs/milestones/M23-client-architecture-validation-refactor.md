@@ -1,6 +1,6 @@
 # M23 — Client Architecture and Validation Refactor
 
-Status: Blocks 1 through 6 integrated; Block 7 implemented and validated locally; Block 8 requires separate review.
+Status: Blocks 1 through 7 integrated; Block 8 implemented and validated locally; M23 ready for final review.
 
 ## Objective
 
@@ -86,3 +86,9 @@ The controller depends only on the framed transport and scene-frame timing. It d
 Four domain-focused harnesses under `client/game/validation` now own the M17–M23 assertions: protocol and controller boundaries, entry/settings/onboarding experience, audio behavior and measurement, and playable presentation. Fixtures cross these boundaries explicitly as nodes, read models, callables, paths, and the scene tree; the harnesses do not discover production state through node paths or singletons and return preserved failure text to the coordinator.
 
 `main.gd` retains validation sequencing, canonical marker emission, common failure handling, audio teardown, and the environment-variable capture contract. The sequence deliberately interleaves harness phases so every M21 and M22 capture observes the same mutations and frame waits as before extraction. The coordinator is reduced from 1,558 to 1,066 lines. The complete local gate preserves all 22 canonical M17–M23 markers, automatic and manual flows, persistence/replay, Inspector, version `0.2.0`, and the frozen V1 hashes. Capture reproduction and final architecture evidence remain deferred to the separately reviewed Block 8; no tag or release is part of this block.
+
+## Block 8 checkpoint
+
+The final ownership map, dependency direction, baseline comparison, validation evidence, and deferred work are recorded in `docs/architecture/m23-client-boundaries.md`. Relative to integrated M22, `main.gd` falls from 1,763 to 1,066 lines and from 52 to 39 state variables. Its 61-function count remains unchanged because composition and routing stay explicit, while nine additional preloads make the extracted boundaries visible at the root instead of hiding their ownership.
+
+The complete local gate passes, as do graphical M21 and M22 reproduction into disposable directories. Both generated checksum manifests verify; the fixed-FPS M22 evidence matches every canonical file byte for byte and remains within its established audio and voice budgets. The 22 canonical M17–M23 validation markers, both activity paths, persistence/replay, Inspector, packaging inputs, Protocol V2 behavior, version `0.2.0`, and frozen V1 hashes remain intact. M23 changes no server authority, protocol schema, persistence, mechanic, presentation asset, tag, or release state.
