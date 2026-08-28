@@ -68,3 +68,9 @@ The session controller creates the third dependency seam and owns the ordered tr
 The authoritative projector creates the fourth dependency seam. Received actor, damage, inventory, reward, progression, equipment, objective, and completion messages update a pure client-side read model before `main.gd` performs any presentation reaction. The read model cannot send intents, poll transport, instantiate nodes, or infer successful outcomes.
 
 The coordinator still owns a separate actor-node registry and consumes projector state when updating scenes and HUD. This distinction is intentional: the projector records what the server confirmed, while the next block will isolate how those facts and local attempts are presented. A deterministic fixture covers every projector domain without requiring a network session.
+
+## Block 6 result
+
+Local control state now terminates at an intent controller: physical and on-screen inputs produce movement or attack attempts plus bounded local cooldown timing, never confirmed movement, damage, equipment, or completion. `main.gd` retains spatial target selection and sends the resulting intent through the session boundary.
+
+HUD formatting now points one way from authoritative projector data to deterministic text. The formatter cannot mutate the read model or scene tree. Node construction, guidance, audio, animation, and other confirmed reactions remain composed by `main.gd`; extracting their broader coordination is deferred rather than coupling presentation code back to protocol or input.

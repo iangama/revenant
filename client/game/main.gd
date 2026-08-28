@@ -17,6 +17,8 @@ const AUDIO_DIRECTOR := preload("res://presentation/audio/audio_director.gd")
 const MESSAGEPACK_CODEC := preload("res://protocol/messagepack_codec.gd")
 const SESSION_CONTROLLER := preload("res://session/session_controller.gd")
 const AUTHORITATIVE_STATE := preload("res://projection/authoritative_state.gd")
+const PLAYER_INTENT_CONTROLLER := preload("res://input/player_intent_controller.gd")
+const HUD_PROJECTION := preload("res://presentation/hud_projection.gd")
 const M21_CAPTURE_FILENAMES := [
 	"01-relay-hub-overview.png",
 	"02-enemy-telegraphs.png",
@@ -25,10 +27,10 @@ const M21_CAPTURE_FILENAMES := [
 
 var _session: Node
 var _authoritative_state := AUTHORITATIVE_STATE.new()
+var _player_intents := PLAYER_INTENT_CONTROLLER.new()
+var _hud_projection := HUD_PROJECTION.new()
 var _actors := {}
 var _current_enemy_id := 0
-var _next_move_at := 0
-var _next_attack_at := 0
 var _camera: Camera3D
 var _environment: Node3D
 var _combat_vfx: Node3D
@@ -50,9 +52,6 @@ var _inventory_label: Label
 var _progression_label: Label
 var _equipment_label: Label
 var _input_events: Array[String] = []
-var _attack_requested := false
-var _ui_attack_requested := false
-var _ui_movement := Vector2.ZERO
 var _movement_buttons: Array[Button] = []
 var _attack_button: Button
 var _weapon_buttons: Array[Button] = []
@@ -100,10 +99,10 @@ func _input(event: InputEvent) -> void:
 		if event.physical_keycode in [KEY_W, KEY_A, KEY_S, KEY_D, KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT]:
 			_append_input_log("KEY %s detected" % event.as_text_physical_keycode())
 		if event.is_action_pressed("attack"):
-			_attack_requested = true
+			_player_intents.call("request_attack", false)
 			_append_input_log("SPACE attack detected")
 	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
-		_attack_requested = true
+		_player_intents.call("request_attack", false)
 		_append_input_log("LEFT CLICK detected")
 
 
@@ -360,8 +359,8 @@ func _handle_manual_input() -> void:
 	var now := Time.get_ticks_msec()
 	_crosshair.position = get_viewport().get_mouse_position() - (_crosshair.size * 0.5)
 	_update_target_highlight()
-	var movement := _ui_movement if _ui_movement != Vector2.ZERO else Input.get_vector("move_left", "move_right", "move_forward", "move_back")
-	if movement.length() > 0.2 and now >= _next_move_at:
+	var movement: Vector2 = _player_intents.call("movement", now)
+	if movement.length() > 0.2:
 		_onboarding.call("note_local", "movement")
 		var player: Node3D = _actors.get(_authoritative_state.player_actor_id)
 		if player != null:
@@ -372,18 +371,16 @@ func _handle_manual_input() -> void:
 			var position := [roundi(target.x), 0, roundi(target.z)]
 			var sent := _send_message({"type": "MoveIntent", "position": position})
 			_append_input_log("MoveIntent %s %s" % [position, "sent" if sent else "FAILED"])
-			_next_move_at = now + 120
-	if (_attack_requested or Input.is_action_just_pressed("attack")) and now >= _next_attack_at:
+			_player_intents.call("consume_movement", now)
+	var attack: Dictionary = _player_intents.call("take_attack", now)
+	if attack.get("requested", false):
 		_onboarding.call("note_local", "attack")
-		var use_active_target := _ui_attack_requested
-		_attack_requested = false
-		_ui_attack_requested = false
-		var target_id := _current_enemy_id if use_active_target else _aimed_enemy()
+		var target_id := _current_enemy_id if attack.get("use_active_target", false) else _aimed_enemy()
 		if target_id != 0:
 			var sent := _send_message({"type": "AttackIntent", "target_actor_id": target_id})
 			_status_label.text = "ATTACK SENT  •  TARGET %d" % target_id if sent else "ATTACK FAILED  •  CONNECTION ERROR"
 			_append_input_log("AttackIntent target %d %s" % [target_id, "sent" if sent else "FAILED"])
-			_next_attack_at = now + 260
+			_player_intents.call("consume_attack", now)
 			if sent:
 				var player: Node3D = _actors.get(_authoritative_state.player_actor_id)
 				if player != null:
@@ -391,8 +388,8 @@ func _handle_manual_input() -> void:
 				_audio_director.call("play_cooldown_acknowledgement")
 		else:
 			_append_input_log("Attack blocked: aim at active enemy")
-	elif _attack_requested:
-		_status_label.text = "WEAPON COOLING  •  %d MS" % (_next_attack_at - now)
+	elif attack.get("cooling", false):
+		_status_label.text = "WEAPON COOLING  •  %d MS" % attack.get("remaining_ms", 0)
 
 
 func _handle_manual_message(message: Dictionary) -> void:
@@ -543,10 +540,7 @@ func _update_objective_hud(objective: Dictionary) -> void:
 	if objective.get("objective_type") == "ReachArea" and objective.get("state") == "Active":
 		_onboarding.call("confirm", "door_objective")
 		_refresh_onboarding()
-	var label := str(objective.get("objective_id", "unknown")).replace("_", " ").to_upper()
-	var progress: int = objective.get("progress", 0)
-	var target: int = objective.get("target", 0)
-	_objective_label.text = "OBJECTIVE  •  %s  [%d/%d]  %s" % [label, progress, target, objective.get("state", "")]
+	_objective_label.text = _hud_projection.call("objective_text", objective)
 	if objective.get("objective_type") == "ReachArea" and objective.get("state") == "Active":
 		_status_label.text = "RELAY DOOR UNLOCKED  •  MOVE TO X=6"
 		_set_guidance("STEP 2  •  OPEN THE CORE", "Hold D to move right until you reach the orange relay door at x=6.")
@@ -566,12 +560,7 @@ func _apply_loot_grant(message: Dictionary) -> void:
 
 
 func _update_inventory_hud() -> void:
-	var lines: Array[String] = ["INVENTORY"]
-	var item_ids := _authoritative_state.inventory.keys()
-	item_ids.sort()
-	for item_id in item_ids:
-		lines.append("%s  x%d" % [str(item_id).replace("_", " ").to_upper(), _authoritative_state.inventory[item_id]])
-	_inventory_label.text = "\n".join(lines)
+	_inventory_label.text = _hud_projection.call("inventory_text", _authoritative_state.inventory)
 
 
 func _apply_progression(message: Dictionary) -> void:
@@ -583,11 +572,7 @@ func _apply_progression(message: Dictionary) -> void:
 
 
 func _update_progression_hud() -> void:
-	_progression_label.text = "PROGRESSION  •  LEVEL %d\nXP %d  •  %d TO NEXT LEVEL" % [
-		_authoritative_state.progression.get("level", 1),
-		_authoritative_state.progression.get("experience", 0),
-		_authoritative_state.progression.get("experience_to_next_level", 500),
-	]
+	_progression_label.text = _hud_projection.call("progression_text", _authoritative_state.progression)
 
 
 func _apply_equipment_snapshot(message: Dictionary) -> void:
@@ -608,12 +593,7 @@ func _apply_equipment_change(message: Dictionary) -> void:
 
 func _update_equipment_hud() -> void:
 	var profile: Dictionary = _authoritative_state.weapon_profiles.get(_authoritative_state.equipped_weapon_item_id, {})
-	_equipment_label.text = "WEAPON  •  %s\nDMG %d  RANGE %d  COOLDOWN %d MS" % [
-		_authoritative_state.equipped_weapon_item_id.replace("_", " ").to_upper(),
-		profile.get("damage", 0),
-		profile.get("range", 0),
-		profile.get("cooldown_ms", 0),
-	]
+	_equipment_label.text = _hud_projection.call("equipment_text", _authoritative_state.equipped_weapon_item_id, profile)
 
 
 func _update_operator_weapon() -> void:
@@ -777,17 +757,16 @@ func _create_control_button(parent: Node, text: String, position: Vector2, size:
 
 
 func _set_ui_movement(direction: Vector2) -> void:
-	_ui_movement = direction
+	_player_intents.call("set_ui_movement", direction)
 	_append_input_log("ON-SCREEN MOVE %s" % direction)
 
 
 func _clear_ui_movement() -> void:
-	_ui_movement = Vector2.ZERO
+	_player_intents.call("clear_ui_movement")
 
 
 func _request_ui_attack() -> void:
-	_attack_requested = true
-	_ui_attack_requested = true
+	_player_intents.call("request_attack", true)
 	_append_input_log("ON-SCREEN ATTACK detected")
 
 
@@ -1225,6 +1204,24 @@ func _validate_playable_slice() -> void:
 		_fail("M23 authoritative state projection does not preserve server-confirmed domain facts")
 		get_tree().quit(1)
 		return
+	var intent_validation := PLAYER_INTENT_CONTROLLER.new()
+	intent_validation.call("set_ui_movement", Vector2.RIGHT)
+	intent_validation.call("request_attack", true)
+	var intent_state: Dictionary = intent_validation.call("presentation_state")
+	var attack_intent: Dictionary = intent_validation.call("take_attack", 1000)
+	var hud_validation := HUD_PROJECTION.new()
+	if (
+		intent_validation.call("movement", 1000) != Vector2.RIGHT
+		or intent_state.get("move_cooldown_ms") != 120
+		or intent_state.get("attack_cooldown_ms") != 260
+		or not attack_intent.get("requested", false)
+		or not attack_intent.get("use_active_target", false)
+		or hud_validation.call("inventory_text", {"relay_core_fragment": 2}) != "INVENTORY\nRELAY CORE FRAGMENT  x2"
+		or hud_validation.call("equipment_text", "pulse_rifle", {"damage": 25, "range": 8, "cooldown_ms": 260}) != "WEAPON  •  PULSE RIFLE\nDMG 25  RANGE 8  COOLDOWN 260 MS"
+	):
+		_fail("M23 input and HUD coordination does not preserve intent-only controls and authoritative text")
+		get_tree().quit(1)
+		return
 	var environment_state: Dictionary = _environment.call("presentation_state")
 	var closed_door_state: Dictionary = environment_state.get("door", {})
 	if (
@@ -1436,6 +1433,7 @@ func _validate_playable_slice() -> void:
 	print("M23 framed transport validated: socket, buffering, deadlines and 64 KiB ceiling are isolated")
 	print("M23 session controller validated: negotiation, identity, join and initial snapshots are isolated")
 	print("M23 authoritative state projection validated: actors, rewards, equipment, objectives and completion are server-owned")
+	print("M23 input and HUD coordination validated: local attempts stay intents and server facts drive presentation")
 	_audio_director.call("shutdown")
 	_audio_director.queue_free()
 	_audio_director = null

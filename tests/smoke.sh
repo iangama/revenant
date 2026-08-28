@@ -145,6 +145,7 @@ if wait_for_gateway; then
       [[ "$slice_output" == *"M23 framed transport validated"* ]]
       [[ "$slice_output" == *"M23 session controller validated"* ]]
       [[ "$slice_output" == *"M23 authoritative state projection validated"* ]]
+      [[ "$slice_output" == *"M23 input and HUD coordination validated"* ]]
     fi
 
     kill "$server_pid"
