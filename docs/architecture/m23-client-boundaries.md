@@ -62,3 +62,9 @@ The node boundary preserves the existing asynchronous model rather than introduc
 The session controller creates the third dependency seam and owns the ordered transition from disconnected transport to an accepted world plus its three initial authoritative snapshots. Connection-state changes cross the boundary as presentation-neutral signals; success and failure cross it as dictionaries without references to scene actors or HUD controls.
 
 `main.gd` now composes the controller, applies returned snapshots, and continues to own activity routing and authoritative projection. This deliberately stops before Block 5: moving projection together with negotiation would blur server-message sequencing with scene mutation and make behavioral review less precise.
+
+## Block 5 result
+
+The authoritative projector creates the fourth dependency seam. Received actor, damage, inventory, reward, progression, equipment, objective, and completion messages update a pure client-side read model before `main.gd` performs any presentation reaction. The read model cannot send intents, poll transport, instantiate nodes, or infer successful outcomes.
+
+The coordinator still owns a separate actor-node registry and consumes projector state when updating scenes and HUD. This distinction is intentional: the projector records what the server confirmed, while the next block will isolate how those facts and local attempts are presented. A deterministic fixture covers every projector domain without requiring a network session.

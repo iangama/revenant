@@ -16,6 +16,7 @@ const ONBOARDING_CONTROLLER := preload("res://presentation/onboarding/onboarding
 const AUDIO_DIRECTOR := preload("res://presentation/audio/audio_director.gd")
 const MESSAGEPACK_CODEC := preload("res://protocol/messagepack_codec.gd")
 const SESSION_CONTROLLER := preload("res://session/session_controller.gd")
+const AUTHORITATIVE_STATE := preload("res://projection/authoritative_state.gd")
 const M21_CAPTURE_FILENAMES := [
 	"01-relay-hub-overview.png",
 	"02-enemy-telegraphs.png",
@@ -23,19 +24,11 @@ const M21_CAPTURE_FILENAMES := [
 ]
 
 var _session: Node
+var _authoritative_state := AUTHORITATIVE_STATE.new()
 var _actors := {}
-var _actor_health := {}
-var _actor_max_health := {}
-var _player_actor_id := 0
 var _current_enemy_id := 0
-var _player_health := 100
 var _next_move_at := 0
 var _next_attack_at := 0
-var _activity_complete := false
-var _inventory := {}
-var _progression := {"level": 1, "experience": 0, "experience_to_next_level": 500}
-var _equipped_weapon_item_id := "pulse_rifle"
-var _weapon_profiles := {}
 var _camera: Camera3D
 var _environment: Node3D
 var _combat_vfx: Node3D
@@ -134,7 +127,7 @@ func _run_handshake(username: String, host: String, port: int) -> void:
 	if not joined.get("ok", false):
 		_fail(joined.get("error", "initial session join failed"))
 		return
-	_player_actor_id = joined.get("world", {}).get("player_actor_id")
+	_authoritative_state.call("join_world", joined.get("world", {}))
 	_apply_inventory_snapshot(joined.get("inventory", {}))
 	_apply_progression(joined.get("progression", {}))
 	_apply_equipment_snapshot(joined.get("equipment", {}))
@@ -206,6 +199,7 @@ func _run_handshake(username: String, host: String, port: int) -> void:
 		if damage.get("type") != "DamageApplied":
 			_fail("expected DamageApplied")
 			return
+		_authoritative_state.call("apply_damage", damage)
 		print("dealt %d damage to actor %d; %d HP remains" % [damage.get("damage"), damage.get("target_actor_id"), damage.get("remaining_health")])
 		if damage.get("killed", false):
 			break
@@ -217,6 +211,8 @@ func _run_handshake(username: String, host: String, port: int) -> void:
 	_destroy_actor(enemy_id)
 	var kill_objective := await _receive_message(Time.get_ticks_msec() + 5000)
 	var reach_objective := await _receive_message(Time.get_ticks_msec() + 5000)
+	_authoritative_state.call("apply_objective", kill_objective)
+	_authoritative_state.call("apply_objective", reach_objective)
 	if kill_objective.get("objective_type") != "KillActors" or kill_objective.get("state") != "Completed":
 		_fail("KillActors objective did not complete")
 		return
@@ -233,6 +229,8 @@ func _run_handshake(username: String, host: String, port: int) -> void:
 	var reached := await _receive_message(Time.get_ticks_msec() + 5000)
 	var boss_objective := await _receive_message(Time.get_ticks_msec() + 5000)
 	var door := await _receive_message(Time.get_ticks_msec() + 5000)
+	_authoritative_state.call("apply_objective", reached)
+	_authoritative_state.call("apply_objective", boss_objective)
 	if reached.get("state") != "Completed" or boss_objective.get("state") != "Active" or not door.get("open", false):
 		_fail("boss stage did not open")
 		return
@@ -249,6 +247,7 @@ func _run_handshake(username: String, host: String, port: int) -> void:
 		if boss_damage.get("type") != "DamageApplied":
 			_fail("expected boss DamageApplied")
 			return
+		_authoritative_state.call("apply_damage", boss_damage)
 		print("dealt %d damage to boss; %d HP remains" % [boss_damage.get("damage"), boss_damage.get("remaining_health")])
 		if boss_damage.get("killed", false):
 			break
@@ -262,6 +261,8 @@ func _run_handshake(username: String, host: String, port: int) -> void:
 	if boss_complete.get("state") != "Completed" or loot.get("type") != "LootGranted" or progression_grant.get("type") != "ProgressionGranted" or activity_complete.get("type") != "ActivityComplete":
 		_fail("activity did not complete after boss death")
 		return
+	_authoritative_state.call("apply_objective", boss_complete)
+	_authoritative_state.call("apply_activity_complete", activity_complete)
 	_audio_director.call("play_completion")
 	_apply_loot_grant(loot)
 	_apply_progression(progression_grant)
@@ -282,6 +283,7 @@ func _receive_message(deadline: int) -> Dictionary:
 
 
 func _render_actor(actor: Dictionary) -> void:
+	_authoritative_state.call("apply_actor_spawn", actor)
 	var instance: Node3D
 	if actor.get("actor_kind") == "player":
 		instance = OPERATOR_SCENE.instantiate()
@@ -294,10 +296,8 @@ func _render_actor(actor: Dictionary) -> void:
 	instance.position = Vector3(position[0], position[1], position[2])
 	add_child(instance)
 	if actor.get("actor_kind") == "player":
-		instance.call("set_weapon", _equipped_weapon_item_id)
+		instance.call("set_weapon", _authoritative_state.equipped_weapon_item_id)
 	_actors[actor.get("actor_id")] = instance
-	_actor_health[actor.get("actor_id")] = actor.get("health", 100)
-	_actor_max_health[actor.get("actor_id")] = actor.get("max_health", 100)
 	_update_enemy_proximity()
 	if actor.get("actor_kind") == "enemy":
 		_audio_director.call("play_enemy_presence", actor.get("archetype", "relay-drone"), instance.global_position)
@@ -311,15 +311,14 @@ func _render_actor(actor: Dictionary) -> void:
 func _destroy_actor(actor_id: int) -> void:
 	var actor: Node = _actors.get(actor_id)
 	if actor != null:
-		if actor is Node3D and actor_id != _player_actor_id:
+		if actor is Node3D and actor_id != _authoritative_state.player_actor_id:
 			_audio_director.call("play_confirmed_defeat", (actor as Node3D).global_position)
 		_actors.erase(actor_id)
 		if actor.has_method("retire"):
 			actor.call("retire")
 		else:
 			actor.queue_free()
-	_actor_health.erase(actor_id)
-	_actor_max_health.erase(actor_id)
+	_authoritative_state.call("apply_actor_destroy", {"actor_id": actor_id})
 	if actor_id == _current_enemy_id and _enemy_health_label != null:
 		_enemy_health_label.text = "ENEMY  •  DEFEATED"
 		_enemy_health_bar.value = 0
@@ -327,6 +326,7 @@ func _destroy_actor(actor_id: int) -> void:
 
 
 func _update_actor(update: Dictionary) -> void:
+	_authoritative_state.call("apply_actor_update", update)
 	var actor: Node3D = _actors.get(update.get("actor_id"))
 	if actor == null:
 		return
@@ -335,10 +335,10 @@ func _update_actor(update: Dictionary) -> void:
 	actor.position = Vector3(position[0], position[1], position[2])
 	if actor.has_method("play_authoritative_move"):
 		actor.call("play_authoritative_move", previous_position - actor.position)
-	if update.get("actor_id") == _player_actor_id and previous_position.distance_to(actor.position) > 0.01:
+	if update.get("actor_id") == _authoritative_state.player_actor_id and previous_position.distance_to(actor.position) > 0.01:
 		_audio_director.call("play_confirmed_move", actor.global_position)
 	_update_enemy_proximity()
-	if update.get("actor_id") == _player_actor_id and _position_label != null:
+	if update.get("actor_id") == _authoritative_state.player_actor_id and _position_label != null:
 		_onboarding.call("confirm", "movement")
 		_refresh_onboarding()
 		var door_distance := maxi(0, 6 - int(position[0]))
@@ -348,7 +348,7 @@ func _update_actor(update: Dictionary) -> void:
 
 func _run_manual_activity() -> void:
 	_controls_label.text = "WASD / ARROWS  MOVE    •    MOUSE / SPACE  ATTACK"
-	while not _activity_complete and _session.call("connection_status") == StreamPeerTCP.STATUS_CONNECTED:
+	while not _authoritative_state.activity_complete and _session.call("connection_status") == StreamPeerTCP.STATUS_CONNECTED:
 		_handle_manual_input()
 		var message := _try_receive_message()
 		if not message.is_empty():
@@ -363,7 +363,7 @@ func _handle_manual_input() -> void:
 	var movement := _ui_movement if _ui_movement != Vector2.ZERO else Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	if movement.length() > 0.2 and now >= _next_move_at:
 		_onboarding.call("note_local", "movement")
-		var player: Node3D = _actors.get(_player_actor_id)
+		var player: Node3D = _actors.get(_authoritative_state.player_actor_id)
 		if player != null:
 			var step := Vector3(roundi(movement.x), 0, roundi(movement.y))
 			var target := player.position + step
@@ -385,7 +385,7 @@ func _handle_manual_input() -> void:
 			_append_input_log("AttackIntent target %d %s" % [target_id, "sent" if sent else "FAILED"])
 			_next_attack_at = now + 260
 			if sent:
-				var player: Node3D = _actors.get(_player_actor_id)
+				var player: Node3D = _actors.get(_authoritative_state.player_actor_id)
 				if player != null:
 					_combat_vfx.call("play_local_cooldown", player.global_position, 260)
 				_audio_director.call("play_cooldown_acknowledgement")
@@ -421,9 +421,9 @@ func _handle_manual_message(message: Dictionary) -> void:
 				_status_label.text = "BOSS ONLINE  •  WARDEN"
 				_set_guidance("STEP 3  •  DEFEAT THE WARDEN", "Aim at the purple Warden and attack until its HP reaches zero.")
 		"ActivityComplete":
+			_authoritative_state.call("apply_activity_complete", message)
 			_onboarding.call("confirm", "completion")
 			_refresh_onboarding()
-			_activity_complete = true
 			_presentation_polish.call("play_authoritative_completion")
 			_audio_director.call("play_completion")
 			_status_label.text = "ACTIVITY COMPLETE  •  RELAY AWAKENED"
@@ -474,10 +474,10 @@ func _update_target_highlight() -> void:
 
 
 func _update_enemy_proximity() -> void:
-	if _current_enemy_id == 0 or _player_actor_id == 0:
+	if _current_enemy_id == 0 or _authoritative_state.player_actor_id == 0:
 		return
 	var enemy: Node3D = _actors.get(_current_enemy_id)
-	var player: Node3D = _actors.get(_player_actor_id)
+	var player: Node3D = _actors.get(_authoritative_state.player_actor_id)
 	if enemy != null and player != null and enemy.has_method("set_danger_close"):
 		enemy.call("set_danger_close", enemy.position.distance_to(player.position) <= 2.05)
 
@@ -489,18 +489,18 @@ func _actor_family(actor: Node) -> String:
 
 
 func _handle_damage_feedback(message: Dictionary) -> void:
-	if message.get("source_actor_id") == _player_actor_id:
+	if message.get("source_actor_id") == _authoritative_state.player_actor_id:
 		_onboarding.call("confirm", "damage")
 		_refresh_onboarding()
 	var source_id: int = message.get("source_actor_id")
 	var target_id: int = message.get("target_actor_id")
 	var remaining: int = message.get("remaining_health")
-	_actor_health[target_id] = remaining
+	_authoritative_state.call("apply_damage", message)
 	var source_actor: Node = _actors.get(source_id)
 	var target_actor: Node3D = _actors.get(target_id)
 	if source_actor is Node3D:
-		if source_id == _player_actor_id:
-			_audio_director.call("play_confirmed_attack", _equipped_weapon_item_id, (source_actor as Node3D).global_position)
+		if source_id == _authoritative_state.player_actor_id:
+			_audio_director.call("play_confirmed_attack", _authoritative_state.equipped_weapon_item_id, (source_actor as Node3D).global_position)
 		else:
 			_audio_director.call("play_enemy_attack", _actor_family(source_actor), (source_actor as Node3D).global_position)
 	if target_actor != null:
@@ -508,20 +508,19 @@ func _handle_damage_feedback(message: Dictionary) -> void:
 	if source_actor != null and source_actor.has_method("play_confirmed_attack"):
 		source_actor.call("play_confirmed_attack")
 	if source_actor is Node3D and target_actor != null:
-		_combat_vfx.call("play_confirmed_exchange", source_actor, target_actor, target_id == _player_actor_id)
-	if target_id == _player_actor_id:
+		_combat_vfx.call("play_confirmed_exchange", source_actor, target_actor, target_id == _authoritative_state.player_actor_id)
+	if target_id == _authoritative_state.player_actor_id:
 		_audio_director.call("play_player_damage")
-		_player_health = remaining
 		_presentation_polish.call("play_confirmed_player_damage")
 		_player_health_bar.value = remaining
-		_health_label.text = "HP  %03d / 100  •  STABLE" % _player_health
+		_health_label.text = "HP  %03d / 100  •  STABLE" % remaining
 		_health_label.modulate = Color("ff6b6b")
 		var health_tween := create_tween()
 		health_tween.tween_property(_health_label, "modulate", Color.WHITE, 0.3)
 	else:
 		_status_label.text = "HIT %d  •  %d HP REMAINS" % [message.get("damage"), remaining]
 		if _enemy_health_label != null:
-			var maximum: int = _actor_max_health.get(target_id, remaining)
+			var maximum: int = _authoritative_state.actor_max_health.get(target_id, remaining)
 			_enemy_health_label.text = "ENEMY  •  %03d / %03d HP" % [remaining, maximum]
 			_enemy_health_bar.max_value = maximum
 			_enemy_health_bar.value = remaining
@@ -540,6 +539,7 @@ func _handle_damage_feedback(message: Dictionary) -> void:
 
 
 func _update_objective_hud(objective: Dictionary) -> void:
+	_authoritative_state.call("apply_objective", objective)
 	if objective.get("objective_type") == "ReachArea" and objective.get("state") == "Active":
 		_onboarding.call("confirm", "door_objective")
 		_refresh_onboarding()
@@ -553,15 +553,13 @@ func _update_objective_hud(objective: Dictionary) -> void:
 
 
 func _apply_inventory_snapshot(message: Dictionary) -> void:
-	_inventory.clear()
-	for item in message.get("items", []):
-		_inventory[item.get("item_id", "unknown")] = item.get("quantity", 0)
+	_authoritative_state.call("apply_inventory_snapshot", message)
 	_update_inventory_hud()
 
 
 func _apply_loot_grant(message: Dictionary) -> void:
 	var item_id: String = message.get("item_id", "unknown")
-	_inventory[item_id] = message.get("resulting_quantity", 0)
+	_authoritative_state.call("apply_loot_grant", message)
 	_update_inventory_hud()
 	_status_label.text = "LOOT SECURED  •  %s +%d" % [item_id.replace("_", " ").to_upper(), message.get("quantity", 0)]
 	print("loot granted: %s x%d" % [item_id, message.get("quantity", 0)])
@@ -569,17 +567,15 @@ func _apply_loot_grant(message: Dictionary) -> void:
 
 func _update_inventory_hud() -> void:
 	var lines: Array[String] = ["INVENTORY"]
-	var item_ids := _inventory.keys()
+	var item_ids := _authoritative_state.inventory.keys()
 	item_ids.sort()
 	for item_id in item_ids:
-		lines.append("%s  x%d" % [str(item_id).replace("_", " ").to_upper(), _inventory[item_id]])
+		lines.append("%s  x%d" % [str(item_id).replace("_", " ").to_upper(), _authoritative_state.inventory[item_id]])
 	_inventory_label.text = "\n".join(lines)
 
 
 func _apply_progression(message: Dictionary) -> void:
-	_progression["level"] = message.get("level", 1)
-	_progression["experience"] = message.get("experience", 0)
-	_progression["experience_to_next_level"] = message.get("experience_to_next_level", 500)
+	_authoritative_state.call("apply_progression", message)
 	_update_progression_hud()
 	if message.get("type") == "ProgressionGranted":
 		_status_label.text = "PROGRESSION SECURED  •  +%d XP" % message.get("experience_granted", 0)
@@ -588,36 +584,32 @@ func _apply_progression(message: Dictionary) -> void:
 
 func _update_progression_hud() -> void:
 	_progression_label.text = "PROGRESSION  •  LEVEL %d\nXP %d  •  %d TO NEXT LEVEL" % [
-		_progression.get("level", 1),
-		_progression.get("experience", 0),
-		_progression.get("experience_to_next_level", 500),
+		_authoritative_state.progression.get("level", 1),
+		_authoritative_state.progression.get("experience", 0),
+		_authoritative_state.progression.get("experience_to_next_level", 500),
 	]
 
 
 func _apply_equipment_snapshot(message: Dictionary) -> void:
-	_weapon_profiles.clear()
-	for weapon in message.get("weapons", []):
-		_weapon_profiles[weapon.get("item_id", "unknown")] = weapon
-	_equipped_weapon_item_id = message.get("equipped_weapon_item_id", "pulse_rifle")
+	_authoritative_state.call("apply_equipment_snapshot", message)
 	_update_operator_weapon()
 	_update_equipment_hud()
 
 
 func _apply_equipment_change(message: Dictionary) -> void:
-	if not message.get("accepted", false):
+	if not _authoritative_state.call("apply_equipment_change", message):
 		_status_label.text = "EQUIP REJECTED  •  %s" % message.get("message", "SERVER REJECTED ITEM")
 		return
-	_equipped_weapon_item_id = message.get("equipped_weapon_item_id", _equipped_weapon_item_id)
 	_update_operator_weapon()
 	_update_equipment_hud()
-	_status_label.text = "WEAPON EQUIPPED  •  %s" % _equipped_weapon_item_id.replace("_", " ").to_upper()
-	print("authoritative weapon equipped: %s" % _equipped_weapon_item_id)
+	_status_label.text = "WEAPON EQUIPPED  •  %s" % _authoritative_state.equipped_weapon_item_id.replace("_", " ").to_upper()
+	print("authoritative weapon equipped: %s" % _authoritative_state.equipped_weapon_item_id)
 
 
 func _update_equipment_hud() -> void:
-	var profile: Dictionary = _weapon_profiles.get(_equipped_weapon_item_id, {})
+	var profile: Dictionary = _authoritative_state.weapon_profiles.get(_authoritative_state.equipped_weapon_item_id, {})
 	_equipment_label.text = "WEAPON  •  %s\nDMG %d  RANGE %d  COOLDOWN %d MS" % [
-		_equipped_weapon_item_id.replace("_", " ").to_upper(),
+		_authoritative_state.equipped_weapon_item_id.replace("_", " ").to_upper(),
 		profile.get("damage", 0),
 		profile.get("range", 0),
 		profile.get("cooldown_ms", 0),
@@ -625,9 +617,9 @@ func _update_equipment_hud() -> void:
 
 
 func _update_operator_weapon() -> void:
-	var player: Node = _actors.get(_player_actor_id)
+	var player: Node = _actors.get(_authoritative_state.player_actor_id)
 	if player != null and player.has_method("set_weapon"):
-		player.call("set_weapon", _equipped_weapon_item_id)
+		player.call("set_weapon", _authoritative_state.equipped_weapon_item_id)
 
 
 func _set_door_open(open: bool) -> void:
@@ -819,9 +811,9 @@ func _drive_manual_activity() -> void:
 	await get_tree().create_timer(0.2).timeout
 	_request_weapon("arc_sidearm")
 	var equip_deadline := Time.get_ticks_msec() + 2000
-	while _equipped_weapon_item_id != "arc_sidearm" and Time.get_ticks_msec() < equip_deadline:
+	while _authoritative_state.equipped_weapon_item_id != "arc_sidearm" and Time.get_ticks_msec() < equip_deadline:
 		await get_tree().process_frame
-	if _equipped_weapon_item_id != "arc_sidearm":
+	if _authoritative_state.equipped_weapon_item_id != "arc_sidearm":
 		_driver_fail("sidearm did not equip through the on-screen loadout control")
 		return
 	for _attack_index in range(4):
@@ -838,12 +830,12 @@ func _drive_manual_activity() -> void:
 	_set_ui_movement(Vector2(1, 0))
 	deadline = Time.get_ticks_msec() + 4000
 	while Time.get_ticks_msec() < deadline:
-		var player: Node3D = _actors.get(_player_actor_id)
+		var player: Node3D = _actors.get(_authoritative_state.player_actor_id)
 		if player != null and player.position.x >= 6:
 			break
 		await get_tree().process_frame
 	_clear_ui_movement()
-	var player: Node3D = _actors.get(_player_actor_id)
+	var player: Node3D = _actors.get(_authoritative_state.player_actor_id)
 	if player == null or player.position.x < 6:
 		_driver_fail("player did not reach the relay door through the on-screen direction control")
 		return
@@ -858,9 +850,9 @@ func _drive_manual_activity() -> void:
 		_request_ui_attack()
 		await get_tree().create_timer(0.35).timeout
 	deadline = Time.get_ticks_msec() + 3000
-	while not _activity_complete and Time.get_ticks_msec() < deadline:
+	while not _authoritative_state.activity_complete and Time.get_ticks_msec() < deadline:
 		await get_tree().process_frame
-	if not _activity_complete:
+	if not _authoritative_state.activity_complete:
 		_driver_fail("relay_awakening did not complete through manual controls")
 		return
 	print("M17 manual controls completed relay_awakening without user input")
@@ -1208,6 +1200,31 @@ func _validate_playable_slice() -> void:
 		_fail("M23 session controller does not preserve its protocol and bounded transport contract")
 		get_tree().quit(1)
 		return
+	var projection_validation := AUTHORITATIVE_STATE.new()
+	projection_validation.call("join_world", {"player_actor_id": 7})
+	projection_validation.call("apply_actor_spawn", {"actor_id": 7, "health": 100, "max_health": 100, "position": [0, 0, 0]})
+	projection_validation.call("apply_damage", {"target_actor_id": 7, "remaining_health": 90})
+	projection_validation.call("apply_inventory_snapshot", {"items": [{"item_id": "pulse_rifle", "quantity": 1}]})
+	projection_validation.call("apply_loot_grant", {"item_id": "relay_core_fragment", "resulting_quantity": 2})
+	projection_validation.call("apply_progression", {"level": 7, "experience": 3200, "experience_to_next_level": 800})
+	projection_validation.call("apply_equipment_snapshot", {"equipped_weapon_item_id": "pulse_rifle", "weapons": [{"item_id": "pulse_rifle", "damage": 25}]})
+	projection_validation.call("apply_objective", {"objective_id": "clear_drone_group", "state": "Active"})
+	projection_validation.call("apply_activity_complete", {"activity_id": "relay_awakening"})
+	var projection_state: Dictionary = projection_validation.call("presentation_state")
+	if (
+		projection_state.get("player_actor_id") != 7
+		or projection_state.get("actor_count") != 1
+		or projection_validation.actor_health.get(7) != 90
+		or projection_state.get("inventory", {}).get("relay_core_fragment") != 2
+		or projection_state.get("progression", {}).get("experience") != 3200
+		or projection_state.get("equipped_weapon_item_id") != "pulse_rifle"
+		or projection_state.get("weapon_profile_count") != 1
+		or projection_state.get("objective_count") != 1
+		or not projection_state.get("activity_complete", false)
+	):
+		_fail("M23 authoritative state projection does not preserve server-confirmed domain facts")
+		get_tree().quit(1)
+		return
 	var environment_state: Dictionary = _environment.call("presentation_state")
 	var closed_door_state: Dictionary = environment_state.get("door", {})
 	if (
@@ -1418,6 +1435,7 @@ func _validate_playable_slice() -> void:
 	print("M23 MessagePack boundary validated: exact signed bytes and supported round-trip are preserved")
 	print("M23 framed transport validated: socket, buffering, deadlines and 64 KiB ceiling are isolated")
 	print("M23 session controller validated: negotiation, identity, join and initial snapshots are isolated")
+	print("M23 authoritative state projection validated: actors, rewards, equipment, objectives and completion are server-owned")
 	_audio_director.call("shutdown")
 	_audio_director.queue_free()
 	_audio_director = null
