@@ -1,6 +1,6 @@
 # M23 — Client Architecture and Validation Refactor
 
-Status: Blocks 1 through 7 integrated; Block 8 implemented and validated locally; M23 ready for final review.
+Status: Blocks 1 through 8 implemented, validated, and integrated.
 
 ## Objective
 
