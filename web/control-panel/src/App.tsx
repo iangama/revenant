@@ -20,6 +20,25 @@ type ReplayEvent = {
   payload: string;
 };
 
+type AuthoritativeSessionSummary = {
+  session_id: string;
+  activity_id: string | null;
+  first_joined_at: string;
+  activity_started_at: string | null;
+  activity_ended_at: string;
+  join_to_start_ms: number | null;
+  activity_duration_ms: number | null;
+  participant_count: number;
+  completed: boolean;
+  enemy_spawn_count: number;
+  enemy_defeat_count: number;
+  boss_spawned: boolean;
+  equipment_change_count: number;
+  loot_grant_count: number;
+  progression_grant_count: number;
+  event_count: number;
+};
+
 const API_ROOT = import.meta.env.VITE_INSPECTOR_API ?? "/api/inspector";
 
 function compactId(value: string) {
@@ -35,11 +54,8 @@ function time(value: string) {
   });
 }
 
-function duration(session: Session) {
-  const milliseconds = Math.max(
-    0,
-    new Date(session.ended_at).getTime() - new Date(session.started_at).getTime(),
-  );
+function duration(milliseconds: number | null | undefined) {
+  if (milliseconds == null) return "—";
   return `${(milliseconds / 1000).toFixed(2)}s`;
 }
 
@@ -47,6 +63,7 @@ function App() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [selectedId, setSelectedId] = useState("");
   const [events, setEvents] = useState<ReplayEvent[]>([]);
+  const [summary, setSummary] = useState<AuthoritativeSessionSummary | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<ReplayEvent | null>(null);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
@@ -84,16 +101,27 @@ function App() {
   useEffect(() => {
     if (!selectedId) {
       setEvents([]);
+      setSummary(null);
       return;
     }
     const controller = new AbortController();
     setSelectedEvent(null);
-    fetch(`${API_ROOT}/sessions/${selectedId}/events`, { signal: controller.signal })
-      .then((response) => {
-        if (!response.ok) throw new Error(`events request returned ${response.status}`);
-        return response.json() as Promise<{ events: ReplayEvent[] }>;
+    setSummary(null);
+    Promise.all([
+      fetch(`${API_ROOT}/sessions/${selectedId}/events`, { signal: controller.signal }),
+      fetch(`${API_ROOT}/sessions/${selectedId}/summary`, { signal: controller.signal }),
+    ])
+      .then(async ([eventsResponse, summaryResponse]) => {
+        if (!eventsResponse.ok) throw new Error(`events request returned ${eventsResponse.status}`);
+        if (!summaryResponse.ok) throw new Error(`summary request returned ${summaryResponse.status}`);
+        const eventBody = (await eventsResponse.json()) as { events: ReplayEvent[] };
+        const summaryBody = (await summaryResponse.json()) as { summary: AuthoritativeSessionSummary };
+        return { eventBody, summaryBody };
       })
-      .then((body) => setEvents(body.events))
+      .then(({ eventBody, summaryBody }) => {
+        setEvents(eventBody.events);
+        setSummary(summaryBody.summary);
+      })
       .catch((caught: unknown) => {
         if (caught instanceof DOMException && caught.name === "AbortError") return;
         setError(caught instanceof Error ? caught.message : "Events unavailable");
@@ -169,10 +197,14 @@ function App() {
               </div>
 
               <div className="metrics">
-                <Metric label="EVENTS" value={selectedSession.event_count} />
-                <Metric label="PLAYERS" value={selectedSession.participant_count} />
-                <Metric label="DURATION" value={duration(selectedSession)} />
-                <Metric label="PROTOCOL" value="V1/V2" />
+                <Metric label="EVENTS" value={summary?.event_count ?? selectedSession.event_count} />
+                <Metric label="PLAYERS" value={summary?.participant_count ?? selectedSession.participant_count} />
+                <Metric label="JOIN → START" value={duration(summary?.join_to_start_ms)} />
+                <Metric label="ACTIVITY" value={duration(summary?.activity_duration_ms)} />
+                <Metric label="ENEMIES" value={summary ? `${summary.enemy_defeat_count}/${summary.enemy_spawn_count}` : "—"} />
+                <Metric label="BOSS" value={summary ? (summary.boss_spawned ? "YES" : "NO") : "—"} />
+                <Metric label="LOADOUT" value={summary?.equipment_change_count ?? "—"} />
+                <Metric label="REWARDS" value={summary ? `${summary.loot_grant_count}L / ${summary.progression_grant_count}P` : "—"} />
               </div>
 
               <div className="timeline-toolbar">

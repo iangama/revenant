@@ -26,4 +26,6 @@ M19 adds `revenant-progression` as the owner of experience reward limits and the
 
 M20 extends `revenant-inventory` with equipability and immutable weapon profiles, while PostgreSQL persists one selected weapon identifier per character. The shared-session coordinator validates `EquipIntent` ownership and item type, then projects accepted state to V2 and replay. Combat receives the selected profile but owns a per-attacker ready deadline, preventing a weapon switch from resetting cooldown. Frozen V1 connections receive no equipment vocabulary and retain the default rifle behavior.
 
+M24 adds a bounded playtest evidence projection without creating a telemetry service. `revenant-persistence` derives `AuthoritativeSessionSummary` directly from one persisted replay session, rejects contradictory elapsed timestamps, and leaves missing milestones as nullable durations. The gateway exposes the typed projection through `/api/inspector/sessions/{session_id}/summary`; the read-only Inspector displays it alongside the unchanged ordered replay stream. No schema, replay vocabulary, Protocol V2 message, or gameplay authority crosses this boundary.
+
 M6 adds a server-side finite-state AI runtime. AI mutates the authoritative `ActorRegistry`; clients observe replicated movement and damage but never execute enemy decisions.

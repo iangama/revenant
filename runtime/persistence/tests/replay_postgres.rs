@@ -20,7 +20,17 @@ fn appends_and_loads_replay_events_from_postgres() {
     persistence
         .ensure_local_account(&account_id, "replay-test")
         .expect("test account should persist");
-    for event_type in ["player_joined", "activity_completed"] {
+    for event_type in [
+        "player_joined",
+        "activity_started",
+        "enemy_spawned",
+        "enemy_died",
+        "boss_spawned",
+        "equipment_changed",
+        "activity_completed",
+        "loot_granted",
+        "progression_granted",
+    ] {
         persistence
             .append_replay_event(&NewReplayEvent {
                 event_type,
@@ -35,9 +45,9 @@ fn appends_and_loads_replay_events_from_postgres() {
     let events = persistence
         .replay_events(&session_id)
         .expect("events should load");
-    assert_eq!(events.len(), 2);
+    assert_eq!(events.len(), 9);
     assert_eq!(events[0].event_type, "player_joined");
-    assert_eq!(events[1].event_type, "activity_completed");
+    assert_eq!(events[6].event_type, "activity_completed");
     let sessions = persistence
         .replay_sessions(100)
         .expect("sessions should load");
@@ -45,9 +55,29 @@ fn appends_and_loads_replay_events_from_postgres() {
         .iter()
         .find(|session| session.session_id == session_id)
         .expect("inserted session should be listed");
-    assert_eq!(session.event_count, 2);
+    assert_eq!(session.event_count, 9);
     assert_eq!(session.participant_count, 1);
     assert!(session.completed);
+    let summary = persistence
+        .authoritative_session_summary(&session_id)
+        .expect("summary should derive")
+        .expect("summary should exist");
+    assert_eq!(summary.session_id, session_id);
+    assert_eq!(summary.activity_id.as_deref(), Some("relay_awakening"));
+    assert!(summary.activity_started_at.is_some());
+    assert!(summary.join_to_start_ms.is_some_and(|elapsed| elapsed >= 0));
+    assert!(summary
+        .activity_duration_ms
+        .is_some_and(|elapsed| elapsed >= 0));
+    assert_eq!(summary.participant_count, 1);
+    assert!(summary.completed);
+    assert_eq!(summary.enemy_spawn_count, 1);
+    assert_eq!(summary.enemy_defeat_count, 1);
+    assert!(summary.boss_spawned);
+    assert_eq!(summary.equipment_change_count, 1);
+    assert_eq!(summary.loot_grant_count, 1);
+    assert_eq!(summary.progression_grant_count, 1);
+    assert_eq!(summary.event_count, 9);
     assert_eq!(
         persistence
             .latest_completed_session_id(&account_id)
@@ -55,6 +85,107 @@ fn appends_and_loads_replay_events_from_postgres() {
             .as_deref(),
         Some(session_id.as_str())
     );
+}
+
+#[test]
+fn derives_incomplete_and_multiplayer_session_summaries() {
+    let Ok(database_url) = env::var("DATABASE_URL") else {
+        eprintln!("DATABASE_URL is not set; PostgreSQL integration test skipped");
+        return;
+    };
+    let suffix = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("clock should follow epoch")
+        .as_nanos();
+    let account_one = format!("local:summary-one-{suffix}");
+    let account_two = format!("local:summary-two-{suffix}");
+    let no_start_session = format!("summary-no-start-{suffix}");
+    let disconnected_session = format!("summary-disconnected-{suffix}");
+    let mut persistence = Persistence::connect(&database_url).expect("PostgreSQL should connect");
+    for (account, username) in [(&account_one, "summary-one"), (&account_two, "summary-two")] {
+        persistence
+            .ensure_local_account(account, username)
+            .expect("test account should persist");
+    }
+    for account in [&account_one, &account_two] {
+        persistence
+            .append_replay_event(&NewReplayEvent {
+                event_type: "player_joined",
+                session_id: &no_start_session,
+                account_id: account,
+                activity_id: Some("relay_awakening"),
+                actor_id: None,
+                payload: "player joined",
+            })
+            .expect("join should append");
+    }
+    let no_start = persistence
+        .authoritative_session_summary(&no_start_session)
+        .expect("summary should derive")
+        .expect("summary should exist");
+    assert_eq!(no_start.participant_count, 2);
+    assert!(!no_start.completed);
+    assert_eq!(no_start.activity_started_at, None);
+    assert_eq!(no_start.join_to_start_ms, None);
+    assert_eq!(no_start.activity_duration_ms, None);
+    assert_eq!(no_start.event_count, 2);
+
+    for event_type in ["player_joined", "activity_started", "enemy_spawned"] {
+        persistence
+            .append_replay_event(&NewReplayEvent {
+                event_type,
+                session_id: &disconnected_session,
+                account_id: &account_one,
+                activity_id: Some("relay_awakening"),
+                actor_id: None,
+                payload: event_type,
+            })
+            .expect("event should append");
+    }
+    let disconnected = persistence
+        .authoritative_session_summary(&disconnected_session)
+        .expect("summary should derive")
+        .expect("summary should exist");
+    assert!(disconnected.activity_started_at.is_some());
+    assert!(disconnected.join_to_start_ms.is_some());
+    assert_eq!(disconnected.activity_duration_ms, None);
+    assert!(!disconnected.completed);
+    let disconnected_events = persistence
+        .replay_events(&disconnected_session)
+        .expect("events should load");
+    assert_eq!(
+        disconnected.activity_ended_at,
+        disconnected_events
+            .last()
+            .expect("event should exist")
+            .timestamp
+    );
+    assert_eq!(disconnected.enemy_spawn_count, 1);
+    assert_eq!(
+        persistence
+            .authoritative_session_summary(&format!("missing-{suffix}"))
+            .expect("missing lookup should succeed"),
+        None
+    );
+
+    let unknown_session = format!("summary-unknown-{suffix}");
+    for event_type in ["player_joined", "future_event"] {
+        persistence
+            .append_replay_event(&NewReplayEvent {
+                event_type,
+                session_id: &unknown_session,
+                account_id: &account_one,
+                activity_id: Some("relay_awakening"),
+                actor_id: None,
+                payload: event_type,
+            })
+            .expect("event should append");
+    }
+    assert!(persistence
+        .authoritative_session_summary(&unknown_session)
+        .expect_err("unknown replay vocabulary should be rejected")
+        .to_string()
+        .contains("unknown replay event kind"));
 }
 
 #[test]

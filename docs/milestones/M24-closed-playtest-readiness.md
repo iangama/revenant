@@ -1,6 +1,6 @@
 # M24 — Closed Playtest Readiness and Product Validation
 
-Status: Block 1 implemented locally as a reviewed planning and data-contract checkpoint; later blocks require separate review.
+Status: Blocks 1 and 2 implemented and validated; later blocks require separate review.
 
 ## Objective
 
@@ -154,3 +154,11 @@ The research brief, participant boundary, fixed research questions, initial deci
 `docs/playtest/m24-data-contract.md` defines the two evidence products before implementation. `AuthoritativeSessionSummary` is a read-only derivation of existing replay events; `LocalObservationReportV1` is a 16 KiB-bounded, local-only, explicitly activated JSON report containing allow-listed environment, first-occurrence, outcome, aggregate, and consent fields. It stores no username, host, IP, raw input history, wall-clock interaction timeline, arbitrary error text, or automatic upload target.
 
 The contract fixes null and contradiction behavior, participant-code format, atomic local storage, 30-day maximum retention, early deletion, reconciliation, and the minimum fixtures later blocks must implement. It changes no code, schema, replay vocabulary, protocol, server authority, published version, tag, release, or participant state. Block 2 may implement only the authoritative derived summary after separate review.
+
+## Block 2 checkpoint
+
+`revenant-persistence` now owns the typed `AuthoritativeSessionSummary` projection for one session. It derives counts and lifecycle facts solely from the existing persisted event kinds, uses replay timestamps only for elapsed projections, returns `null` for a missing start or completion, and rejects a missing join or negative elapsed evidence rather than manufacturing a result. The query is read-only and bounded by the canonical session identifier accepted by the gateway.
+
+The gateway exposes `GET /api/inspector/sessions/{session_id}/summary` without adding protocol messages or mutation paths. The Inspector consumes that endpoint to show join-to-start, activity duration, participant, enemy, boss, accepted equipment, loot, progression, and event totals next to the unchanged event stream. Persistence fixtures cover a completed solo session, an incomplete session with no start, a started session with no completion, two participants, and a missing session; the canonical smoke reconciles a completed two-participant session with the summary endpoint.
+
+Block 2 changes no database schema, replay vocabulary, replay payload, gameplay authority, frozen V1 artifact, version, tag, release, participant recruitment, or local observation state. The `LocalObservationReportV1` remains deferred to separately reviewed Block 3.

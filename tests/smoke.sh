@@ -189,6 +189,17 @@ if wait_for_gateway; then
     events_json="$(curl --fail --silent "http://$bind_addr/api/inspector/sessions/$session_id/events")"
     [[ "$events_json" == *'"event_type":"player_joined"'* ]]
     [[ "$events_json" == *'"event_type":"activity_completed"'* ]]
+    summary_json="$(curl --fail --silent "http://$bind_addr/api/inspector/sessions/$session_id/summary")"
+    [[ "$summary_json" == *'"completed":true'* ]]
+    [[ "$summary_json" == *'"participant_count":2'* ]]
+    [[ "$summary_json" == *'"enemy_spawn_count":1'* ]]
+    [[ "$summary_json" == *'"enemy_defeat_count":2'* ]]
+    [[ "$summary_json" == *'"boss_spawned":true'* ]]
+    [[ "$summary_json" == *'"equipment_change_count":1'* ]]
+    [[ "$summary_json" == *'"loot_grant_count":2'* ]]
+    [[ "$summary_json" == *'"progression_grant_count":2'* ]]
+    [[ "$summary_json" != *'"join_to_start_ms":null'* ]]
+    [[ "$summary_json" != *'"activity_duration_ms":null'* ]]
 
     frozen_output="$(REVENANT_GAME_ADDR="$game_addr" \
       cargo run --quiet -p revenant-frozen-client-v1)"
