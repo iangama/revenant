@@ -1,6 +1,6 @@
 # M23 — Client Architecture and Validation Refactor
 
-Status: Blocks 1 through 3 implemented and validated locally; later blocks require separate review.
+Status: Blocks 1 through 4 implemented and validated locally; later blocks require separate review.
 
 ## Objective
 
@@ -62,3 +62,9 @@ The extraction preserves the existing error text, supported markers, signed fixi
 The transport is a child `Node` because deadline waits advance on `SceneTree.process_frame`; it has no presentation, actor, domain, settings, audio, or validation dependency. Its observable initial state records the fixed ceiling, empty buffer, and socket status for deterministic validation.
 
 The isolated Godot slice passes every M17–M23 marker with no leaks, and `main.gd` is reduced from 1,665 to 1,624 lines after adding the transport-specific assertion and marker. Message bytes, buffer consumption, deadlines, oversized-frame rejection, error-to-empty-result behavior, manual polling, and session message order remain unchanged. No server, protocol schema, persistence, mechanic, presentation, frozen artifact, version, tag, or release changes.
+
+## Block 4 checkpoint
+
+`client/game/session/session_controller.gd` now owns connection establishment and the ordered Protocol V2 initial-session sequence: client hello, authentication, character selection, world join, then inventory, progression, and equipment snapshots. It emits presentation-neutral connection-state requests and returns either the accepted server snapshots or the preserved failure text. `main.gd` remains responsible for applying those snapshots, starting and routing activity messages, projecting authoritative state, and presenting failures.
+
+The controller depends only on the framed transport and scene-frame timing. It does not access actors, HUD nodes, audio, settings, onboarding, validation fixtures, or local input, and it cannot manufacture a successful session outcome. The extracted public state makes protocol version, deadline, and bounded transport ownership deterministic to validate. `main.gd` is reduced from 1,624 to 1,542 lines after adding the session-specific assertion and marker. The complete local gate preserves message order, exact wire behavior, automatic and manual flows, persistence/replay, Inspector, frozen V1 evidence, packaging, and version `0.2.0`; no tag or release is part of this block.

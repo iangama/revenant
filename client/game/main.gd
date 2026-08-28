@@ -1,6 +1,5 @@
 extends Node
 
-const PROTOCOL_VERSION := 2
 const DEFAULT_HOST := "127.0.0.1"
 const DEFAULT_PORT := 7000
 const OPERATOR_SCENE := preload("res://presentation/operator/operator.tscn")
@@ -16,14 +15,14 @@ const SETTINGS_STORE := preload("res://presentation/settings/settings_store.gd")
 const ONBOARDING_CONTROLLER := preload("res://presentation/onboarding/onboarding_controller.gd")
 const AUDIO_DIRECTOR := preload("res://presentation/audio/audio_director.gd")
 const MESSAGEPACK_CODEC := preload("res://protocol/messagepack_codec.gd")
-const FRAMED_TRANSPORT := preload("res://protocol/framed_transport.gd")
+const SESSION_CONTROLLER := preload("res://session/session_controller.gd")
 const M21_CAPTURE_FILENAMES := [
 	"01-relay-hub-overview.png",
 	"02-enemy-telegraphs.png",
 	"03-combat-feedback.png",
 ]
 
-var _transport: Node
+var _session: Node
 var _actors := {}
 var _actor_health := {}
 var _actor_max_health := {}
@@ -76,9 +75,10 @@ var _audio_director: Node3D
 
 
 func _ready() -> void:
-	_transport = FRAMED_TRANSPORT.new()
-	_transport.name = "FramedTransport"
-	add_child(_transport)
+	_session = SESSION_CONTROLLER.new()
+	_session.name = "SessionController"
+	_session.connect("connection_state_requested", _set_connection_state)
+	add_child(_session)
 	_build_playable_scene()
 	_build_entry_shell()
 	_build_settings()
@@ -118,7 +118,7 @@ func _begin_connection(username: String) -> void:
 	if _connection_started:
 		return
 	_connection_started = true
-	_transport.call("reset_connection")
+	_session.call("reset_connection")
 	var host := OS.get_environment("REVENANT_GAME_HOST")
 	if host.is_empty():
 		host = DEFAULT_HOST
@@ -130,100 +130,14 @@ func _begin_connection(username: String) -> void:
 
 
 func _run_handshake(username: String, host: String, port: int) -> void:
-
-	var connect_error: Error = _transport.call("connect_to_host", host, port)
-	if connect_error != OK:
-		_fail("connection could not start: %s" % error_string(connect_error))
+	var joined: Dictionary = await _session.call("join_initial_session", username, host, port)
+	if not joined.get("ok", false):
+		_fail(joined.get("error", "initial session join failed"))
 		return
-
-	var deadline := Time.get_ticks_msec() + 5000
-	while _transport.call("connection_status") == StreamPeerTCP.STATUS_CONNECTING and Time.get_ticks_msec() < deadline:
-		_transport.call("poll")
-		await get_tree().process_frame
-
-	if _transport.call("connection_status") != StreamPeerTCP.STATUS_CONNECTED:
-		_fail("connection to %s:%d timed out" % [host, port])
-		return
-
-	_set_connection_state("Negotiating", "Relay transport connected. Verifying Protocol V2 compatibility.")
-	var hello := {
-		"type": "ClientHello",
-		"protocol_version": PROTOCOL_VERSION,
-		"client_name": "revenant-godot",
-		"client_build": "0.2.0",
-	}
-	if not _send_message(hello):
-		_fail("ClientHello send failed")
-		return
-
-	var server_hello := await _receive_message(Time.get_ticks_msec() + 5000)
-	if server_hello.get("type") != "ServerHello":
-		_fail("expected ServerHello")
-		return
-	if not server_hello.get("accepted", false):
-		_fail("server rejected handshake: %s" % server_hello.get("message", "unknown error"))
-		return
-	if server_hello.get("protocol_version") != PROTOCOL_VERSION:
-		_fail("server selected an unexpected protocol version")
-		return
-
-	print("handshake accepted by %s using protocol v%d" % [server_hello.get("server_name"), PROTOCOL_VERSION])
-
-	_set_connection_state("Authenticating", "Protocol accepted. Requesting the local Operator identity.")
-	if not _send_message({"type": "AuthRequest", "username": username}):
-		_fail("AuthRequest send failed")
-		return
-	var auth_response := await _receive_message(Time.get_ticks_msec() + 5000)
-	if auth_response.get("type") != "AuthResponse":
-		_fail("expected AuthResponse")
-		return
-	if not auth_response.get("authenticated", false):
-		_fail("local authentication rejected: %s" % auth_response.get("message", "unknown error"))
-		return
-	print("authenticated local account %s" % auth_response.get("account_id"))
-
-	_set_connection_state("Joining", "Identity accepted. Loading the server-owned character and relay state.")
-	if not _send_message({"type": "CharacterListRequest"}):
-		_fail("CharacterListRequest send failed")
-		return
-	var character_response := await _receive_message(Time.get_ticks_msec() + 5000)
-	if character_response.get("type") != "CharacterListResponse":
-		_fail("expected CharacterListResponse")
-		return
-	var characters: Array = character_response.get("characters", [])
-	if characters.is_empty():
-		_fail("server returned no local character")
-		return
-	var character: Dictionary = characters[0]
-	print("received character %s (%s, level %d)" % [character.get("display_name"), character.get("class_name"), character.get("level")])
-
-	if not _send_message({"type": "WorldJoinRequest", "character_id": character.get("character_id")}):
-		_fail("WorldJoinRequest send failed")
-		return
-	var world_response := await _receive_message(Time.get_ticks_msec() + 5000)
-	if world_response.get("type") != "WorldJoinResponse":
-		_fail("expected WorldJoinResponse")
-		return
-	if not world_response.get("accepted", false):
-		_fail("world join rejected: %s" % world_response.get("message", "unknown error"))
-		return
-	print("joined world %s as player actor %d" % [world_response.get("world_id"), world_response.get("player_actor_id")])
-	_player_actor_id = world_response.get("player_actor_id")
-	var inventory_snapshot := await _receive_message(Time.get_ticks_msec() + 5000)
-	if inventory_snapshot.get("type") != "InventorySnapshot":
-		_fail("expected InventorySnapshot")
-		return
-	_apply_inventory_snapshot(inventory_snapshot)
-	var progression_snapshot := await _receive_message(Time.get_ticks_msec() + 5000)
-	if progression_snapshot.get("type") != "ProgressionSnapshot":
-		_fail("expected ProgressionSnapshot")
-		return
-	_apply_progression(progression_snapshot)
-	var equipment_snapshot := await _receive_message(Time.get_ticks_msec() + 5000)
-	if equipment_snapshot.get("type") != "EquipmentSnapshot":
-		_fail("expected EquipmentSnapshot")
-		return
-	_apply_equipment_snapshot(equipment_snapshot)
+	_player_actor_id = joined.get("world", {}).get("player_actor_id")
+	_apply_inventory_snapshot(joined.get("inventory", {}))
+	_apply_progression(joined.get("progression", {}))
+	_apply_equipment_snapshot(joined.get("equipment", {}))
 	_set_connection_state("Waiting", "Relay joined. Waiting for the server to begin the activity.")
 	_entry_shell.call("dismiss")
 	_hud_canvas.visible = true
@@ -357,14 +271,14 @@ func _run_handshake(username: String, host: String, port: int) -> void:
 
 
 func _send_message(value: Dictionary) -> bool:
-	if not _transport.call("send_message", value):
+	if not _session.call("send_message", value):
 		_append_input_log("Protocol encode FAILED: %s" % value.get("type", "unknown"))
 		return false
 	return true
 
 
 func _receive_message(deadline: int) -> Dictionary:
-	return await _transport.call("receive_message", deadline)
+	return await _session.call("receive_message", deadline)
 
 
 func _render_actor(actor: Dictionary) -> void:
@@ -434,7 +348,7 @@ func _update_actor(update: Dictionary) -> void:
 
 func _run_manual_activity() -> void:
 	_controls_label.text = "WASD / ARROWS  MOVE    •    MOUSE / SPACE  ATTACK"
-	while not _activity_complete and _transport.call("connection_status") == StreamPeerTCP.STATUS_CONNECTED:
+	while not _activity_complete and _session.call("connection_status") == StreamPeerTCP.STATUS_CONNECTED:
 		_handle_manual_input()
 		var message := _try_receive_message()
 		if not message.is_empty():
@@ -530,7 +444,7 @@ func _handle_manual_message(message: Dictionary) -> void:
 
 
 func _try_receive_message() -> Dictionary:
-	return _transport.call("try_receive_message")
+	return _session.call("try_receive_message")
 
 
 func _aimed_enemy() -> int:
@@ -1282,13 +1196,16 @@ func _validate_playable_slice() -> void:
 		_fail("M23 extracted MessagePack codec does not preserve the supported wire subset")
 		get_tree().quit(1)
 		return
-	var transport_state: Dictionary = _transport.call("presentation_state")
+	var session_state: Dictionary = _session.call("presentation_state")
+	var transport_state: Dictionary = session_state.get("transport", {})
 	if (
-		_transport.name != "FramedTransport"
+		_session.name != "SessionController"
+		or session_state.get("protocol_version") != 2
+		or session_state.get("message_deadline_ms") != 5000
 		or transport_state.get("maximum_frame_size") != 64 * 1024
 		or transport_state.get("buffered_bytes") != 0
 	):
-		_fail("M23 framed transport does not preserve its bounded initial state")
+		_fail("M23 session controller does not preserve its protocol and bounded transport contract")
 		get_tree().quit(1)
 		return
 	var environment_state: Dictionary = _environment.call("presentation_state")
@@ -1500,6 +1417,7 @@ func _validate_playable_slice() -> void:
 	print("M22 integration evidence validated: mix measurement and reproducible review captures are ready")
 	print("M23 MessagePack boundary validated: exact signed bytes and supported round-trip are preserved")
 	print("M23 framed transport validated: socket, buffering, deadlines and 64 KiB ceiling are isolated")
+	print("M23 session controller validated: negotiation, identity, join and initial snapshots are isolated")
 	_audio_director.call("shutdown")
 	_audio_director.queue_free()
 	_audio_director = null
