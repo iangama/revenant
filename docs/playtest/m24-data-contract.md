@@ -1,6 +1,6 @@
 # M24 playtest evidence data contract
 
-Status: Block 1 contract; authoritative summary implemented in Block 2, local report deferred to Block 3.
+Status: Block 1 contract; authoritative summary implemented in Block 2 and local report implemented in Block 3.
 
 ## Boundary decision
 
@@ -50,6 +50,8 @@ Neither product adds a replay event, changes Protocol V2, or grants gameplay sta
 - Disabled by default.
 - Enabled only when `REVENANT_PLAYTEST_MODE=1` is present at launch.
 - Requires a valid participant code supplied through `REVENANT_PLAYTEST_PARTICIPANT`.
+- Requires an operator-supplied package identifier through `REVENANT_PLAYTEST_BUILD_ID`.
+- Requires explicit observation consent through `REVENANT_PLAYTEST_OBSERVATION_CONSENT=1`; retention is independently confirmed through `REVENANT_PLAYTEST_RETENTION_CONSENT=1`.
 - A valid code matches `PT-[A-Z0-9]{4}` and is assigned independently of name, email, username, or schedule record.
 - Missing or malformed activation values disable collection and expose an explicit local diagnostic; they must not block normal play.
 
@@ -153,4 +155,4 @@ Blocks 2 and 3 must later implement tests for at least:
 - temporary-report deletion when retention is declined;
 - contradiction between local completion observation and authoritative replay.
 
-No implementation may weaken these fixtures without updating and separately reviewing this contract.
+No implementation may weaken these fixtures without updating and separately reviewing this contract. Block 2 covers the authoritative completed, incomplete, started/disconnected, and multiplayer fixtures. Block 3 covers disabled and malformed activation, explicit consent, completion before settings, pre-session failure, first-occurrence semantics, count and encoded-size bounds, retention-declined deletion, and explicit contradiction detection.
