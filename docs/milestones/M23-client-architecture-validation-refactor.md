@@ -1,6 +1,6 @@
 # M23 — Client Architecture and Validation Refactor
 
-Status: Blocks 1 through 6 implemented and validated locally; later blocks require separate review.
+Status: Blocks 1 through 6 integrated; Block 7 implemented and validated locally; Block 8 requires separate review.
 
 ## Objective
 
@@ -80,3 +80,9 @@ The controller depends only on the framed transport and scene-frame timing. It d
 `client/game/input/player_intent_controller.gd` now owns keyboard/on-screen movement sampling, attack request consumption, and the existing 120 ms movement and 260 ms attack attempt windows. It returns intent-neutral values to `main.gd`; only the coordinator can submit them to the session, and no local attempt mutates the authoritative projector. Target selection remains presentation-aware in the coordinator.
 
 `client/game/presentation/hud_projection.gd` owns deterministic objective, inventory, progression, and equipment text derived from the Block 5 read model. It has no node, transport, input, audio, or settings dependency. Scene composition and confirmed feedback remain in `main.gd`, which is reduced from 1,560 to 1,558 lines after adding the combined boundary fixture and marker. The complete gate preserves controls, cooldown acknowledgements, exact HUD semantics, both activity paths, prior markers, version `0.2.0`, and frozen evidence; no tag or release is part of this block.
+
+## Block 7 checkpoint
+
+Four domain-focused harnesses under `client/game/validation` now own the M17–M23 assertions: protocol and controller boundaries, entry/settings/onboarding experience, audio behavior and measurement, and playable presentation. Fixtures cross these boundaries explicitly as nodes, read models, callables, paths, and the scene tree; the harnesses do not discover production state through node paths or singletons and return preserved failure text to the coordinator.
+
+`main.gd` retains validation sequencing, canonical marker emission, common failure handling, audio teardown, and the environment-variable capture contract. The sequence deliberately interleaves harness phases so every M21 and M22 capture observes the same mutations and frame waits as before extraction. The coordinator is reduced from 1,558 to 1,066 lines. The complete local gate preserves all 22 canonical M17–M23 markers, automatic and manual flows, persistence/replay, Inspector, version `0.2.0`, and the frozen V1 hashes. Capture reproduction and final architecture evidence remain deferred to the separately reviewed Block 8; no tag or release is part of this block.

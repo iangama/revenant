@@ -74,3 +74,9 @@ The coordinator still owns a separate actor-node registry and consumes projector
 Local control state now terminates at an intent controller: physical and on-screen inputs produce movement or attack attempts plus bounded local cooldown timing, never confirmed movement, damage, equipment, or completion. `main.gd` retains spatial target selection and sends the resulting intent through the session boundary.
 
 HUD formatting now points one way from authoritative projector data to deterministic text. The formatter cannot mutate the read model or scene tree. Node construction, guidance, audio, animation, and other confirmed reactions remain composed by `main.gd`; extracting their broader coordination is deferred rather than coupling presentation code back to protocol or input.
+
+## Block 7 result
+
+Validation now terminates in four explicit domain harnesses: `boundary_harness.gd`, `experience_harness.gd`, `audio_harness.gd`, and `presentation_harness.gd`. Pure controller fixtures are constructed inside the boundary harness; scene-dependent harnesses receive only the nodes, callables, paths, and timing context needed for their assertions. Production protocol, session, projection, input, and presentation collaborators have no dependency on validation code.
+
+The coordinator remains responsible for ordering the harness phases because capture state spans domain boundaries. It also retains canonical marker output and common shutdown behavior, preventing the extraction from changing smoke contracts or lifecycle ownership. Broader integration evidence, final ownership metrics, and deferred-work review remain Block 8 work.
