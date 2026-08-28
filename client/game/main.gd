@@ -19,11 +19,10 @@ const SESSION_CONTROLLER := preload("res://session/session_controller.gd")
 const AUTHORITATIVE_STATE := preload("res://projection/authoritative_state.gd")
 const PLAYER_INTENT_CONTROLLER := preload("res://input/player_intent_controller.gd")
 const HUD_PROJECTION := preload("res://presentation/hud_projection.gd")
-const M21_CAPTURE_FILENAMES := [
-	"01-relay-hub-overview.png",
-	"02-enemy-telegraphs.png",
-	"03-combat-feedback.png",
-]
+const AUDIO_HARNESS := preload("res://validation/audio_harness.gd")
+const BOUNDARY_HARNESS := preload("res://validation/boundary_harness.gd")
+const EXPERIENCE_HARNESS := preload("res://validation/experience_harness.gd")
+const PRESENTATION_HARNESS := preload("res://validation/presentation_harness.gd")
 
 var _session: Node
 var _authoritative_state := AUTHORITATIVE_STATE.new()
@@ -880,535 +879,84 @@ func _append_input_log(message: String) -> void:
 
 
 func _validate_playable_slice() -> void:
-	var initial_audio_state: Dictionary = _audio_director.call("presentation_state")
-	if (
-		initial_audio_state.get("fixed_nodes") != 14
-		or initial_audio_state.get("maximum_voices") != 14
-		or initial_audio_state.get("foundation_voices") != 4
-		or initial_audio_state.get("combat_voices") != 8
-		or initial_audio_state.get("interface_critical_voices") != 4
-		or initial_audio_state.get("decoded_bytes") != 741120
-		or not initial_audio_state.get("ambience_looping", false)
-		or initial_audio_state.get("routes") != {"ambience": "Ambience", "door": "Effects", "system": "Interface", "combat": "Effects"}
-	):
-		_fail("M22 audio foundation is not fixed, bounded or loop-ready: %s" % initial_audio_state)
-		get_tree().quit(1)
+	var validation_error := AUDIO_HARNESS.new().validate(_audio_director, _door)
+	if not validation_error.is_empty():
+		_validation_fail(validation_error)
 		return
-	_audio_director.call("set_silent", true)
-	_audio_director.call("play_system_ready")
-	_audio_director.call("apply_door_state", false, Vector3.ZERO)
-	_audio_director.call("apply_door_state", true, Vector3.ZERO)
-	_audio_director.call("play_cooldown_acknowledgement")
-	_audio_director.call("play_confirmed_attack", "pulse_rifle", Vector3.ZERO)
-	_audio_director.call("play_enemy_presence", "warden", Vector3.ZERO)
-	_audio_director.call("play_player_damage")
-	_audio_director.call("play_completion")
-	var silent_audio_state: Dictionary = _audio_director.call("presentation_state")
-	if (
-		silent_audio_state.get("active_voices") != 0
-		or silent_audio_state.get("suppressed", 0) < 7
-		or silent_audio_state.get("requests", {}).get("door_unlock") != 1
-	):
-		_fail("M22 silent mode permits audible or queued cues")
-		get_tree().quit(1)
+	var experience_fixtures := {
+		"tree": get_tree(),
+		"entry_shell": _entry_shell,
+		"settings_store": _settings_store,
+		"settings_panel": _settings_panel,
+		"onboarding": _onboarding,
+		"hud_canvas": _hud_canvas,
+		"status_label": _status_label,
+		"controls_label": _controls_label,
+		"presentation_polish": _presentation_polish,
+		"open_settings": Callable(self, "_open_settings"),
+		"apply_settings": Callable(self, "_apply_settings"),
+		"refresh_onboarding": Callable(self, "_refresh_onboarding"),
+		"save_capture": Callable(self, "_save_review_capture"),
+		"guidance_mode": Callable(self, "_validation_guidance_mode"),
+	}
+	validation_error = await EXPERIENCE_HARNESS.new().validate(experience_fixtures)
+	if not validation_error.is_empty():
+		_validation_fail(validation_error)
 		return
-	_audio_director.call("set_silent", false)
-	_audio_director.call("play_system_ready")
-	_audio_director.call("apply_door_state", true, _door.global_position)
-	_audio_director.call("play_cooldown_acknowledgement")
-	var local_ack_state: Dictionary = _audio_director.call("presentation_state")
-	if local_ack_state.get("played", {}).get("cooldown") != 1 or local_ack_state.get("played", {}).get("pulse_rifle") != 0:
-		_fail("M22 local attack acknowledgement manufactures a confirmed combat cue")
-		get_tree().quit(1)
+	var presentation_fixtures := {
+		"camera": _camera,
+		"door": _door,
+		"status_label": _status_label,
+		"health_label": _health_label,
+		"enemy_health_label": _enemy_health_label,
+		"position_label": _position_label,
+		"objective_label": _objective_label,
+		"crosshair": _crosshair,
+		"guidance_label": _guidance_label,
+		"input_log_label": _input_log_label,
+		"inventory_label": _inventory_label,
+		"progression_label": _progression_label,
+		"equipment_label": _equipment_label,
+		"hud_frame": _hud_frame,
+		"presentation_polish": _presentation_polish,
+		"player_health_bar": _player_health_bar,
+		"enemy_health_bar": _enemy_health_bar,
+		"movement_buttons": _movement_buttons,
+		"attack_button": _attack_button,
+		"weapon_buttons": _weapon_buttons,
+	}
+	var presentation_harness := PRESENTATION_HARNESS.new()
+	validation_error = presentation_harness.validate_foundation(presentation_fixtures)
+	if not validation_error.is_empty():
+		_validation_fail(validation_error)
 		return
-	_audio_director.call("play_confirmed_move", Vector3.ZERO)
-	_audio_director.call("play_confirmed_attack", "pulse_rifle", Vector3.ZERO)
-	_audio_director.call("play_confirmed_attack", "arc_sidearm", Vector3.ZERO)
-	_audio_director.call("play_enemy_presence", "relay-drone", Vector3.ZERO)
-	_audio_director.call("play_enemy_presence", "warden", Vector3.ZERO)
-	_audio_director.call("play_confirmed_impact", Vector3.ZERO)
-	_audio_director.call("play_confirmed_defeat", Vector3.ZERO)
-	_audio_director.call("play_player_damage")
-	_audio_director.call("play_completion")
-	var audible_audio_state: Dictionary = _audio_director.call("presentation_state")
-	if audible_audio_state.get("active_voices", 0) > 14:
-		_fail("M22 audio presentation exceeds its voice budget")
-		get_tree().quit(1)
+	validation_error = BOUNDARY_HARNESS.new().validate(_session)
+	if not validation_error.is_empty():
+		_validation_fail(validation_error)
 		return
-	var onboarding_validation := ONBOARDING_CONTROLLER.new()
-	onboarding_validation.call("reset", "Full")
-	onboarding_validation.call("note_local", "movement")
-	onboarding_validation.call("note_local", "attack")
-	var onboarding_state: Dictionary = onboarding_validation.call("presentation_state")
-	if onboarding_state.get("step") != "Movement":
-		_fail("M22 local onboarding attempts manufacture authoritative progress")
-		get_tree().quit(1)
-		return
-	onboarding_validation.call("confirm", "movement")
-	onboarding_validation.call("confirm", "damage")
-	onboarding_validation.call("confirm", "equipment")
-	onboarding_validation.call("confirm", "door_objective")
-	onboarding_validation.call("confirm", "warden_spawn")
-	onboarding_validation.call("toggle")
-	onboarding_validation.call("toggle")
-	onboarding_validation.call("confirm", "completion")
-	onboarding_state = onboarding_validation.call("presentation_state")
-	if onboarding_state.get("step") != "Completion" or onboarding_state.get("dismissed", true):
-		_fail("M22 onboarding does not follow confirmed evidence or revisitable guidance")
-		get_tree().quit(1)
-		return
-	var entry_state: Dictionary = _entry_shell.call("presentation_state")
-	if (
-		entry_state.get("state") != "Entry"
-		or not entry_state.get("username_valid", false)
-		or not entry_state.get("connect_enabled", false)
-		or not entry_state.get("mouse_captured", false)
-		or not _entry_shell.call("is_username_valid", "Echo.Runner-1")
-		or _entry_shell.call("is_username_valid", "bad user")
-		or _entry_shell.call("is_username_valid", "")
-	):
-		_fail("M22 entry shell does not expose a safe explicit connection state")
-		get_tree().quit(1)
-		return
-	var entry_capture_path := OS.get_environment("REVENANT_CAPTURE_M22_ENTRY")
-	if not entry_capture_path.is_empty():
-		await get_tree().process_frame
-		await get_tree().process_frame
-		var entry_capture_error := await _save_review_capture(entry_capture_path)
-		if entry_capture_error != OK:
-			_fail("M22 entry shell validation capture could not be saved")
-			get_tree().quit(1)
-			return
-	_entry_shell.call("set_connection_state", "Connecting", "Validation")
-	entry_state = _entry_shell.call("presentation_state")
-	if entry_state.get("state") != "Connecting" or entry_state.get("connect_enabled", true):
-		_fail("M22 entry shell does not prevent duplicate connection actions")
-		get_tree().quit(1)
-		return
-	_entry_shell.call("show_failure", "Validation failure")
-	entry_state = _entry_shell.call("presentation_state")
-	if entry_state.get("state") != "Failed" or not entry_state.get("connect_enabled", false):
-		_fail("M22 entry shell does not provide a keyboard-reachable retry state")
-		get_tree().quit(1)
-		return
-	var sanitized_settings: Dictionary = _settings_store.call("sanitize", {
-		"master_volume": 4.0,
-		"ambience_volume": -2.0,
-		"effects_volume": "invalid",
-		"interface_volume": 0.35,
-		"muted": "invalid",
-		"display_mode": "Borderless",
-		"reduced_flash": true,
-		"guidance_mode": "Unknown",
+	presentation_fixtures.merge({
+		"root": self,
+		"tree": get_tree(),
+		"environment": _environment,
+		"combat_vfx": _combat_vfx,
+		"save_capture": Callable(self, "_save_review_capture"),
+		"onboarding": _onboarding,
+		"refresh_onboarding": Callable(self, "_refresh_onboarding"),
 	})
-	if (
-		sanitized_settings.get("master_volume") != 1.0
-		or sanitized_settings.get("ambience_volume") != 0.0
-		or sanitized_settings.get("effects_volume") != 0.85
-		or sanitized_settings.get("interface_volume") != 0.35
-		or sanitized_settings.get("muted") != false
-		or sanitized_settings.get("display_mode") != "Windowed"
-		or sanitized_settings.get("reduced_flash") != true
-		or sanitized_settings.get("guidance_mode") != "Full"
-	):
-		_fail("M22 settings do not recover deterministic safe defaults")
-		get_tree().quit(1)
+	var scene_validation: Dictionary = await presentation_harness.validate_scene(presentation_fixtures)
+	validation_error = scene_validation.get("error", "")
+	if not validation_error.is_empty():
+		_validation_fail(validation_error)
 		return
-	var validation_settings_path := "user://m22-settings-validation.cfg"
-	var persisted_candidate := sanitized_settings.duplicate(true)
-	persisted_candidate["guidance_mode"] = "Off"
-	if _settings_store.call("save_settings", persisted_candidate, validation_settings_path) != OK:
-		_fail("M22 settings cannot persist local validated values")
-		get_tree().quit(1)
-		return
-	var persisted_settings: Dictionary = _settings_store.call("load_settings", validation_settings_path)
-	DirAccess.remove_absolute(ProjectSettings.globalize_path(validation_settings_path))
-	if persisted_settings.get("guidance_mode") != "Off" or persisted_settings.get("master_volume") != 1.0:
-		_fail("M22 settings persistence does not round-trip validated values")
-		get_tree().quit(1)
-		return
-	var settings_focus_source: Control = _entry_shell.call("settings_focus_source")
-	_open_settings(settings_focus_source)
-	var settings_capture_path := OS.get_environment("REVENANT_CAPTURE_M22_SETTINGS")
-	if not settings_capture_path.is_empty():
-		await get_tree().process_frame
-		await get_tree().process_frame
-		var settings_capture_error := await _save_review_capture(settings_capture_path)
-		if settings_capture_error != OK:
-			_fail("M22 settings validation capture could not be saved")
-			get_tree().quit(1)
-			return
-	var settings_state: Dictionary = _settings_panel.call("presentation_state")
-	if (
-		not settings_state.get("visible", false)
-		or settings_state.get("slider_count", 0) != 4
-		or not settings_state.get("has_mute", false)
-		or not settings_state.get("has_reduced_flash", false)
-		or settings_state.get("display_options", 0) != 2
-		or settings_state.get("guidance_options", 0) != 3
-		or not settings_state.get("mouse_captured", false)
-		or settings_state.get("focus_owner") != "Apply"
-	):
-		_fail("M22 settings panel is incomplete or not keyboard reachable")
-		get_tree().quit(1)
-		return
-	_settings_panel.call("close_panel")
-	entry_state = _entry_shell.call("presentation_state")
-	if entry_state.get("focus_owner") != "Settings":
-		_fail("M22 settings do not restore focus to their invoking control")
-		get_tree().quit(1)
-		return
-	_entry_shell.call("dismiss")
-	_hud_canvas.visible = true
-	_status_label.text = "RELAY READY  •  WAITING FOR ACTIVITY"
-	_controls_label.text = "WASD / ARROWS MOVE  •  AIM + CLICK / SPACE ATTACK  •  H HELP  •  ESC SETTINGS"
-	_refresh_onboarding()
-	var onboarding_capture_path := OS.get_environment("REVENANT_CAPTURE_M22_ONBOARDING")
-	if not onboarding_capture_path.is_empty():
-		var onboarding_capture_error := await _save_review_capture(onboarding_capture_path)
-		if onboarding_capture_error != OK:
-			_fail("M22 onboarding validation capture could not be saved")
-			get_tree().quit(1)
-			return
-	_apply_settings({
-		"master_volume": 0.6,
-		"ambience_volume": 0.5,
-		"effects_volume": 0.7,
-		"interface_volume": 0.4,
-		"muted": true,
-		"display_mode": "Windowed",
-		"reduced_flash": true,
-		"guidance_mode": "Compact",
-	}, false)
-	var audio_state: Dictionary = _settings_store.call("audio_state")
-	var buses: Dictionary = audio_state.get("buses", {})
-	if (
-		not buses.get("Master", {}).get("present", false)
-		or not buses.get("Master", {}).get("muted", false)
-		or not buses.get("Ambience", {}).get("present", false)
-		or not buses.get("Effects", {}).get("present", false)
-		or not buses.get("Interface", {}).get("present", false)
-		or _guidance_mode != "Compact"
-		or not _presentation_polish.call("presentation_state").get("reduced_flash", false)
-	):
-		_fail("M22 local settings do not apply bounded buses and accessibility state")
-		get_tree().quit(1)
-		return
-	_apply_settings(_settings_store.call("defaults"), false)
-	var required_actions := ["move_forward", "move_back", "move_left", "move_right", "attack"]
-	for action in required_actions:
-		if not InputMap.has_action(action):
-			_fail("M17 input action is missing: %s" % action)
-			get_tree().quit(1)
-			return
-	if (
-		_camera == null
-		or _door == null
-		or _status_label == null
-		or _health_label == null
-		or _enemy_health_label == null
-		or _position_label == null
-		or _objective_label == null
-		or _crosshair == null
-		or _guidance_label == null
-		or _input_log_label == null
-		or _inventory_label == null
-		or _progression_label == null
-		or _equipment_label == null
-		or _hud_frame == null
-		or _presentation_polish == null
-		or _player_health_bar == null
-		or _enemy_health_bar == null
-		or _movement_buttons.size() != 4
-		or _attack_button == null
-		or _weapon_buttons.size() != 2
-		or _crosshair.mouse_filter != Control.MOUSE_FILTER_IGNORE
-	):
-		_fail("M17 playable scene composition is incomplete")
-		get_tree().quit(1)
-		return
-	_presentation_polish.call("play_confirmed_player_damage")
-	_presentation_polish.call("play_authoritative_completion")
-	var polish_state: Dictionary = _presentation_polish.call("presentation_state")
-	if (
-		polish_state.get("confirmed_damage_cues", 0) != 1
-		or polish_state.get("completion_cues", 0) != 1
-		or polish_state.get("edge_overlays", 0) != 4
-		or polish_state.get("maximum_screen_coverage", 1.0) > 0.06
-	):
-		_fail("M21 polished slice exceeds its visual consistency or performance budget")
-		get_tree().quit(1)
-		return
-	var hud_state: Dictionary = _hud_frame.call("presentation_state")
-	if (
-		hud_state.get("panel_count", 0) != 4
-		or hud_state.get("semantic_accent_count", 0) < 4
-		or not hud_state.get("mouse_passthrough", false)
-		or _player_health_bar.value != 100.0
-		or _enemy_health_bar.value != 100.0
-	):
-		_fail("M21 Operator HUD does not preserve its hierarchy, semantic roles or authoritative health state")
-		get_tree().quit(1)
-		return
-	var codec_validation: RefCounted = MESSAGEPACK_CODEC.new()
-	if codec_validation.call("encode_array", [-12, 0, 12]) != PackedByteArray([0x93, 0xf4, 0x00, 0x0c]):
-		_fail("M17 movement encoder does not support signed relay-hub coordinates")
-		get_tree().quit(1)
-		return
-	var codec_fixture := {"type": "MoveIntent", "position": [6, 0, 0]}
-	var codec_payload: PackedByteArray = codec_validation.call("encode_map", codec_fixture)
-	var codec_decoded: Array = codec_validation.call("decode_value", codec_payload)
-	if (
-		codec_validation.call("has_failed")
-		or codec_decoded.is_empty()
-		or codec_decoded[0] != codec_fixture
-		or codec_decoded[1] != codec_payload.size()
-	):
-		_fail("M23 extracted MessagePack codec does not preserve the supported wire subset")
-		get_tree().quit(1)
-		return
-	var session_state: Dictionary = _session.call("presentation_state")
-	var transport_state: Dictionary = session_state.get("transport", {})
-	if (
-		_session.name != "SessionController"
-		or session_state.get("protocol_version") != 2
-		or session_state.get("message_deadline_ms") != 5000
-		or transport_state.get("maximum_frame_size") != 64 * 1024
-		or transport_state.get("buffered_bytes") != 0
-	):
-		_fail("M23 session controller does not preserve its protocol and bounded transport contract")
-		get_tree().quit(1)
-		return
-	var projection_validation := AUTHORITATIVE_STATE.new()
-	projection_validation.call("join_world", {"player_actor_id": 7})
-	projection_validation.call("apply_actor_spawn", {"actor_id": 7, "health": 100, "max_health": 100, "position": [0, 0, 0]})
-	projection_validation.call("apply_damage", {"target_actor_id": 7, "remaining_health": 90})
-	projection_validation.call("apply_inventory_snapshot", {"items": [{"item_id": "pulse_rifle", "quantity": 1}]})
-	projection_validation.call("apply_loot_grant", {"item_id": "relay_core_fragment", "resulting_quantity": 2})
-	projection_validation.call("apply_progression", {"level": 7, "experience": 3200, "experience_to_next_level": 800})
-	projection_validation.call("apply_equipment_snapshot", {"equipped_weapon_item_id": "pulse_rifle", "weapons": [{"item_id": "pulse_rifle", "damage": 25}]})
-	projection_validation.call("apply_objective", {"objective_id": "clear_drone_group", "state": "Active"})
-	projection_validation.call("apply_activity_complete", {"activity_id": "relay_awakening"})
-	var projection_state: Dictionary = projection_validation.call("presentation_state")
-	if (
-		projection_state.get("player_actor_id") != 7
-		or projection_state.get("actor_count") != 1
-		or projection_validation.actor_health.get(7) != 90
-		or projection_state.get("inventory", {}).get("relay_core_fragment") != 2
-		or projection_state.get("progression", {}).get("experience") != 3200
-		or projection_state.get("equipped_weapon_item_id") != "pulse_rifle"
-		or projection_state.get("weapon_profile_count") != 1
-		or projection_state.get("objective_count") != 1
-		or not projection_state.get("activity_complete", false)
-	):
-		_fail("M23 authoritative state projection does not preserve server-confirmed domain facts")
-		get_tree().quit(1)
-		return
-	var intent_validation := PLAYER_INTENT_CONTROLLER.new()
-	intent_validation.call("set_ui_movement", Vector2.RIGHT)
-	intent_validation.call("request_attack", true)
-	var intent_state: Dictionary = intent_validation.call("presentation_state")
-	var attack_intent: Dictionary = intent_validation.call("take_attack", 1000)
-	var hud_validation := HUD_PROJECTION.new()
-	if (
-		intent_validation.call("movement", 1000) != Vector2.RIGHT
-		or intent_state.get("move_cooldown_ms") != 120
-		or intent_state.get("attack_cooldown_ms") != 260
-		or not attack_intent.get("requested", false)
-		or not attack_intent.get("use_active_target", false)
-		or hud_validation.call("inventory_text", {"relay_core_fragment": 2}) != "INVENTORY\nRELAY CORE FRAGMENT  x2"
-		or hud_validation.call("equipment_text", "pulse_rifle", {"damage": 25, "range": 8, "cooldown_ms": 260}) != "WEAPON  •  PULSE RIFLE\nDMG 25  RANGE 8  COOLDOWN 260 MS"
-	):
-		_fail("M23 input and HUD coordination does not preserve intent-only controls and authoritative text")
-		get_tree().quit(1)
-		return
-	var environment_state: Dictionary = _environment.call("presentation_state")
-	var closed_door_state: Dictionary = environment_state.get("door", {})
-	if (
-		environment_state.get("visual_bounds") != 12.0
-		or environment_state.get("door_position") != Vector3(6.5, 0.0, 0.0)
-		or not environment_state.get("terminal_present", false)
-		or environment_state.get("terminal_interactive", true)
-		or not environment_state.get("damaged_section_present", false)
-		or environment_state.get("mesh_count", 0) > 60
-		or environment_state.get("material_count", 0) > 6
-		or environment_state.get("light_count", 0) != 5
-		or environment_state.get("shadow_light_count", 1) != 0
-		or closed_door_state.get("open", true)
-	):
-		_fail("M21 relay-hub modular environment exceeds its composition or performance contract")
-		get_tree().quit(1)
-		return
-	_environment.call("set_core_door_open", true, false)
-	var open_door_state: Dictionary = _environment.call("presentation_state").get("door", {})
-	if not open_door_state.get("open", false) or open_door_state.get("amber_visible", true):
-		_fail("M21 relay-core door does not expose its authoritative open state")
-		get_tree().quit(1)
-		return
-	_environment.call("set_core_door_open", false, false)
-	var operator: Node3D = OPERATOR_SCENE.instantiate()
-	operator.name = "OperatorValidation"
-	add_child(operator)
-	await get_tree().process_frame
-	var operator_state: Dictionary = operator.call("presentation_state")
-	if (
-		operator_state.get("equipped_weapon") != "pulse_rifle"
-		or operator_state.get("last_animation") != "idle"
-		or not operator_state.get("pulse_rifle_visible", false)
-		or operator_state.get("arc_sidearm_visible", true)
-		or operator_state.get("part_count", 0) < 15
-	):
-		_fail("M21 Operator initial presentation is incomplete")
-		get_tree().quit(1)
-		return
-	operator.call("set_weapon", "arc_sidearm")
-	operator_state = operator.call("presentation_state")
-	if operator_state.get("equipped_weapon") != "arc_sidearm" or not operator_state.get("arc_sidearm_visible", false):
-		_fail("M21 Operator weapon silhouettes do not follow authoritative equipment")
-		get_tree().quit(1)
-		return
-	var drone: Node3D = RELAY_DRONE_SCENE.instantiate()
-	drone.name = "RelayDroneValidation"
-	drone.position = Vector3(-2.0, 0.0, 2.5)
-	add_child(drone)
-	var warden: Node3D = WARDEN_SCENE.instantiate()
-	warden.name = "WardenValidation"
-	warden.position = Vector3(3.0, 0.0, 2.5)
-	add_child(warden)
-	await get_tree().process_frame
-	var drone_state: Dictionary = drone.call("presentation_state")
-	var warden_state: Dictionary = warden.call("presentation_state")
-	if (
-		drone_state.get("family") != "relay_drone"
-		or drone_state.get("mesh_count", 0) > 12
-		or drone_state.get("material_count", 0) > 3
-		or warden_state.get("family") != "warden"
-		or warden_state.get("mesh_count", 0) > 18
-		or warden_state.get("material_count", 0) > 4
-		or warden_state.get("mesh_count", 0) <= drone_state.get("mesh_count", 0)
-	):
-		_fail("M21 enemy families are not distinct or exceed their presentation budgets")
-		get_tree().quit(1)
-		return
-	var capture_directory := OS.get_environment("REVENANT_CAPTURE_M21_DIR")
-	if not capture_directory.is_empty():
-		var overview_error := await _save_review_capture(capture_directory.path_join(M21_CAPTURE_FILENAMES[0]))
-		if overview_error != OK:
-			_fail("M21 overview capture could not be saved")
-			get_tree().quit(1)
-			return
-	drone.call("set_targeted", true)
-	drone.call("set_danger_close", false)
-	drone_state = drone.call("presentation_state")
-	if not drone_state.get("targeted", false) or drone_state.get("danger_close", true):
-		_fail("M21 enemy target and danger telegraphs are not independent")
-		get_tree().quit(1)
-		return
-	drone.call("set_danger_close", true)
-	if not capture_directory.is_empty():
-		var telegraph_error := await _save_review_capture(capture_directory.path_join(M21_CAPTURE_FILENAMES[1]))
-		if telegraph_error != OK:
-			_fail("M21 telegraph capture could not be saved")
-			get_tree().quit(1)
-			return
-	operator.call("play_authoritative_move", Vector3(-1.0, 0.0, 0.0))
-	operator.call("play_confirmed_attack")
-	operator.call("play_confirmed_hit")
-	operator.call("play_defeat")
-	operator_state = operator.call("presentation_state")
-	if operator_state.get("last_animation") != "defeat" or not operator_state.get("defeated", false):
-		_fail("M21 Operator authoritative animation states are incomplete")
-		get_tree().quit(1)
-		return
-	drone.call("play_authoritative_move", Vector3(-1.0, 0.0, -1.0))
-	drone.call("play_confirmed_attack")
-	drone.call("play_confirmed_hit")
-	drone.call("retire")
-	warden.call("play_confirmed_attack")
-	warden.call("play_confirmed_hit")
-	warden.call("retire")
-	_combat_vfx.call("play_local_cooldown", operator.global_position, 260)
-	_combat_vfx.call("play_confirmed_exchange", operator, drone, false)
-	_combat_vfx.call("play_confirmed_exchange", warden, operator, true)
-	var vfx_state: Dictionary = _combat_vfx.call("presentation_state")
-	if (
-		vfx_state.get("confirmed_exchanges", 0) != 2
-		or vfx_state.get("cooldown_cues", 0) != 1
-		or vfx_state.get("active_effects", 0) <= 0
-		or vfx_state.get("active_effects", 0) > vfx_state.get("maximum_active_effects", 0)
-		or vfx_state.get("permanent_particles", 1) != 0
-	):
-		_fail("M21 combat VFX does not preserve its bounded authoritative feedback contract")
-		get_tree().quit(1)
-		return
-	drone_state = drone.call("presentation_state")
-	warden_state = warden.call("presentation_state")
-	if not drone_state.get("retired", false) or not warden_state.get("retired", false):
-		_fail("M21 enemy defeat does not retire confirmed targets")
-		get_tree().quit(1)
-		return
-	var scene_budget: Dictionary = _presentation_polish.call("scene_budget", self)
-	if (
-		scene_budget.get("meshes", 0) > 120
-		or scene_budget.get("materials", 0) > 32
-		or scene_budget.get("lights", 0) != 5
-		or scene_budget.get("shadow_lights", 1) != 0
-		or scene_budget.get("particles", 1) != 0
-		or scene_budget.get("audio_nodes", 0) != 14
-	):
-		_fail("M21 representative combat peak exceeds its whole-scene performance budget")
-		get_tree().quit(1)
-		return
-	print("M21 scene budget measured: %d meshes, %d materials, %d lights, %d particles, %d audio nodes" % [
-		scene_budget.get("meshes", 0),
-		scene_budget.get("materials", 0),
-		scene_budget.get("lights", 0),
-		scene_budget.get("particles", 0),
-		scene_budget.get("audio_nodes", 0),
-	])
-	if not capture_directory.is_empty():
-		var combat_error := await _save_review_capture(capture_directory.path_join(M21_CAPTURE_FILENAMES[2]))
-		if combat_error != OK:
-			_fail("M21 combat capture could not be saved")
-			get_tree().quit(1)
-			return
-	var runtime_capture_path := OS.get_environment("REVENANT_CAPTURE_M22_RUNTIME")
-	if not runtime_capture_path.is_empty():
-		_status_label.text = "ENGAGED  •  CONFIRMED COMBAT FEEDBACK"
-		_objective_label.text = "OBJECTIVE  •  DEFEAT THE WARDEN"
-		_enemy_health_label.text = "ENEMY  WARDEN  •  020 / 120 HP"
-		_enemy_health_bar.max_value = 120
-		_enemy_health_bar.value = 20
-		_onboarding.call("confirm", "warden_spawn")
-		_refresh_onboarding()
-		var runtime_capture_error := await _save_review_capture(runtime_capture_path)
-		if runtime_capture_error != OK:
-			_fail("M22 runtime validation capture could not be saved")
-			get_tree().quit(1)
-			return
-	var capture_path := OS.get_environment("REVENANT_CAPTURE_SLICE")
-	if not capture_path.is_empty():
-		await get_tree().process_frame
-		await get_tree().process_frame
-		var capture_image := get_viewport().get_texture().get_image()
-		if capture_image == null:
-			_fail("M21 visual validation capture requires a graphical renderer")
-			get_tree().quit(1)
-			return
-		var capture_error := capture_image.save_png(capture_path)
-		if capture_error != OK:
-			_fail("M21 visual validation capture could not be saved")
-			get_tree().quit(1)
-			return
+	var operator: Node3D = scene_validation.operator
+	var drone: Node3D = scene_validation.drone
+	var warden: Node3D = scene_validation.warden
 	if OS.get_environment("REVENANT_MEASURE_M22") == "1":
-		var measurement := await _measure_m22_presentation(operator, drone, warden)
-		if (
-			measurement.get("captured_frames", 0) <= 0
-			or measurement.get("peak_dbfs", 0.0) > -3.0
-			or measurement.get("peak_voices", 0) > 14
-		):
-			_fail("M22 graphical presentation exceeds its measured output or voice budget: %s" % measurement)
-			get_tree().quit(1)
+		var audio_harness := AUDIO_HARNESS.new()
+		var measurement: Dictionary = await audio_harness.measure(get_tree(), _audio_director, operator, drone, warden)
+		validation_error = audio_harness.validate_measurement(measurement)
+		if not validation_error.is_empty():
+			_validation_fail(validation_error)
 			return
 	operator.queue_free()
 	await get_tree().process_frame
@@ -1442,53 +990,13 @@ func _validate_playable_slice() -> void:
 	get_tree().quit(0)
 
 
-func _measure_m22_presentation(operator: Node3D, drone: Node3D, warden: Node3D) -> Dictionary:
-	var master_bus := AudioServer.get_bus_index("Master")
-	var effect_index := AudioServer.get_bus_effect_count(master_bus)
-	var capture := AudioEffectCapture.new()
-	AudioServer.add_bus_effect(master_bus, capture, effect_index)
-	await get_tree().process_frame
-	capture.clear_buffer()
-	_audio_director.call("play_confirmed_move", operator.global_position)
-	_audio_director.call("play_confirmed_attack", "pulse_rifle", operator.global_position)
-	_audio_director.call("play_enemy_presence", "relay-drone", drone.global_position)
-	_audio_director.call("play_enemy_presence", "warden", warden.global_position)
-	_audio_director.call("play_confirmed_impact", drone.global_position)
-	_audio_director.call("play_player_damage")
-	_audio_director.call("play_completion")
-	var frame_times_ms: Array[float] = []
-	var peak_voices := 0
-	for _frame in range(30):
-		var started_at := Time.get_ticks_usec()
-		await get_tree().process_frame
-		frame_times_ms.append(float(Time.get_ticks_usec() - started_at) / 1000.0)
-		peak_voices = maxi(peak_voices, int(_audio_director.call("presentation_state").get("active_voices", 0)))
-	var captured_frames := capture.get_frames_available()
-	var samples := capture.get_buffer(captured_frames)
-	var peak := 0.0
-	var square_sum := 0.0
-	for sample in samples:
-		peak = maxf(peak, maxf(absf(sample.x), absf(sample.y)))
-		square_sum += sample.x * sample.x + sample.y * sample.y
-	AudioServer.remove_bus_effect(master_bus, effect_index)
-	var frame_sum := 0.0
-	var frame_max := 0.0
-	for frame_time in frame_times_ms:
-		frame_sum += frame_time
-		frame_max = maxf(frame_max, frame_time)
-	var rms := sqrt(square_sum / float(samples.size() * 2)) if not samples.is_empty() else 0.0
-	var mean_frame_ms := frame_sum / float(frame_times_ms.size())
-	var peak_dbfs := linear_to_db(peak) if peak > 0.0 else -80.0
-	var rms_dbfs := linear_to_db(rms) if rms > 0.0 else -80.0
-	print("M22 graphical presentation measured: mean %.3f ms/frame, max %.3f ms/frame, mixed peak %.2f dBFS, RMS %.2f dBFS, %d captured stereo frames, %d peak voices" % [mean_frame_ms, frame_max, peak_dbfs, rms_dbfs, captured_frames, peak_voices])
-	return {
-		"mean_frame_ms": mean_frame_ms,
-		"max_frame_ms": frame_max,
-		"peak_dbfs": peak_dbfs,
-		"rms_dbfs": rms_dbfs,
-		"captured_frames": captured_frames,
-		"peak_voices": peak_voices,
-	}
+func _validation_guidance_mode() -> String:
+	return _guidance_mode
+
+
+func _validation_fail(message: String) -> void:
+	_fail(message)
+	get_tree().quit(1)
 
 
 func _save_review_capture(path: String) -> Error:
