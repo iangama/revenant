@@ -1,6 +1,6 @@
 # M23 — Client Architecture and Validation Refactor
 
-Status: Blocks 1 through 4 implemented and validated locally; later blocks require separate review.
+Status: Blocks 1 through 5 implemented and validated locally; later blocks require separate review.
 
 ## Objective
 
@@ -68,3 +68,9 @@ The isolated Godot slice passes every M17–M23 marker with no leaks, and `main.
 `client/game/session/session_controller.gd` now owns connection establishment and the ordered Protocol V2 initial-session sequence: client hello, authentication, character selection, world join, then inventory, progression, and equipment snapshots. It emits presentation-neutral connection-state requests and returns either the accepted server snapshots or the preserved failure text. `main.gd` remains responsible for applying those snapshots, starting and routing activity messages, projecting authoritative state, and presenting failures.
 
 The controller depends only on the framed transport and scene-frame timing. It does not access actors, HUD nodes, audio, settings, onboarding, validation fixtures, or local input, and it cannot manufacture a successful session outcome. The extracted public state makes protocol version, deadline, and bounded transport ownership deterministic to validate. `main.gd` is reduced from 1,624 to 1,542 lines after adding the session-specific assertion and marker. The complete local gate preserves message order, exact wire behavior, automatic and manual flows, persistence/replay, Inspector, frozen V1 evidence, packaging, and version `0.2.0`; no tag or release is part of this block.
+
+## Block 5 checkpoint
+
+`client/game/projection/authoritative_state.gd` is now the presentation-neutral owner of server-confirmed player identity, actor records and health, inventory, progression, weapon profiles and selection, objective records, and activity completion. Its mutation surface accepts only the corresponding received messages. It has no scene tree, transport, HUD, input, audio, onboarding, settings, clock, or validation dependency.
+
+`main.gd` retains actor node instantiation and all visual, textual, audio, and guidance reactions; those presentation responsibilities remain deliberately ordered after state application and are deferred to Block 6. Nine authoritative state fields were removed from the coordinator. Its line count rises from 1,542 to 1,560 because each state transition is now explicit at the routing boundary and the deterministic fixture exercises every extracted domain. This is the documented line-budget exception: collapsing those calls into presentation helpers or moving the fixture into production code would obscure authority or prematurely mix Blocks 5 through 7. The complete local gate preserves both activity paths and all prior evidence with version `0.2.0`; no tag or release is part of this block.
