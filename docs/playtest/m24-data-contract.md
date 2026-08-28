@@ -1,6 +1,6 @@
 # M24 playtest evidence data contract
 
-Status: Block 1 contract; implementation is deferred to Blocks 2 and 3.
+Status: Block 1 contract; authoritative summary implemented in Block 2, local report deferred to Block 3.
 
 ## Boundary decision
 

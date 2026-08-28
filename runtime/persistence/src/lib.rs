@@ -1,5 +1,6 @@
 use postgres::{Client, NoTls};
 use revenant_progression::{ExperienceReward, Progression as DomainProgression};
+use std::fmt;
 
 const SCHEMA: &str = concat!(
     include_str!("../migrations/0001_initial.sql"),
@@ -78,6 +79,58 @@ pub struct PersistedReplaySession {
     pub event_count: i64,
     pub participant_count: i64,
     pub completed: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AuthoritativeSessionSummary {
+    pub session_id: String,
+    pub activity_id: Option<String>,
+    pub first_joined_at: String,
+    pub activity_started_at: Option<String>,
+    pub activity_ended_at: String,
+    pub join_to_start_ms: Option<i64>,
+    pub activity_duration_ms: Option<i64>,
+    pub participant_count: i64,
+    pub completed: bool,
+    pub enemy_spawn_count: i64,
+    pub enemy_defeat_count: i64,
+    pub boss_spawned: bool,
+    pub equipment_change_count: i64,
+    pub loot_grant_count: i64,
+    pub progression_grant_count: i64,
+    pub event_count: i64,
+}
+
+#[derive(Debug)]
+pub enum SessionSummaryError {
+    Database(postgres::Error),
+    InvalidEvidence(&'static str),
+}
+
+impl fmt::Display for SessionSummaryError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Database(error) => error.fmt(formatter),
+            Self::InvalidEvidence(message) => {
+                write!(formatter, "invalid replay evidence: {message}")
+            }
+        }
+    }
+}
+
+impl std::error::Error for SessionSummaryError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Self::Database(error) => Some(error),
+            Self::InvalidEvidence(_) => None,
+        }
+    }
+}
+
+impl From<postgres::Error> for SessionSummaryError {
+    fn from(error: postgres::Error) -> Self {
+        Self::Database(error)
+    }
 }
 
 pub struct Persistence {
@@ -463,6 +516,93 @@ impl Persistence {
                     })
                     .collect()
             })
+    }
+
+    /// Derives the bounded authoritative playtest summary for one replay session.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the query fails or persisted timestamps contradict replay order.
+    pub fn authoritative_session_summary(
+        &mut self,
+        session_id: &str,
+    ) -> Result<Option<AuthoritativeSessionSummary>, SessionSummaryError> {
+        let row = self.client.query_opt(
+            "WITH summary AS ( \
+                 SELECT session_id, MAX(activity_id) AS activity_id, \
+                        MIN(occurred_at) FILTER (WHERE event_type = 'player_joined') AS first_joined_at, \
+                        MIN(occurred_at) FILTER (WHERE event_type = 'activity_started') AS activity_started_at, \
+                        MIN(occurred_at) FILTER (WHERE event_type = 'activity_completed') AS completed_at, \
+                        MAX(occurred_at) AS latest_at, COUNT(DISTINCT account_id) AS participant_count, \
+                        COUNT(*) FILTER (WHERE event_type = 'enemy_spawned') AS enemy_spawn_count, \
+                        COUNT(*) FILTER (WHERE event_type = 'enemy_died') AS enemy_defeat_count, \
+                        BOOL_OR(event_type = 'boss_spawned') AS boss_spawned, \
+                        COUNT(*) FILTER (WHERE event_type = 'equipment_changed') AS equipment_change_count, \
+                        COUNT(*) FILTER (WHERE event_type = 'loot_granted') AS loot_grant_count, \
+                        COUNT(*) FILTER (WHERE event_type = 'progression_granted') AS progression_grant_count, \
+                        COUNT(*) AS event_count, \
+                        COUNT(*) FILTER (WHERE event_type NOT IN ( \
+                            'player_joined', 'activity_started', 'enemy_spawned', 'enemy_died', \
+                            'boss_spawned', 'activity_completed', 'loot_granted', \
+                            'progression_granted', 'equipment_changed' \
+                        )) AS unknown_event_count \
+                 FROM replay_events WHERE session_id = $1 GROUP BY session_id \
+             ) \
+             SELECT session_id, activity_id, first_joined_at::TEXT, activity_started_at::TEXT, \
+                    COALESCE(completed_at, latest_at)::TEXT, \
+                    CASE WHEN first_joined_at IS NULL OR activity_started_at IS NULL THEN NULL \
+                         ELSE (EXTRACT(EPOCH FROM (activity_started_at - first_joined_at)) * 1000)::BIGINT END, \
+                    CASE WHEN activity_started_at IS NULL OR completed_at IS NULL THEN NULL \
+                         ELSE (EXTRACT(EPOCH FROM (completed_at - activity_started_at)) * 1000)::BIGINT END, \
+                    participant_count, completed_at IS NOT NULL, enemy_spawn_count, enemy_defeat_count, \
+                    boss_spawned, equipment_change_count, loot_grant_count, progression_grant_count, event_count, \
+                    unknown_event_count \
+             FROM summary",
+            &[&session_id],
+        )?;
+        let Some(row) = row else {
+            return Ok(None);
+        };
+        let first_joined_at =
+            row.get::<_, Option<String>>(2)
+                .ok_or(SessionSummaryError::InvalidEvidence(
+                    "session has no player_joined event",
+                ))?;
+        let join_to_start_ms: Option<i64> = row.get(5);
+        let activity_duration_ms: Option<i64> = row.get(6);
+        if join_to_start_ms.is_some_and(|elapsed| elapsed < 0) {
+            return Err(SessionSummaryError::InvalidEvidence(
+                "activity_started precedes player_joined",
+            ));
+        }
+        if activity_duration_ms.is_some_and(|elapsed| elapsed < 0) {
+            return Err(SessionSummaryError::InvalidEvidence(
+                "activity_completed precedes activity_started",
+            ));
+        }
+        if row.get::<_, i64>(16) > 0 {
+            return Err(SessionSummaryError::InvalidEvidence(
+                "session contains an unknown replay event kind",
+            ));
+        }
+        Ok(Some(AuthoritativeSessionSummary {
+            session_id: row.get(0),
+            activity_id: row.get(1),
+            first_joined_at,
+            activity_started_at: row.get(3),
+            activity_ended_at: row.get(4),
+            join_to_start_ms,
+            activity_duration_ms,
+            participant_count: row.get(7),
+            completed: row.get(8),
+            enemy_spawn_count: row.get(9),
+            enemy_defeat_count: row.get(10),
+            boss_spawned: row.get(11),
+            equipment_change_count: row.get(12),
+            loot_grant_count: row.get(13),
+            progression_grant_count: row.get(14),
+            event_count: row.get(15),
+        }))
     }
 
     /// Finds the most recently completed replay session for an account.

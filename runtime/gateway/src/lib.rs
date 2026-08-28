@@ -170,6 +170,39 @@ fn handle_http_connection(
                 serde_json::json!({ "sessions": sessions }).to_string(),
             ))
         }
+        InspectorRoute::Summary(session_id) => {
+            let mut persistence = Persistence::connect(database_url)?;
+            let Some(summary) = persistence.authoritative_session_summary(session_id)? else {
+                return Ok((
+                    "404 Not Found",
+                    "{\"error\":\"session_not_found\"}\n".to_owned(),
+                ));
+            };
+            Ok((
+                "200 OK",
+                serde_json::json!({
+                    "summary": {
+                        "session_id": summary.session_id,
+                        "activity_id": summary.activity_id,
+                        "first_joined_at": summary.first_joined_at,
+                        "activity_started_at": summary.activity_started_at,
+                        "activity_ended_at": summary.activity_ended_at,
+                        "join_to_start_ms": summary.join_to_start_ms,
+                        "activity_duration_ms": summary.activity_duration_ms,
+                        "participant_count": summary.participant_count,
+                        "completed": summary.completed,
+                        "enemy_spawn_count": summary.enemy_spawn_count,
+                        "enemy_defeat_count": summary.enemy_defeat_count,
+                        "boss_spawned": summary.boss_spawned,
+                        "equipment_change_count": summary.equipment_change_count,
+                        "loot_grant_count": summary.loot_grant_count,
+                        "progression_grant_count": summary.progression_grant_count,
+                        "event_count": summary.event_count,
+                    }
+                })
+                .to_string(),
+            ))
+        }
         InspectorRoute::Events(session_id) => {
             let mut persistence = Persistence::connect(database_url)?;
             let events = persistence.replay_events(session_id)?;
@@ -215,6 +248,7 @@ fn read_http_request_line(reader: impl Read) -> io::Result<String> {
 enum InspectorRoute<'a> {
     Health,
     Sessions,
+    Summary(&'a str),
     Events(&'a str),
     NotFound,
 }
@@ -224,19 +258,26 @@ fn inspector_route(path: &str) -> InspectorRoute<'_> {
         InspectorRoute::Health
     } else if path == "/api/inspector/sessions" {
         InspectorRoute::Sessions
-    } else if let Some(session_id) = path
-        .strip_prefix("/api/inspector/sessions/")
-        .and_then(|suffix| suffix.strip_suffix("/events"))
-        .filter(|session_id| {
-            !session_id.is_empty()
-                && session_id
-                    .chars()
-                    .all(|character| character.is_ascii_alphanumeric() || character == '-')
-        })
-    {
-        InspectorRoute::Events(session_id)
     } else {
-        InspectorRoute::NotFound
+        let Some(suffix) = path.strip_prefix("/api/inspector/sessions/") else {
+            return InspectorRoute::NotFound;
+        };
+        let (session_id, route) = if let Some(session_id) = suffix.strip_suffix("/summary") {
+            (session_id, InspectorRoute::Summary(session_id))
+        } else if let Some(session_id) = suffix.strip_suffix("/events") {
+            (session_id, InspectorRoute::Events(session_id))
+        } else {
+            return InspectorRoute::NotFound;
+        };
+        if !session_id.is_empty()
+            && session_id
+                .chars()
+                .all(|character| character.is_ascii_alphanumeric() || character == '-')
+        {
+            route
+        } else {
+            InspectorRoute::NotFound
+        }
     }
 }
 
@@ -1267,7 +1308,15 @@ mod tests {
             InspectorRoute::Events("session-123")
         );
         assert_eq!(
+            inspector_route("/api/inspector/sessions/session-123/summary"),
+            InspectorRoute::Summary("session-123")
+        );
+        assert_eq!(
             inspector_route("/api/inspector/sessions/../events"),
+            InspectorRoute::NotFound
+        );
+        assert_eq!(
+            inspector_route("/api/inspector/sessions/../summary"),
             InspectorRoute::NotFound
         );
     }
