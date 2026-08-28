@@ -80,3 +80,38 @@ HUD formatting now points one way from authoritative projector data to determini
 Validation now terminates in four explicit domain harnesses: `boundary_harness.gd`, `experience_harness.gd`, `audio_harness.gd`, and `presentation_harness.gd`. Pure controller fixtures are constructed inside the boundary harness; scene-dependent harnesses receive only the nodes, callables, paths, and timing context needed for their assertions. Production protocol, session, projection, input, and presentation collaborators have no dependency on validation code.
 
 The coordinator remains responsible for ordering the harness phases because capture state spans domain boundaries. It also retains canonical marker output and common shutdown behavior, preventing the extraction from changing smoke contracts or lifecycle ownership. Broader integration evidence, final ownership metrics, and deferred-work review remain Block 8 work.
+
+## Final ownership after Block 8
+
+| Area | Final owner | Observable boundary |
+| --- | --- | --- |
+| Composition and lifecycle | `main.gd` | Instantiates collaborators and scenes, routes lifecycle, failures, captures, and shutdown |
+| MessagePack subset | `protocol/messagepack_codec.gd` | Exact supported encode/decode bytes and codec-local failure state |
+| Framing and TCP | `protocol/framed_transport.gd` | Bounded frames, socket polling, buffering, deadlines, and decoded messages |
+| Initial session | `session/session_controller.gd` | Ordered Protocol V2 negotiation and presentation-neutral connection outcomes |
+| Server-confirmed read model | `projection/authoritative_state.gd` | Actor, inventory, progression, equipment, objective, and completion projection |
+| Local controls | `input/player_intent_controller.gd` | Movement and attack attempts with bounded local timing |
+| Authoritative HUD text | `presentation/hud_projection.gd` | Deterministic text derived from confirmed projector state |
+| Deterministic validation | `validation/*_harness.gd` | Explicit fixtures, preserved error text, measurement, and scene assertions |
+
+The final dependency direction is coordinator to session, transport, codec, projection, input, presentation, and validation. Session depends only on transport; transport depends only on the codec. Production collaborators do not depend on validation. Validation receives production objects and explicit scene context from the coordinator and never resolves `main.gd` through node paths or global state.
+
+## Final metrics and evidence
+
+| Metric | Integrated M22 baseline | M23 final | Change |
+| --- | ---: | ---: | ---: |
+| `main.gd` lines | 1,763 | 1,066 | -697 (-39.5%) |
+| `main.gd` functions | 61 | 61 | unchanged |
+| `main.gd` state variables | 52 | 39 | -13 (-25.0%) |
+| `main.gd` preloaded collaborators | 12 | 21 | +9 explicit boundaries |
+
+The unchanged function count does not indicate unchanged ownership: codec primitives, framing, handshake sequencing, read-model mutation, intent timing, HUD formatting, measurements, and assertions moved out, while the coordinator retains thin routing and composition methods. The six extracted production boundaries contain 530 lines and the four validation harnesses contain 535 lines.
+
+The final local gate passed version consistency, formatting, Clippy, Rust tests and build, Inspector checks and build, secret audit, automatic and manual Godot flows, all 22 canonical M17–M23 slice markers, persistence/replay, frozen V1 compatibility, and V1 reconstruction. Graphical reproduction produced all M21 and M22 review files with valid generated manifests. The deterministic M22 package matched every canonical SHA-256 byte for byte and measured 27.119 ms mean, 31.261 ms maximum, -17.67 dBFS peak, -26.85 dBFS RMS, 7,680 captured stereo frames, and seven peak voices under Mesa llvmpipe movie capture.
+
+## Deferred work
+
+- Scene construction, actor-node lifecycle, target selection, confirmed presentation reactions, activity routing, and deterministic activity driving remain coordinated by `main.gd`; they are cohesive orchestration responsibilities rather than hidden protocol or domain authority.
+- Validation fixture dictionaries and presentation-neutral result dictionaries remain intentionally untyped. A typed-result migration would change failure contracts and requires its own milestone.
+- The asymmetric MessagePack subset, empty-result transport failures, 64 KiB ceiling, and scene-frame deadline model remain compatibility constraints, not cleanup targets for M23.
+- Responsive layout, broader presentation composition, protocol evolution, and further service extraction require separate behavioral scope and are not implied by this refactor.

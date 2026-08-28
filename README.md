@@ -2,7 +2,7 @@
 
 Revenant is an original game-engineering and software-preservation project. It will evolve into a small online game, an authoritative client-server runtime, and eventually a controlled compatibility laboratory for old builds of Revenant itself.
 
-The repository has completed **M22 — Player Experience and Audio Slice** on top of the published 0.2.0 baseline and has begun **M23 — Client Architecture and Validation Refactor**. The playable `relay_awakening` slice retains its server-authoritative inventory, progression, loadout, combat, and activity flow while M23 incrementally separates client protocol, transport, projection, input, presentation, and validation responsibilities without changing behavior or the published version.
+The repository has completed implementation and local validation of **M23 — Client Architecture and Validation Refactor** on top of the published 0.2.0 baseline. The playable `relay_awakening` slice retains its server-authoritative inventory, progression, loadout, combat, and activity flow while explicit client protocol, transport, projection, input, presentation, and validation boundaries reduce coordinator concentration without changing behavior or the published version.
 
 ## Repository map
 
