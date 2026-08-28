@@ -143,6 +143,7 @@ if wait_for_gateway; then
       [[ "$slice_output" == *"M22 integration evidence validated"* ]]
       [[ "$slice_output" == *"M23 MessagePack boundary validated"* ]]
       [[ "$slice_output" == *"M23 framed transport validated"* ]]
+      [[ "$slice_output" == *"M23 session controller validated"* ]]
     fi
 
     kill "$server_pid"

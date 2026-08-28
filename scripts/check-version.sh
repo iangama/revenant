@@ -25,7 +25,7 @@ mapfile -t inspector_lock_versions < <(
   sed -n 's/^[[:space:]]*"version": "\([0-9][0-9.]*\)",$/\1/p' \
     web/control-panel/package-lock.json | head -2
 )
-godot_version="$(sed -n 's/^[[:space:]]*"client_build": "\([0-9][0-9.]*\)",$/\1/p' client/game/main.gd | head -1)"
+godot_version="$(sed -n 's/^[[:space:]]*const CLIENT_BUILD := "\([0-9][0-9.]*\)"$/\1/p' client/game/session/session_controller.gd | head -1)"
 
 require_version "Rust workspace" "$workspace_version"
 require_version "Inspector package" "$inspector_version"

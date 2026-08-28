@@ -56,3 +56,9 @@ The codec extraction creates the first enforced dependency seam. It reduces `mai
 The framed transport creates the second dependency seam and is the sole owner of the TCP peer and receive buffer. `main.gd` retains connection-state presentation, handshake ordering, and one-line wrappers for send, awaited receive, and nonblocking receive; it no longer knows how frames are assembled, buffered, decoded, or read from the socket.
 
 The node boundary preserves the existing asynchronous model rather than introducing signals or a background loop. This keeps deadlines tied to the same monotonic clock and scene frames while preventing transport code from reaching into session or presentation state.
+
+## Block 4 result
+
+The session controller creates the third dependency seam and owns the ordered transition from disconnected transport to an accepted world plus its three initial authoritative snapshots. Connection-state changes cross the boundary as presentation-neutral signals; success and failure cross it as dictionaries without references to scene actors or HUD controls.
+
+`main.gd` now composes the controller, applies returned snapshots, and continues to own activity routing and authoritative projection. This deliberately stops before Block 5: moving projection together with negotiation would blur server-message sequencing with scene mutation and make behavioral review less precise.
