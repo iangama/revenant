@@ -2,6 +2,7 @@ extends Control
 
 signal connect_requested(username: String)
 signal settings_requested(focus_source: Control)
+signal quit_requested
 
 const GRAPHITE := Color("10151d")
 const BLUE_PETROL := Color("12313a")
@@ -150,7 +151,7 @@ func _build_shell() -> void:
 	_settings_button = _make_button("SETTINGS", "Settings", Vector2(306, 374), Vector2(132, 54), AMBER)
 	_settings_button.pressed.connect(_request_settings)
 	_quit_button = _make_button("QUIT", "Quit", Vector2(452, 374), Vector2(126, 54), NEUTRAL)
-	_quit_button.pressed.connect(get_tree().quit)
+	_quit_button.pressed.connect(quit_requested.emit)
 
 	_add_label("ENTER  CONNECT    •    TAB  NAVIGATE    •    ESC  RETURN", Vector2(42, 458), 13, NEUTRAL)
 	_connect_button.focus_neighbor_left = _username.get_path()

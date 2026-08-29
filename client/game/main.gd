@@ -23,6 +23,8 @@ const AUDIO_HARNESS := preload("res://validation/audio_harness.gd")
 const BOUNDARY_HARNESS := preload("res://validation/boundary_harness.gd")
 const EXPERIENCE_HARNESS := preload("res://validation/experience_harness.gd")
 const PRESENTATION_HARNESS := preload("res://validation/presentation_harness.gd")
+const PLAYTEST_OBSERVATION := preload("res://playtest/local_observation_report.gd")
+const PLAYTEST_OBSERVATION_HARNESS := preload("res://validation/playtest_observation_harness.gd")
 
 var _session: Node
 var _authoritative_state := AUTHORITATIVE_STATE.new()
@@ -63,6 +65,8 @@ var _settings_panel: Control
 var _guidance_mode := "Full"
 var _onboarding: RefCounted
 var _audio_director: Node3D
+var _playtest_observation: RefCounted
+var _quitting := false
 
 
 func _ready() -> void:
@@ -73,6 +77,11 @@ func _ready() -> void:
 	_build_playable_scene()
 	_build_entry_shell()
 	_build_settings()
+	_playtest_observation = PLAYTEST_OBSERVATION.new()
+	_playtest_observation.call("configure_from_environment", _settings, Vector2i(get_viewport().get_visible_rect().size))
+	print(_playtest_observation.call("diagnostic"))
+	if _playtest_observation.call("is_active"):
+		get_tree().auto_accept_quit = false
 	_onboarding = ONBOARDING_CONTROLLER.new()
 	_onboarding.call("reset", _guidance_mode)
 	if OS.get_environment("REVENANT_VALIDATE_SLICE") == "1":
@@ -109,6 +118,7 @@ func _begin_connection(username: String) -> void:
 	if _connection_started:
 		return
 	_connection_started = true
+	_observe_first("connect_requested")
 	_session.call("reset_connection")
 	var host := OS.get_environment("REVENANT_GAME_HOST")
 	if host.is_empty():
@@ -123,8 +133,10 @@ func _begin_connection(username: String) -> void:
 func _run_handshake(username: String, host: String, port: int) -> void:
 	var joined: Dictionary = await _session.call("join_initial_session", username, host, port)
 	if not joined.get("ok", false):
+		_observe_connection_failure(joined.get("error", ""))
 		_fail(joined.get("error", "initial session join failed"))
 		return
+	_observe_connection_outcome("connected")
 	_authoritative_state.call("join_world", joined.get("world", {}))
 	_apply_inventory_snapshot(joined.get("inventory", {}))
 	_apply_progression(joined.get("progression", {}))
@@ -261,6 +273,8 @@ func _run_handshake(username: String, host: String, port: int) -> void:
 		return
 	_authoritative_state.call("apply_objective", boss_complete)
 	_authoritative_state.call("apply_activity_complete", activity_complete)
+	_observe_first("completion_observed")
+	_observe_terminal_outcome("completed")
 	_audio_director.call("play_completion")
 	_apply_loot_grant(loot)
 	_apply_progression(progression_grant)
@@ -352,6 +366,9 @@ func _run_manual_activity() -> void:
 		if not message.is_empty():
 			_handle_manual_message(message)
 		await get_tree().process_frame
+	if not _authoritative_state.activity_complete:
+		_observe_first("disconnect_observed")
+		_observe_terminal_outcome("disconnected")
 
 
 func _handle_manual_input() -> void:
@@ -360,6 +377,7 @@ func _handle_manual_input() -> void:
 	_update_target_highlight()
 	var movement: Vector2 = _player_intents.call("movement", now)
 	if movement.length() > 0.2:
+		_observe_first("first_movement_attempt")
 		_onboarding.call("note_local", "movement")
 		var player: Node3D = _actors.get(_authoritative_state.player_actor_id)
 		if player != null:
@@ -373,6 +391,7 @@ func _handle_manual_input() -> void:
 			_player_intents.call("consume_movement", now)
 	var attack: Dictionary = _player_intents.call("take_attack", now)
 	if attack.get("requested", false):
+		_observe_first("first_attack_attempt")
 		_onboarding.call("note_local", "attack")
 		var target_id := _current_enemy_id if attack.get("use_active_target", false) else _aimed_enemy()
 		if target_id != 0:
@@ -381,6 +400,7 @@ func _handle_manual_input() -> void:
 			_append_input_log("AttackIntent target %d %s" % [target_id, "sent" if sent else "FAILED"])
 			_player_intents.call("consume_attack", now)
 			if sent:
+				_observe_cooldown_acknowledgement()
 				var player: Node3D = _actors.get(_authoritative_state.player_actor_id)
 				if player != null:
 					_combat_vfx.call("play_local_cooldown", player.global_position, 260)
@@ -417,6 +437,8 @@ func _handle_manual_message(message: Dictionary) -> void:
 				_status_label.text = "BOSS ONLINE  •  WARDEN"
 				_set_guidance("STEP 3  •  DEFEAT THE WARDEN", "Aim at the purple Warden and attack until its HP reaches zero.")
 		"ActivityComplete":
+			_observe_first("completion_observed")
+			_observe_terminal_outcome("completed")
 			_authoritative_state.call("apply_activity_complete", message)
 			_onboarding.call("confirm", "completion")
 			_refresh_onboarding()
@@ -692,6 +714,7 @@ func _build_entry_shell() -> void:
 	_entry_shell.call("configure_endpoint", _connection_host(), _connection_port())
 	_entry_shell.connect("connect_requested", _begin_connection)
 	_entry_shell.connect("settings_requested", _open_settings)
+	_entry_shell.connect("quit_requested", _quit_client.bind(0))
 
 
 func _build_settings() -> void:
@@ -708,6 +731,7 @@ func _build_settings() -> void:
 
 
 func _open_settings(focus_source: Control) -> void:
+	_observe_first("settings_opened")
 	_settings_panel.call("open", _settings, focus_source)
 
 
@@ -717,6 +741,8 @@ func _on_settings_applied(settings: Dictionary) -> void:
 
 func _apply_settings(settings: Dictionary, persist: bool) -> void:
 	_settings = _settings_store.call("apply", settings)
+	if _playtest_observation != null:
+		_playtest_observation.call("update_preferences", _settings)
 	_guidance_mode = _settings.get("guidance_mode", "Full")
 	if _onboarding != null:
 		_onboarding.call("set_mode", _guidance_mode)
@@ -756,6 +782,7 @@ func _create_control_button(parent: Node, text: String, position: Vector2, size:
 
 
 func _set_ui_movement(direction: Vector2) -> void:
+	_observe_first("first_movement_attempt")
 	_player_intents.call("set_ui_movement", direction)
 	_append_input_log("ON-SCREEN MOVE %s" % direction)
 
@@ -765,6 +792,7 @@ func _clear_ui_movement() -> void:
 
 
 func _request_ui_attack() -> void:
+	_observe_first("first_attack_attempt")
 	_player_intents.call("request_attack", true)
 	_append_input_log("ON-SCREEN ATTACK detected")
 
@@ -934,6 +962,10 @@ func _validate_playable_slice() -> void:
 	if not validation_error.is_empty():
 		_validation_fail(validation_error)
 		return
+	validation_error = PLAYTEST_OBSERVATION_HARNESS.new().validate()
+	if not validation_error.is_empty():
+		_validation_fail(validation_error)
+		return
 	presentation_fixtures.merge({
 		"root": self,
 		"tree": get_tree(),
@@ -982,6 +1014,7 @@ func _validate_playable_slice() -> void:
 	print("M23 session controller validated: negotiation, identity, join and initial snapshots are isolated")
 	print("M23 authoritative state projection validated: actors, rewards, equipment, objectives and completion are server-owned")
 	print("M23 input and HUD coordination validated: local attempts stay intents and server facts drive presentation")
+	print("M24 local observation validated: opt-in allow-list, bounded atomic storage and consent deletion are ready")
 	_audio_director.call("shutdown")
 	_audio_director.queue_free()
 	_audio_director = null
@@ -1008,6 +1041,7 @@ func _save_review_capture(path: String) -> Error:
 
 
 func _fail(message: String) -> void:
+	_observe_terminal_outcome("failed")
 	push_error("Revenant handshake failed: %s" % message)
 	_connection_started = false
 	if _entry_shell != null and not _should_exit_after_flow():
@@ -1027,6 +1061,14 @@ func _fail(message: String) -> void:
 
 
 func _quit_client(exit_code: int) -> void:
+	if _quitting:
+		return
+	_quitting = true
+	_observe_first("quit_requested")
+	if _playtest_observation != null:
+		if _playtest_observation.call("report").get("terminal_outcome") == "running":
+			_observe_terminal_outcome("quit")
+		_playtest_observation.call("finalize")
 	if _audio_director != null:
 		_audio_director.call("shutdown")
 		_audio_director.queue_free()
@@ -1064,3 +1106,40 @@ func _set_connection_state(state: String, detail: String) -> void:
 		_entry_shell.call("set_connection_state", state, detail)
 	if state == "Waiting" and _audio_director != null:
 		_audio_director.call("play_system_ready")
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST and _playtest_observation != null and _playtest_observation.call("is_active"):
+		_quit_client(0)
+
+
+func _observe_first(key: String) -> void:
+	if _playtest_observation != null and _playtest_observation.call("is_active"):
+		_playtest_observation.call("record_first", key)
+
+
+func _observe_connection_outcome(outcome: String) -> void:
+	if _playtest_observation != null and _playtest_observation.call("is_active"):
+		_playtest_observation.call("set_connection_outcome", outcome)
+
+
+func _observe_connection_failure(message: String) -> void:
+	var normalized := message.to_lower()
+	var outcome := "transport_failure"
+	if "timed out" in normalized:
+		outcome = "timeout"
+	elif "rejected" in normalized and "world join" in normalized:
+		outcome = "session_unavailable"
+	elif "rejected" in normalized:
+		outcome = "rejected"
+	_observe_connection_outcome(outcome)
+
+
+func _observe_terminal_outcome(outcome: String) -> void:
+	if _playtest_observation != null and _playtest_observation.call("is_active"):
+		_playtest_observation.call("set_terminal_outcome", outcome)
+
+
+func _observe_cooldown_acknowledgement() -> void:
+	if _playtest_observation != null and _playtest_observation.call("is_active"):
+		_playtest_observation.call("increment_cooldown_acknowledgement")

@@ -1,6 +1,6 @@
 # M24 — Closed Playtest Readiness and Product Validation
 
-Status: Blocks 1 and 2 implemented and validated; later blocks require separate review.
+Status: Blocks 1–3 implemented and validated; later blocks require separate review.
 
 ## Objective
 
@@ -162,3 +162,11 @@ The contract fixes null and contradiction behavior, participant-code format, ato
 The gateway exposes `GET /api/inspector/sessions/{session_id}/summary` without adding protocol messages or mutation paths. The Inspector consumes that endpoint to show join-to-start, activity duration, participant, enemy, boss, accepted equipment, loot, progression, and event totals next to the unchanged event stream. Persistence fixtures cover a completed solo session, an incomplete session with no start, a started session with no completion, two participants, and a missing session; the canonical smoke reconciles a completed two-participant session with the summary endpoint.
 
 Block 2 changes no database schema, replay vocabulary, replay payload, gameplay authority, frozen V1 artifact, version, tag, release, participant recruitment, or local observation state. The `LocalObservationReportV1` remains deferred to separately reviewed Block 3.
+
+## Block 3 checkpoint
+
+The Godot client now owns a local-only `LocalObservationReportV1` collector under `client/game/playtest`. It is inactive unless playtest mode, a valid anonymous participant code, a bounded operator build ID, and observation consent are all explicit. Retention consent is independent: confirmed reports use atomic temporary-file replacement into `user://playtest/m24-<report_id>.json`; declined reports remain temporary and are deleted during controlled closeout.
+
+`main.gd` supplies only allow-listed semantic observations: connection request/outcome, first movement and attack attempts, settings opening, authoritative completion as observed locally, disconnect, quit, preferences, and a saturating cooldown-acknowledgement aggregate. It supplies no username, endpoint, raw input, arbitrary error, payload, wall-clock interaction timestamp, or authority mutation. Protocol V2 does not currently project the authoritative replay session ID to the client, so the optional `session_id` remains absent rather than expanding the wire contract.
+
+The deterministic M24 harness verifies disabled-by-default and malformed activation, explicit observation consent, bounded build identity, the exact top-level allow-list, a failure before session correlation exists, first-occurrence timing, completion without optional settings interaction, count saturation, the 16 KiB ceiling, retention-declined deletion, and contradiction detection without rewriting either evidence source. Block 3 changes no server, database, replay vocabulary, protocol, gameplay authority, frozen V1 artifact, published version, tag, release, participant recruitment, or network upload. Failure and recovery behavior remains deferred to separately reviewed Block 4.
