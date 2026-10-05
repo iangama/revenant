@@ -39,7 +39,7 @@ The [M38 local archive guide](docs/operations/m38-local-archive.md) covers the a
 
 ## Prerequisites
 
-- Rust stable with `rustfmt` and `clippy`
+- Rust 1.97.1 with `rustfmt` and `clippy` (the validated CI toolchain)
 - `curl`
 - Docker Compose for local infrastructure
 - Python 3.10+ for backup tooling and its safety tests

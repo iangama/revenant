@@ -1440,3 +1440,9 @@ points retain executable permissions for clean Linux checkouts. The secret audit
 and exact comparison against the current private installation values passed.
 Existing accepted M38 gameplay/integrity evidence remains applicable; source
 synchronization is verified by the resulting remote commit and GitHub CI.
+
+Source commit e38e174 reached main with history intact. Its first GitHub CI run
+selected Rust 1.99 through the floating stable channel and stopped at newly
+introduced deprecation/pedantic diagnostics. CI and release validation now pin
+Rust 1.97.1, the locally accepted M38 toolchain, also documented in README.
+Runtime code and the accepted private archive remain unchanged by this fix.

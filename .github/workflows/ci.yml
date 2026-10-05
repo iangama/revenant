@@ -37,6 +37,7 @@ jobs:
           cache-dependency-path: web/control-panel/package-lock.json
       - uses: dtolnay/rust-toolchain@stable
         with:
+          toolchain: 1.97.1
           components: clippy,rustfmt
       - name: Validate version consistency
         run: |
