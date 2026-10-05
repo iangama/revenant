@@ -1446,3 +1446,10 @@ selected Rust 1.99 through the floating stable channel and stopped at newly
 introduced deprecation/pedantic diagnostics. CI and release validation now pin
 Rust 1.97.1, the locally accepted M38 toolchain, also documented in README.
 Runtime code and the accepted private archive remain unchanged by this fix.
+
+The owner's "Traduza o necessário" adds a Brazilian Portuguese reader guide in
+README.pt-BR.md, linked from the English README. It covers the project, setup,
+play modes, controls and development entry points; technical history stays in
+English. Both setup guides distinguish first-time credential generation from
+later starts and use detached Compose startup. Validation is text, link, command
+and diff review only; the accepted runtime CI remains applicable.

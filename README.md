@@ -1,5 +1,7 @@
 # Revenant
 
+**English** | [Português (Brasil)](README.pt-BR.md)
+
 Revenant is an original game-engineering and software-preservation project. It will evolve into a small online game, an authoritative client-server runtime, and eventually a controlled compatibility laboratory for old builds of Revenant itself.
 
 The repository contains the completed **M0–M38 scope**, retaining version **0.2.0**. The local solo game has a six-chapter campaign with optional records and endings, five weapons, ten fixed modules, eight challenge contracts, bounded modifiers, and six masteries with three non-power archive titles. Server authority, confirmed rewards, replay history and frozen V1 compatibility remain intact. English/Portuguese, remappable controls, scalable menus, contrast, captions and reduced motion/flash are available. Current scope and evidence are in [the M33–M38 ledger](docs/roadmap-m33-m38-experience-expansion.md).
@@ -39,11 +41,14 @@ The [M38 local archive guide](docs/operations/m38-local-archive.md) covers the a
 
 ## Prerequisites
 
-- Rust 1.97.1 with `rustfmt` and `clippy` (the validated CI toolchain)
-- `curl`
+- Linux with Bash, or WSL2 for the shell commands on Windows
+- Git, `curl` and OpenSSL
 - Docker Compose for local infrastructure
-- Python 3.10+ for backup tooling and its safety tests
 - Godot 4.7.1 for opening the game client
+
+For host-side development and validation, also install Rust 1.97.1 with
+`rustfmt` and `clippy` (the validated CI toolchain), Node.js 20 with npm,
+Python 3.10+ and GNU Make. Compose builds the server and Inspector in containers.
 
 ## Validate
 
@@ -71,16 +76,38 @@ Future stable releases are validated and published by `.github/workflows/release
 
 ## Run locally
 
-Generate the owner-only local database files once, then run the complete local
-stack:
+Clone the repository and enter its directory:
+
+```bash
+git clone https://github.com/iangama/revenant.git
+cd revenant
+```
+
+Generate the owner-only local database files on the first installation only:
 
 ```bash
 scripts/m30-generate-secrets.sh current
-export REVENANT_SECRETS_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/revenant/m30-secrets/current"
-docker compose -f infra/docker-compose.yml up --build
-curl http://127.0.0.1:8080/health
-cargo run -p revenant-bot
 ```
+
+Keep these files on the Linux filesystem, including when using WSL2. Reuse them
+on subsequent starts; the generator refuses to overwrite existing credentials.
+In each new terminal session, export their location before starting the stack:
+
+```bash
+export REVENANT_SECRETS_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/revenant/m30-secrets/current"
+docker compose -f infra/docker-compose.yml up --build -d
+docker compose -f infra/docker-compose.yml ps
+```
+
+Once PostgreSQL, the gateway and Inspector are healthy, check the server:
+
+```bash
+curl http://127.0.0.1:8080/health
+```
+
+With Rust installed, `cargo run -p revenant-bot` is an optional terminal client.
+To stop the stack while keeping its saved data, use
+`docker compose -f infra/docker-compose.yml stop` in the configured terminal.
 
 If an explicit path is needed, copy `.env.example` to `.env`, set only
 `REVENANT_SECRETS_DIR` to an absolute owner-controlled Linux path, and pass
@@ -88,7 +115,14 @@ If an explicit path is needed, copy `.env.example` to `.env`, set only
 
 Open `http://127.0.0.1:4173` for the Inspector. The container serves the static application and proxies its read-only `/api/inspector` requests to the gateway.
 
-Open `client/game/project.godot` with Godot 4.7.1 to play the vertical slice. The client opens on an explicit local identity and endpoint screen. Settings provides audio levels/mute, display mode, guidance density, 100/125/150% interface size, high contrast, sound captions, separate motion/flash reduction, and English, Brazilian Portuguese, or expanded-text preview. The Controls tab remaps gameplay keys and controller buttons; assigning an occupied input swaps its bindings. Tab/arrows/D-pad navigate menus, Enter/South selects, and Escape/East closes them. The left stick moves and the shoulder buttons cycle weapons by default.
+Open `client/game/project.godot` with Godot 4.7.1 and run the project with **F5**. The client opens on an explicit local identity and endpoint screen; use host `127.0.0.1` and TCP port `7000` for the local stack. Settings provides audio levels/mute, display mode, guidance density, 100/125/150% interface size, high contrast, sound captions, separate motion/flash reduction, and English, Brazilian Portuguese, or expanded-text preview. The Controls tab remaps gameplay keys and controller buttons; assigning an occupied input swaps its bindings. Tab/arrows/D-pad navigate menus, Enter/South selects, and Escape/East closes them. The left stick moves and the shoulder buttons cycle weapons by default.
+
+Choose a mode in **Play mode**:
+
+- **Campaign — continue / resume** starts or resumes the six-chapter story from saved checkpoints. Each chapter's first clear grants one fragment and 100 XP.
+- **Practice** revisits a cleared chapter without awarding items or XP.
+- **Challenge board** loads the saved contract records; select a challenge to start an attempt. Challenges grant no items or XP; mastery titles add no combat power.
+- **Standalone operation** opens the relay mission with optional exploration and encounters described below.
 
 With default bindings, use WASD, arrow keys, or the on-screen directional pad to move; aim the cursor at the active enemy and click, press Space, or use the on-screen Attack button. Keyboard/controller attacks use the active enemy without requiring cursor aiming. Press H to revisit contextual guidance and Escape to open in-session settings. After defeating the relay drone, move to `x=6` to open the relay core and fight the Warden. Every audio cue remains optional and has a visual or textual counterpart. The gateway prepares a fresh run automatically after all players leave the current session. Shortcuts below use defaults; the interface displays remapped keys.
 
