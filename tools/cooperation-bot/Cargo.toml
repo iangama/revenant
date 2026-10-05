@@ -1,0 +1,12 @@
+[package]
+name = "revenant-cooperation-bot"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+revenant-protocol = { path = "../../runtime/protocol" }
+serde_json.workspace = true
+
+[lints]
+workspace = true

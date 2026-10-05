@@ -10,7 +10,12 @@ lint:
 	cargo clippy --workspace --all-targets --all-features -- -D warnings
 
 test:
-	cargo test --workspace --all-targets
+	python3 -B -m unittest discover -s tests -p 'test_m*.py'
+	@if [ -n "$${DATABASE_ADMIN_URL:-}" ]; then \
+		DATABASE_URL="$$DATABASE_ADMIN_URL" cargo test --workspace --all-targets; \
+	else \
+		cargo test --workspace --all-targets; \
+	fi
 
 build:
 	cargo build --workspace --all-targets

@@ -33,6 +33,7 @@ func scene_budget(root: Node) -> Dictionary:
 	var materials := {}
 	var counts := {
 		"meshes": 0,
+		"visible_meshes": 0,
 		"lights": 0,
 		"shadow_lights": 0,
 		"particles": 0,
@@ -83,9 +84,11 @@ func _pulse_edges(color: Color, peak_alpha: float, duration: float) -> void:
 
 
 func _collect_scene(node: Node, counts: Dictionary, materials: Dictionary) -> void:
-	if node is MeshInstance3D:
+	if node is MeshInstance3D or node is MultiMeshInstance3D:
 		counts["meshes"] += 1
-		var mesh_instance := node as MeshInstance3D
+		var mesh_instance := node as GeometryInstance3D
+		if mesh_instance.is_visible_in_tree():
+			counts["visible_meshes"] += 1
 		if mesh_instance.material_override != null:
 			materials[mesh_instance.material_override.get_instance_id()] = true
 	elif node is Light3D:

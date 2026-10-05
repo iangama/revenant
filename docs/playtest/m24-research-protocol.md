@@ -1,6 +1,10 @@
 # M24 closed-playtest research protocol
 
-Status: draft for Block 1 review; no participant session is authorized by this document.
+Status: archived external-participant design; inactive under the solo hobby roadmap.
+
+The owner removed all other-person dependencies after Gate C. This protocol is
+preserved as design history and does not authorize or schedule recruitment,
+observation, interviews, or participant sessions.
 
 ## Session format
 

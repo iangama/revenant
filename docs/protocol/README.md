@@ -74,3 +74,94 @@ M20 adds V2-only `EquipmentSnapshot`, `EquipIntent`, and `EquipmentChanged`. The
 | --- | --- | --- |
 | Frozen Client 0.1.0 | V1 | `FrozenV1` adapter or isolated reconstructed V1 harness |
 | Current bot and Godot client | V2 | `CurrentV2` adapter |
+
+The optional `content_revision` field in `ClientHello` and `ServerHello`
+negotiates content without changing wire protocol versions. The gateway echoes
+recognized V2 revisions: `m31-v1` enables the extended equipment catalog;
+`m33-v1` includes that same catalog and enables solo Meridian exploration;
+`m34-v1` retains both and enables the optional solo Glass Lancer encounter;
+`m34-v2` adds the optional Steel Bulwark; `m34-v3` adds the Relay Mender pair
+and `RepairApplied`; `m34-v4` adds Bastion Link and Crossed Guard. The gateway echoes each recognized
+revision, so clients retaining `m34-v1` still access the Lancer alone.
+Absent or unknown revisions retain the original catalog and hub bounds.
+V1 never enables these capabilities. Meridian uses existing `ObjectiveUpdate`
+and `ActorUpdate` messages; the server gates entrance, adjacent walkable steps,
+field discoveries, and the standard mission reward boundary. Field discoveries
+persist as revisioned replay events, while reconnecting starts fresh run state.
+
+M34 adds optional `ActorUpdate.charge` with a fixed `target`, `winding_up` and
+`warning_ms`. It is omitted for ordinary actors, preserving old update bytes.
+The server persists a warning before presenting it, waits at least 1.8 seconds
+after confirmation, then resolves the locked cardinal line against the current
+player position. Recovery lasts at least 1.4 seconds. The client holds the cue
+until the next confirmed state; it never resolves damage or expires the warning
+locally. `lancer-v1:` field evidence binds actor, timing, position, damage and
+health transitions for replay. Withdrawal or defeat grants no extra reward.
+
+The Bulwark uses optional `ActorUpdate.defense` with a cardinal `facing`,
+`braced` state and `warning_ms`. The initial west-facing stance lasts at least
+1.6 seconds before a two-unit, 90-degree frontal slam; recovery lasts at least
+1.8 seconds. Facing changes only on a new brace. A front shot while braced
+produces a confirmed zero-damage result and consumes its normal cooldown.
+The client presents that as a shield block. Ordinary updates omit both optional
+cues, preserving legacy bytes. `bulwark-v1:` evidence persists each accepted
+attack; its fatal attack occupies one `EnemyDied` row, binding the health change
+and death atomically. Other stance/strike/withdrawal evidence uses FieldActivity.
+
+
+The optional Mender + Lancer encounter at [2, 6] uses one typed
+`support-v1:` EnemySpawned record for both actors. Replay and Inspector count
+both actors, retain each confirmed health transition, and validate repair
+eligibility, amounts and timing. Every attack persists before confirmation;
+fatal hits and their EnemyDied evidence share one row. RepairApplied carries
+`source_actor_id`, `target_actor_id`, positive `amount` and `remaining_health`.
+It represents a confirmed repair, never damage or an anticipated heal. The
+client projects a brief link and lets mouse, a remappable next-target action,
+or its visible button choose among living enemies. Both enemies must fall to
+clear the optional objective; withdrawal removes both and keeps the core route.
+The encounter grants no separate reward. Earlier revisions receive none of the
+new support messages and preserve their existing encounter access.
+
+
+The two elite compositions reuse defense, charge and repair messages under
+`m34-v4`: Bastion Link (Bulwark + Mender) at [5, -6] and Crossed Guard
+(Bulwark + Lancer) at [5, -10]. One typed `elite-v1:` EnemySpawned creates
+both actors. Attacks, repairs, warnings, resolutions and withdrawal persist
+before projection; fatal hits and deaths remain atomic. Crossed Guard
+alternates damaging warnings with a minimum 600 ms gap, preserving the full
+archetype warning/recovery after a slow write. Evidence includes the previous
+transition's actual confirmation time so replay reproduces delayed cadence,
+repair priority and death cancellation. The optional objective requires both
+enemies, grants no separate reward, and leaves standard core completion
+available after victory or withdrawal. Older negotiated revisions skip these
+entrances and preserve their previous access.
+
+
+Prism Warden: `m34-v5` recognizes the
+optional core choice at [5, 2] while retaining m34-v4 capabilities. It introduces
+`PrismState` with actor ID, phase (Lanes/Pulses), mode, an optional tagged pattern
+and interval_ms. AcrossX locks z; AcrossZ locks x; Center and Perimeter partition
+the authored arena. A client must retain the cue until the next server state;
+the interval is presentation information, never permission to resolve damage.
+The Godot client requests m34-v5 and projects the boss state without predicting
+damage or ending a warning locally.
+
+The boss occupies one typed `prism-v1:` BossSpawned row. Each blocked/accepted
+shot, warning, resolution and retreat is persisted before confirmation. The
+half-health phase change shares its attack evidence. Death is atomic with the
+fatal hit; if standard completion fails afterward, the gateway retains the
+pending fatal projection and retries completion without another death event.
+Retreat restores the previous activity objectives and permits the normal
+Warden. It grants nothing. Replay checks complete/partial phases, confirmation
+times, phase protection, damage, defeat and fallback completion after retreat.
+
+M35 acquisition negotiates content capability `m35-v3` while retaining the frozen
+`m35-v2` weapon/module catalog. `AcquisitionStateRequest` returns three authored
+commissions with server-verified requirements and locked/ready/claimed status.
+`AcquisitionClaimIntent` carries only `arc_id`; accepted `AcquisitionClaimed`
+returns the durable commission state and current module/fragment snapshot. Each
+arc grants two fragments once per character after mission completion. A retry
+credits zero and preserves the current balance after spending. Acquisition
+claims have their own typed replay event and never increment normal loot grants.
+Frozen V1 rejects these intents; earlier V2 content clients receive no acquisition
+messages. The gateway only accepts requests after capability negotiation.

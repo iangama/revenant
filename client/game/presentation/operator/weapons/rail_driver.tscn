@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://presentation/operator/weapons/weapon_visual.gd" id="1"]
+
+[node name="rail_driver" type="Node3D"]
+script = ExtResource("1")
+weapon_id = "rail_driver"
+body_length = 1.1
+body_height = 0.15

@@ -3,22 +3,38 @@ name = "revenant-gateway"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+default-run = "revenant-gateway"
+
+[features]
+default = []
+m27-runtime-matrix = []
+
+[[bin]]
+name = "revenant-m27-matrix-gateway"
+path = "src/matrix_main.rs"
+required-features = ["m27-runtime-matrix"]
 
 [dependencies]
+revenant-campaign = { path = "../campaign" }
+revenant-challenges = { path = "../challenges" }
 revenant-activities = { path = "../activities" }
 revenant-ai = { path = "../ai" }
 revenant-actors = { path = "../actors" }
 revenant-combat = { path = "../combat" }
 revenant-compatibility = { path = "../compatibility" }
+revenant-cooperation = { path = "../cooperation" }
 revenant-identity = { path = "../identity" }
 revenant-inventory = { path = "../inventory" }
+revenant-modules = { path = "../modules" }
 revenant-objectives = { path = "../objectives" }
+revenant-operations = { path = "../operations" }
 revenant-persistence = { path = "../persistence" }
 revenant-protocol = { path = "../protocol" }
 revenant-progression = { path = "../progression" }
 revenant-replay = { path = "../replay" }
 revenant-world = { path = "../world" }
 serde_json.workspace = true
+getrandom.workspace = true
 
 [lints]
 workspace = true

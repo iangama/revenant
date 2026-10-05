@@ -129,6 +129,8 @@ func set_connection_outcome(outcome: String) -> Error:
 func set_terminal_outcome(outcome: String) -> Error:
 	if not _active or outcome not in TERMINAL_OUTCOMES:
 		return ERR_INVALID_PARAMETER
+	if _report.get("terminal_outcome") != "running":
+		return OK
 	_report["terminal_outcome"] = outcome
 	return persist()
 
@@ -144,6 +146,13 @@ func update_preferences(preferences: Dictionary) -> Error:
 	if not _active:
 		return ERR_UNAVAILABLE
 	_report["preferences"] = _sanitize_preferences(preferences)
+	return persist()
+
+
+func update_environment(viewport_size: Vector2i) -> Error:
+	if not _active:
+		return ERR_UNAVAILABLE
+	_report["environment"] = _sanitize_environment(_environment(viewport_size))
 	return persist()
 
 

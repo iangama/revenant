@@ -15,9 +15,11 @@ type ReplayEvent = {
   event_type: string;
   timestamp: string;
   session_id: string;
+  account_id: string;
   activity_id: string | null;
   actor_id: number | null;
   payload: string;
+  decoded_payload: unknown | null;
 };
 
 type AuthoritativeSessionSummary = {
@@ -36,6 +38,27 @@ type AuthoritativeSessionSummary = {
   equipment_change_count: number;
   loot_grant_count: number;
   progression_grant_count: number;
+  module_replay_legacy: boolean;
+  module_participant_count: number;
+  module_snapshot_count: number;
+  module_combination_count: number;
+  module_loadout_change_count: number;
+  route_replay_legacy: boolean;
+  route_id: string | null;
+  route_event_id: string | null;
+  route_terminal_outcome: string | null;
+  route_elapsed_ms: number | null;
+  route_transition_count: number;
+  route_reward_participant_count: number;
+  cooperation_replay_legacy: boolean;
+  cooperation_replay_state: "legacy" | "active" | "succeeded" | "failed";
+  cooperation_last_phase: string | null;
+  cooperation_terminal_outcome: string | null;
+  cooperation_terminal_elapsed_ms: number | null;
+  cooperation_participant_count: number;
+  cooperation_contribution_count: number;
+  cooperation_revive_count: number;
+  cooperation_reward_participant_count: number;
   event_count: number;
 };
 
@@ -57,6 +80,12 @@ function time(value: string) {
 function duration(milliseconds: number | null | undefined) {
   if (milliseconds == null) return "—";
   return `${(milliseconds / 1000).toFixed(2)}s`;
+}
+
+function eventPayload(event: ReplayEvent) {
+  return event.decoded_payload == null
+    ? event.payload
+    : JSON.stringify(event.decoded_payload, null, 2);
 }
 
 function App() {
@@ -205,6 +234,24 @@ function App() {
                 <Metric label="BOSS" value={summary ? (summary.boss_spawned ? "YES" : "NO") : "—"} />
                 <Metric label="LOADOUT" value={summary?.equipment_change_count ?? "—"} />
                 <Metric label="REWARDS" value={summary ? `${summary.loot_grant_count}L / ${summary.progression_grant_count}P` : "—"} />
+                <Metric label="MODULE PLAYERS" value={summary?.module_participant_count ?? "—"} />
+                <Metric label="MODULE SNAPSHOTS" value={summary?.module_snapshot_count ?? "—"} />
+                <Metric label="COMBINATIONS" value={summary?.module_combination_count ?? "—"} />
+                <Metric label="MODULE LOADOUTS" value={summary?.module_loadout_change_count ?? "—"} />
+                <Metric label="ROUTE" value={summary?.route_id ?? (summary?.route_replay_legacy ? "LEGACY" : "—")} />
+                <Metric label="ROUTE EVENT" value={summary?.route_event_id ?? "—"} />
+                <Metric label="ROUTE OUTCOME" value={summary?.route_terminal_outcome ?? "—"} />
+                <Metric label="ROUTE ELAPSED" value={duration(summary?.route_elapsed_ms)} />
+                <Metric label="TRANSITIONS" value={summary?.route_transition_count ?? "—"} />
+                <Metric label="ROUTE REWARDS" value={summary?.route_reward_participant_count ?? "—"} />
+                <Metric label="COOPERATION" value={summary ? (summary.cooperation_replay_legacy ? "LEGACY" : summary.cooperation_replay_state) : "—"} />
+                <Metric label="COOP PHASE" value={summary?.cooperation_last_phase ?? "—"} />
+                <Metric label="COOP OUTCOME" value={summary?.cooperation_terminal_outcome ?? "—"} />
+                <Metric label="COOP ELAPSED" value={duration(summary?.cooperation_terminal_elapsed_ms)} />
+                <Metric label="COOP PLAYERS" value={summary?.cooperation_participant_count ?? "—"} />
+                <Metric label="CONTRIBUTIONS" value={summary?.cooperation_contribution_count ?? "—"} />
+                <Metric label="REVIVES" value={summary?.cooperation_revive_count ?? "—"} />
+                <Metric label="COOP REWARDS" value={summary?.cooperation_reward_participant_count ?? "—"} />
               </div>
 
               <div className="timeline-toolbar">
@@ -230,7 +277,7 @@ function App() {
                     <div className="rail"><i className={`event-dot type-${event.event_type}`} />{index < filteredEvents.length - 1 && <span />}</div>
                     <div className="event-copy">
                       <strong>{event.event_type.replaceAll("_", " ")}</strong>
-                      <p>{event.payload}</p>
+                      <p>{event.decoded_payload == null ? event.payload : "validated structured evidence"}</p>
                     </div>
                     <div className="actor-tag">{event.actor_id ? `ACTOR ${event.actor_id}` : "SYSTEM"}</div>
                     <span className="arrow">›</span>
@@ -251,9 +298,10 @@ function App() {
               <h3>{selectedEvent.event_type.replaceAll("_", " ")}</h3>
               <Detail label="TIMESTAMP" value={selectedEvent.timestamp} />
               <Detail label="SESSION" value={selectedEvent.session_id} mono />
+              <Detail label="ACCOUNT" value={selectedEvent.account_id} mono />
               <Detail label="ACTIVITY" value={selectedEvent.activity_id ?? "—"} />
               <Detail label="ACTOR" value={selectedEvent.actor_id?.toString() ?? "—"} />
-              <div className="payload"><span>PAYLOAD</span><pre>{selectedEvent.payload}</pre></div>
+              <div className="payload"><span>{selectedEvent.decoded_payload == null ? "PAYLOAD" : "VALIDATED STRUCTURED PAYLOAD"}</span><pre>{eventPayload(selectedEvent)}</pre></div>
               <div className="evidence"><i /> PERSISTED / CONFIRMED</div>
             </div>
           ) : (

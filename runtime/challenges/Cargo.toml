@@ -1,0 +1,17 @@
+[package]
+name = "revenant-challenges"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+revenant-ai = { path = "../ai" }
+revenant-inventory = { path = "../inventory" }
+revenant-modules = { path = "../modules" }
+serde.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true
+
+[lints]
+workspace = true

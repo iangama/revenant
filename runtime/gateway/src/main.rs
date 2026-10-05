@@ -4,8 +4,24 @@ use std::net::TcpStream;
 use std::process::ExitCode;
 
 fn main() -> ExitCode {
-    if env::args().any(|argument| argument == "--healthcheck") {
-        return healthcheck();
+    let arguments = env::args().skip(1).collect::<Vec<_>>();
+    match arguments.as_slice() {
+        [argument] if argument == "--healthcheck" => return healthcheck(),
+        [argument] if argument == "--migrate-only" => {
+            return if revenant_gateway::migrate_database().is_ok() {
+                ExitCode::SUCCESS
+            } else {
+                eprintln!("{{\"event\":\"session_command_failed\",\"category\":\"persistence\"}}");
+                ExitCode::FAILURE
+            };
+        }
+        [] => {}
+        _ => {
+            eprintln!(
+                "{{\"event\":\"session_command_failed\",\"category\":\"invalid_arguments\"}}"
+            );
+            return ExitCode::FAILURE;
+        }
     }
 
     let bind_addr = env::var("REVENANT_BIND_ADDR")
@@ -13,14 +29,11 @@ fn main() -> ExitCode {
     let game_addr = env::var("REVENANT_GAME_ADDR")
         .unwrap_or_else(|_| revenant_gateway::DEFAULT_GAME_ADDR.to_owned());
 
-    match revenant_gateway::run(&bind_addr, &game_addr) {
-        Ok(()) => ExitCode::SUCCESS,
-        Err(error) => {
-            eprintln!(
-                "failed to start Revenant gateway on health={bind_addr} game={game_addr}: {error}"
-            );
-            ExitCode::FAILURE
-        }
+    if revenant_gateway::run(&bind_addr, &game_addr).is_ok() {
+        ExitCode::SUCCESS
+    } else {
+        eprintln!("{{\"event\":\"session_command_failed\",\"category\":\"internal\"}}");
+        ExitCode::FAILURE
     }
 }
 

@@ -1,0 +1,20 @@
+{
+  "revision": "meridian-v1",
+  "floors": [
+    [-14, -12, -1, 1],
+    [-20, -14, -3, 3],
+    [-25, -19, -1, 1],
+    [-25, -23, -6, 6],
+    [-32, -24, -10, -2],
+    [-32, -24, 2, 10],
+    [-31, -29, -6, 6]
+  ],
+  "stations": [
+    {"id": "meridian_arrival", "position": [-16, 0, 0]},
+    {"id": "meridian_lens", "position": [-28, 0, -7]},
+    {"id": "meridian_gallery", "position": [-28, 0, 7]},
+    {"id": "meridian_log", "position": [-30, 0, 0]},
+    {"id": "meridian_return", "position": [-16, 0, 0]},
+    {"id": "meridian_memory", "position": [-31, 0, 8]}
+  ]
+}

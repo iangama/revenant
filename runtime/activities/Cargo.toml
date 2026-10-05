@@ -9,6 +9,12 @@ mlua = { version = "0.11.4", features = ["lua54", "vendored"] }
 revenant-objectives = { path = "../objectives" }
 revenant-progression = { path = "../progression" }
 revenant-inventory = { path = "../inventory" }
+revenant-operations = { path = "../operations" }
+serde.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true
 
 [lints]
 workspace = true

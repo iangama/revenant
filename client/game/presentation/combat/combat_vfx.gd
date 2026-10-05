@@ -4,7 +4,14 @@ const MAX_ACTIVE_EFFECTS := 24
 
 var _active_effects := 0
 var _confirmed_exchanges := 0
+var _confirmed_player_hits := 0
+var _confirmed_hostile_hits := 0
+var _confirmed_defeats := 0
+var _local_attempts := 0
+var _unavailable_targets := 0
 var _cooldown_cues := 0
+var _reduced_flash := false
+var _reduced_motion := false
 var _cyan_material: StandardMaterial3D
 var _magenta_material: StandardMaterial3D
 var _red_material: StandardMaterial3D
@@ -22,14 +29,33 @@ func play_confirmed_exchange(source: Node3D, target: Node3D, hostile: bool) -> v
 	if source == null or target == null:
 		return
 	_confirmed_exchanges += 1
+	if hostile:
+		_confirmed_hostile_hits += 1
+	else:
+		_confirmed_player_hits += 1
 	var source_position := source.global_position + Vector3(0.0, 1.05, 0.0)
 	var target_position := target.global_position + Vector3(0.0, 0.82, 0.0)
 	var shot_material := _magenta_material if hostile else _cyan_material
 	_spawn_flash("MuzzleConfirmation", source_position, 0.13, shot_material, 0.11)
 	_spawn_trail(source_position, target_position, shot_material)
 	_spawn_flash("DamageImpact", target_position, 0.24, _red_material, 0.18)
-	if not hostile:
+	if not hostile and not _reduced_motion:
 		_spawn_corruption_shards(target_position)
+
+
+func play_confirmed_defeat(origin: Vector3) -> void:
+	_confirmed_defeats += 1
+	_spawn_flash("DefeatConfirmation", origin + Vector3(0.0, 0.8, 0.0), 0.34, _magenta_material, 0.24)
+
+
+func play_local_attempt(origin: Vector3) -> void:
+	_local_attempts += 1
+	_spawn_flash("LocalAttackAttempt", origin + Vector3(0.0, 1.25, 0.0), 0.1, _amber_material, 0.09)
+
+
+func play_target_unavailable(origin: Vector3) -> void:
+	_unavailable_targets += 1
+	_spawn_flash("UnavailableTarget", origin + Vector3(0.0, 1.25, 0.0), 0.16, _red_material, 0.14)
 
 
 func play_local_cooldown(origin: Vector3, duration_ms: int) -> void:
@@ -48,18 +74,36 @@ func play_local_cooldown(origin: Vector3, duration_ms: int) -> void:
 	cue.global_position = origin + Vector3(0.0, 0.06, 0.0)
 	var lifetime := clampf(float(duration_ms) / 1000.0, 0.12, 1.2)
 	var tween := create_tween().set_parallel(true)
-	tween.tween_property(cue, "scale", Vector3.ONE, lifetime)
+	if _reduced_motion:
+		cue.scale = Vector3.ONE
+	else:
+		tween.tween_property(cue, "scale", Vector3.ONE, lifetime)
 	tween.tween_property(cue, "transparency", 1.0, lifetime)
 	tween.finished.connect(_expire.bind(cue))
+
+
+func set_reduced_motion(enabled: bool) -> void:
+	_reduced_motion = enabled
+
+
+func set_reduced_flash(enabled: bool) -> void:
+	_reduced_flash = enabled
 
 
 func presentation_state() -> Dictionary:
 	return {
 		"active_effects": _active_effects,
 		"confirmed_exchanges": _confirmed_exchanges,
+		"confirmed_player_hits": _confirmed_player_hits,
+		"confirmed_hostile_hits": _confirmed_hostile_hits,
+		"confirmed_defeats": _confirmed_defeats,
+		"local_attempts": _local_attempts,
+		"unavailable_targets": _unavailable_targets,
 		"cooldown_cues": _cooldown_cues,
 		"maximum_active_effects": MAX_ACTIVE_EFFECTS,
 		"permanent_particles": 0,
+		"reduced_flash": _reduced_flash,
+		"flash_scale": 0.55 if _reduced_flash else 1.0,
 	}
 
 
@@ -86,11 +130,13 @@ func _spawn_trail(start: Vector3, finish: Vector3, material: Material) -> void:
 
 
 func _spawn_flash(effect_name: String, position: Vector3, radius: float, material: Material, lifetime: float) -> void:
+	var flash_scale := 0.55 if _reduced_flash else 1.0
+	var effective_lifetime := lifetime * (0.7 if _reduced_flash else 1.0)
 	var flash := MeshInstance3D.new()
 	flash.name = effect_name
 	var mesh := SphereMesh.new()
-	mesh.radius = radius
-	mesh.height = radius * 2.0
+	mesh.radius = radius * flash_scale
+	mesh.height = radius * flash_scale * 2.0
 	mesh.radial_segments = 12
 	mesh.rings = 6
 	flash.mesh = mesh
@@ -99,8 +145,12 @@ func _spawn_flash(effect_name: String, position: Vector3, radius: float, materia
 	_add_bounded(flash)
 	flash.global_position = position
 	var tween := create_tween().set_parallel(true)
-	tween.tween_property(flash, "scale", Vector3(1.7, 1.7, 1.7), lifetime)
-	tween.tween_property(flash, "transparency", 1.0, lifetime)
+	var target_scale := Vector3.ONE * (1.25 if _reduced_flash else 1.7)
+	if _reduced_motion:
+		flash.scale = Vector3.ONE
+	else:
+		tween.tween_property(flash, "scale", target_scale, effective_lifetime)
+	tween.tween_property(flash, "transparency", 1.0, effective_lifetime)
 	tween.finished.connect(_expire.bind(flash))
 
 

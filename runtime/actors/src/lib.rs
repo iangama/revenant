@@ -19,7 +19,7 @@ pub struct Actor {
     pub max_health: u32,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct ActorRegistry {
     actors: HashMap<u64, Actor>,
 }

@@ -1,10 +1,37 @@
 extends RefCounted
 
 const LOCAL_OBSERVATION_REPORT := preload("res://playtest/local_observation_report.gd")
+const SESSION_CONTROLLER := preload("res://session/session_controller.gd")
 const REPORT_ID := "0123456789abcdef0123456789abcdef"
 
 
 func validate() -> String:
+	var connection_fixtures := [
+		["deadline timeout", SESSION_CONTROLLER.classify_transport_failure(true), "timeout"],
+		[
+			"immediate refusal",
+			SESSION_CONTROLLER.classify_transport_failure(false),
+			"transport_failure",
+		],
+		[
+			"handshake rejection",
+			SESSION_CONTROLLER.classify_rejection("handshake", "unsupported protocol version"),
+			"rejected",
+		],
+		[
+			"occupied session",
+			SESSION_CONTROLLER.classify_rejection("world_join", "relay-hub session is already active"),
+			"session_unavailable",
+		],
+		[
+			"other join rejection",
+			SESSION_CONTROLLER.classify_rejection("world_join", "connection closed"),
+			"transport_failure",
+		],
+	]
+	for fixture: Array in connection_fixtures:
+		if fixture[1] != fixture[2]:
+			return "M24 connection fixture misclassified %s" % fixture[0]
 	var validation_directory := "user://m24-playtest-validation"
 	_remove_tree(validation_directory)
 	var preferences := {"guidance_mode": "Compact", "muted": true, "reduced_flash": true}
@@ -48,12 +75,19 @@ func validate() -> String:
 	expected_keys.sort()
 	if top_level_keys != expected_keys:
 		return "M24 local observation report does not enforce its top-level allow-list"
+	report.update_environment(Vector2i(2560, 1440))
+	var updated_environment: Dictionary = report.report().get("environment", {})
+	if updated_environment.get("viewport_width") != 2560 or updated_environment.get("viewport_height") != 1440:
+		return "M24 local observation does not follow an applied display-size change"
 	report.record_first("connect_requested", 10)
 	report.set_connection_outcome("transport_failure")
+	report.set_terminal_outcome("disconnected")
 	report.set_terminal_outcome("failed")
 	var failure_state: Dictionary = report.report()
 	if failure_state.has("session_id") or failure_state.get("connection_outcome") != "transport_failure":
 		return "M24 pre-session failure manufactures an authoritative session identifier"
+	if failure_state.get("terminal_outcome") != "disconnected":
+		return "M24 terminal failure classification overwrites the first observed outcome"
 	var completed := LOCAL_OBSERVATION_REPORT.new()
 	var completed_options := _options("PT-C3D4", true)
 	completed_options["report_id"] = "abcdef0123456789abcdef0123456789"

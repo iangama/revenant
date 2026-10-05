@@ -1,0 +1,12 @@
+[package]
+name = "revenant-activity-validator"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+revenant-activities = { path = "../../runtime/activities" }
+serde_json.workspace = true
+
+[lints]
+workspace = true

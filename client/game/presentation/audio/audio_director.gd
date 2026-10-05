@@ -1,5 +1,7 @@
 extends Node3D
 
+signal caption_requested(cue: String, source_position: Vector3)
+
 const AUDIO_ROOT := "res://audio/m22/"
 const FOUNDATION_PATHS := {
 	"ambience": "relay_hub_ambience.wav",
@@ -18,6 +20,7 @@ const CUE_PATHS := {
 	"cooldown": "cooldown_tick.wav",
 	"completion": "completion.wav",
 }
+const SEMANTIC_CUES := ["attack_attempt", "target_unavailable", "lancer_charge", "bulwark_slam", "shield_block", "mender_repair", "reserve_recovery", "gauntlet_recovery"]
 const SYSTEM_POOL_SIZE := 2
 const COMBAT_POOL_SIZE := 8
 const CRITICAL_POOL_SIZE := 2
@@ -38,6 +41,23 @@ var _silent := false
 var _requests := {}
 var _played := {}
 var _suppressed := 0
+var _exploration_zone := ""
+
+
+func set_exploration_zone(zone: String) -> void:
+	var inside := zone not in ["", "approach"]
+	var was_inside := _exploration_zone not in ["", "approach"]
+	_exploration_zone = zone
+	if inside == was_inside:
+		return
+	if inside and not _streams.has("meridian"):
+		_streams["meridian"] = _load_pcm_wav("res://audio/m33/meridian.wav")
+		_streams["meridian"].loop_mode = AudioStreamWAV.LOOP_FORWARD
+	_ambience.stop()
+	_ambience.stream = _streams["meridian" if inside else "ambience"]
+	if not _silent:
+		_ambience.play()
+	caption_requested.emit("meridian" if inside else "ambience", Vector3.INF)
 
 
 func _ready() -> void:
@@ -45,7 +65,12 @@ func _ready() -> void:
 		_streams[cue] = _load_pcm_wav(AUDIO_ROOT + FOUNDATION_PATHS[cue])
 	for cue in CUE_PATHS:
 		_streams[cue] = _load_pcm_wav(AUDIO_ROOT + CUE_PATHS[cue])
+	for cue in ["scatter_caster", "rail_driver"]:
+		_streams[cue] = _load_pcm_wav("res://audio/m35/%s.wav" % cue)
 	for cue in _streams:
+		_requests[cue] = 0
+		_played[cue] = 0
+	for cue in SEMANTIC_CUES:
 		_requests[cue] = 0
 		_played[cue] = 0
 
@@ -146,15 +171,50 @@ func play_confirmed_move(world_position: Vector3) -> void:
 
 
 func play_enemy_presence(family: String, world_position: Vector3) -> void:
-	_play_spatial("warden" if family == "warden" else "relay_drone", world_position)
+	_play_spatial("warden" if family in ["warden", "prism-warden"] else "relay_drone", world_position, family)
 
 
 func play_confirmed_attack(profile: String, world_position: Vector3) -> void:
-	_play_spatial("arc_sidearm" if profile == "arc_sidearm" else "pulse_rifle", world_position)
+	var cue := profile if profile in ["arc_sidearm", "scatter_caster", "rail_driver"] else "pulse_rifle"
+	_play_spatial(cue, world_position, profile)
 
 
 func play_enemy_attack(family: String, world_position: Vector3) -> void:
-	_play_spatial("warden" if family == "warden" else "relay_drone", world_position)
+	_play_spatial("warden" if family in ["warden", "prism-warden"] else "relay_drone", world_position, family)
+
+
+func play_prism_cue(kind: String) -> void:
+	if kind not in ["lane", "center", "perimeter", "shift", "recovery"]: return
+	var cue := "prism_" + kind
+	if not _streams.has(cue):
+		_streams[cue] = _load_pcm_wav("res://audio/m34/" + cue + ".wav")
+		_requests[cue] = 0
+		_played[cue] = 0
+	_play_critical_variant(cue, cue, "Effects", 1.0)
+
+
+func play_reserve_recovery() -> void:
+	_play_critical_variant("system_ready", "reserve_recovery", "Effects", 1.4)
+
+
+func play_gauntlet_recovery() -> void:
+	_play_critical_variant("system_ready", "gauntlet_recovery", "Effects", 1.4)
+
+
+func play_mender_repair() -> void:
+	_play_critical_variant("system_ready", "mender_repair", "Effects", 1.4)
+
+
+func play_lancer_charge() -> void:
+	_play_critical_variant("relay_drone", "lancer_charge", "Effects", 0.7)
+
+
+func play_bulwark_slam() -> void:
+	_play_critical_variant("warden", "bulwark_slam", "Effects", 0.7)
+
+
+func play_shield_block() -> void:
+	_play_critical_variant("impact", "shield_block", "Effects", 0.65)
 
 
 func play_confirmed_impact(world_position: Vector3) -> void:
@@ -171,6 +231,14 @@ func play_player_damage() -> void:
 
 func play_completion() -> void:
 	_play_critical("completion", "Effects")
+
+
+func play_attack_attempt() -> void:
+	_play_critical_variant("cooldown", "attack_attempt", "Interface", 1.3)
+
+
+func play_target_unavailable() -> void:
+	_play_critical_variant("cooldown", "target_unavailable", "Interface", 0.72)
 
 
 func play_cooldown_acknowledgement() -> void:
@@ -199,11 +267,12 @@ func presentation_state() -> Dictionary:
 		"requests": _requests.duplicate(true),
 		"played": _played.duplicate(true),
 		"suppressed": _suppressed,
+		"semantic_pitch_scales": {"attack_attempt": 1.3, "cooldown": 1.0, "target_unavailable": 0.72},
 	}
 
 
-func _play_spatial(cue: String, world_position: Vector3) -> void:
-	_request(cue)
+func _play_spatial(cue: String, world_position: Vector3, caption := "") -> void:
+	_request(cue, world_position, caption)
 	if _reject(cue, true):
 		return
 	var player := _combat_pool[_next_combat]
@@ -215,19 +284,25 @@ func _play_spatial(cue: String, world_position: Vector3) -> void:
 
 
 func _play_critical(cue: String, bus: String) -> void:
-	_request(cue)
-	if _reject(cue, true):
+	_play_critical_variant(cue, cue, bus, 1.0)
+
+
+func _play_critical_variant(stream_cue: String, semantic_cue: String, bus: String, pitch_scale: float) -> void:
+	_request(semantic_cue)
+	if _reject(semantic_cue, true):
 		return
 	var player := _critical_pool[_next_critical]
 	_next_critical = (_next_critical + 1) % _critical_pool.size()
 	player.bus = bus
-	player.stream = _streams[cue]
+	player.stream = _streams[stream_cue]
+	player.pitch_scale = pitch_scale
 	player.play()
-	_mark_played(cue)
+	_mark_played(semantic_cue)
 
 
-func _request(cue: String) -> void:
+func _request(cue: String, source_position := Vector3.INF, caption := "") -> void:
 	_requests[cue] += 1
+	caption_requested.emit(cue if caption.is_empty() else caption, source_position)
 
 
 func _reject(cue: String, retrigger_bounded: bool) -> bool:
@@ -257,10 +332,8 @@ func _stop_all() -> void:
 
 
 func _load_pcm_wav(path: String) -> AudioStreamWAV:
-	var bytes := FileAccess.get_file_as_bytes(path)
-	var stream := AudioStreamWAV.new()
-	stream.format = AudioStreamWAV.FORMAT_16_BITS
-	stream.mix_rate = 48000
-	stream.stereo = false
-	stream.data = bytes.slice(44) if bytes.size() >= 44 else PackedByteArray()
-	return stream
+	var imported := load(path) as AudioStreamWAV
+	if imported == null:
+		push_error("Could not load imported PCM WAV: %s" % path)
+		return AudioStreamWAV.new()
+	return imported.duplicate(true) as AudioStreamWAV

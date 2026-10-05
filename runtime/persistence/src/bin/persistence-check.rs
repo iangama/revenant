@@ -1,17 +1,14 @@
-use std::env;
 use std::error::Error;
 use std::io;
 
-use revenant_persistence::Persistence;
-
-const DEFAULT_DATABASE_URL: &str = "postgres://revenant:revenant_local@127.0.0.1:5432/revenant";
+use revenant_persistence::{database_url_from_environment, Persistence};
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let database_url = env::var("DATABASE_URL").unwrap_or_else(|_| DEFAULT_DATABASE_URL.to_owned());
-    let account_id =
-        env::var("REVENANT_EXPECT_ACCOUNT").unwrap_or_else(|_| "local:revenant-bot".to_owned());
+    let database_url = database_url_from_environment()?;
+    let account_id = std::env::var("REVENANT_EXPECT_ACCOUNT")
+        .unwrap_or_else(|_| "local:revenant-bot".to_owned());
     let character_id = format!("{account_id}:operator");
-    let mut persistence = Persistence::connect(&database_url)?;
+    let mut persistence = Persistence::connect_existing(&database_url)?;
 
     let characters = persistence.characters_for(&account_id)?;
     if !characters

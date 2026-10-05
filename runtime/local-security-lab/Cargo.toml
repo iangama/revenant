@@ -1,0 +1,30 @@
+[package]
+name = "revenant-local-security-lab"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[features]
+default = []
+m30-identity-session-lab = [
+    "dep:getrandom",
+    "dep:serde",
+    "dep:serde_json",
+    "dep:sha2",
+    "dep:subtle",
+]
+
+[dependencies]
+getrandom = { workspace = true, optional = true }
+serde = { workspace = true, optional = true }
+serde_json = { workspace = true, optional = true }
+sha2 = { workspace = true, optional = true }
+subtle = { workspace = true, optional = true }
+
+[[bin]]
+name = "revenant-security-lab"
+path = "src/main.rs"
+required-features = ["m30-identity-session-lab"]
+
+[lints]
+workspace = true

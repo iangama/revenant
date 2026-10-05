@@ -27,15 +27,15 @@ jobs:
   release:
     runs-on: ubuntu-latest
     env:
-      DATABASE_URL: postgres://revenant:revenant_local@127.0.0.1:5432/revenant
+      DATABASE_URL: postgres://revenant:ci-${{ github.run_id }}-${{ github.run_attempt }}@127.0.0.1:5432/revenant
       RELEASE_TAG: ${{ github.event_name == 'push' && github.ref_name || inputs.release_tag }}
     services:
       postgres:
-        image: postgres:16-alpine
+        image: postgres:16.15-alpine
         env:
           POSTGRES_DB: revenant
           POSTGRES_USER: revenant
-          POSTGRES_PASSWORD: revenant_local
+          POSTGRES_PASSWORD: ci-${{ github.run_id }}-${{ github.run_attempt }}
         ports:
           - 5432:5432
         options: >-
@@ -75,7 +75,11 @@ jobs:
       - name: Lint
         run: cargo clippy --workspace --all-targets --all-features -- -D warnings
       - name: Test
-        run: cargo test --workspace --all-targets
+        env:
+          RUST_TEST_THREADS: "1"
+        run: |
+          python3 -B -m unittest discover -s tests -p 'test_m*.py'
+          cargo test --workspace --all-targets
       - name: Build
         run: cargo build --workspace --all-targets
       - name: Build Inspector

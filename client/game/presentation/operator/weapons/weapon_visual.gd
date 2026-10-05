@@ -23,12 +23,24 @@ func pulse() -> void:
 
 func _build_weapon() -> void:
 	var frame_material := _material(Color("172632"), 0.7, 0.3)
-	_energy_material = _emissive_material(Color("35d0d0"), 1.8)
+	_energy_material = _emissive_material({"coil_lance": Color("f5a524"), "scatter_caster": Color("f07856"), "rail_driver": Color("86a8ff")}.get(weapon_id, Color("35d0d0")), 1.8)
 	_add_box("Frame", Vector3(body_length, body_height, 0.16), Vector3(body_length * 0.38, 0.0, 0.0), frame_material)
 	_add_box("Barrel", Vector3(body_length * 0.38, body_height * 0.48, 0.1), Vector3(body_length * 0.92, 0.02, 0.0), frame_material)
 	_add_box("EnergyCell", Vector3(body_length * 0.28, body_height * 0.55, 0.18), Vector3(body_length * 0.35, 0.0, 0.0), _energy_material)
 	_add_box("Grip", Vector3(0.13, 0.34, 0.14), Vector3(grip_offset, -0.2, 0.0), frame_material, Vector3(0.0, 0.0, -12.0))
-	if weapon_id == "pulse_rifle":
+	if weapon_id == "scatter_caster":
+		_add_box("BroadMuzzle", Vector3(0.24, 0.3, 0.42), Vector3(0.74, 0.02, 0), frame_material)
+		for index in 3:
+			_add_box("Emitter%d" % index, Vector3(0.05, 0.18, 0.07), Vector3(0.88, 0.02, (index - 1) * 0.13), _energy_material)
+	elif weapon_id == "rail_driver":
+		for side in [-1, 1]:
+			_add_box("Rail%d" % side, Vector3(1.0, 0.07, 0.07), Vector3(0.85, 0.04, side * 0.14), _energy_material)
+		_add_box("Sight", Vector3(0.22, 0.12, 0.08), Vector3(0.22, 0.22, 0), frame_material)
+	elif weapon_id == "coil_lance":
+		_add_box("Stock", Vector3(0.42, 0.24, 0.2), Vector3(-0.25, -0.02, 0.0), frame_material)
+		for index in 3:
+			_add_box("Coil%d" % index, Vector3(0.08, 0.3, 0.27), Vector3(0.55 + index * 0.2, 0.0, 0.0), _energy_material)
+	elif weapon_id == "pulse_rifle":
 		_add_box("Stock", Vector3(0.34, 0.27, 0.2), Vector3(-0.22, -0.02, 0.0), frame_material)
 	else:
 		_add_box("ArcGuard", Vector3(0.28, 0.08, 0.2), Vector3(0.02, -0.34, 0.0), _energy_material, Vector3(0.0, 0.0, 18.0))

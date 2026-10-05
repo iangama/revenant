@@ -8,3 +8,9 @@ dist/
 *.tsbuildinfo
 /release/
 *.pgdump
+*.dump
+__pycache__/
+*.py[cod]
+/NUL
+# Owner's local continuation notes and usage telemetry.
+/RESUMO.md

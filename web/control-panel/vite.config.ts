@@ -4,10 +4,23 @@ import react from "@vitejs/plugin-react";
 export default defineConfig({
   plugins: [react()],
   server: {
-    host: "0.0.0.0",
+    host: "127.0.0.1",
     port: 4173,
     proxy: {
-      "/api": "http://127.0.0.1:8080",
+      "/api": {
+        target: "http://127.0.0.1:8080",
+        configure(proxy) {
+          proxy.on("proxyReq", (proxyRequest, request) => {
+            if (
+              request.headers.origin === undefined &&
+              request.headers["sec-fetch-site"] === "same-origin" &&
+              typeof request.headers.host === "string"
+            ) {
+              proxyRequest.setHeader("Origin", `http://${request.headers.host}`);
+            }
+          });
+        },
+      },
     },
   },
 });

@@ -4,5 +4,18 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 
+[dependencies]
+revenant-campaign = { path = "../campaign" }
+revenant-challenges = { path = "../challenges" }
+revenant-actors = { path = "../actors" }
+revenant-activities = { path = "../activities" }
+revenant-ai = { path = "../ai" }
+revenant-cooperation = { path = "../cooperation" }
+revenant-inventory = { path = "../inventory" }
+revenant-modules = { path = "../modules" }
+revenant-operations = { path = "../operations" }
+serde.workspace = true
+serde_json.workspace = true
+
 [lints]
 workspace = true

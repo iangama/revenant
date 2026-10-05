@@ -3,10 +3,8 @@ use std::error::Error;
 use std::io;
 use std::process::ExitCode;
 
-use revenant_persistence::Persistence;
+use revenant_persistence::{database_url_from_environment, Persistence};
 use revenant_replay::{reconstruct, ReplayEvent, ReplayEventKind};
-
-const DEFAULT_DATABASE_URL: &str = "postgres://revenant:revenant_local@127.0.0.1:5432/revenant";
 
 fn main() -> ExitCode {
     match run() {
@@ -20,8 +18,8 @@ fn main() -> ExitCode {
 
 fn run() -> Result<(), Box<dyn Error>> {
     let arguments = env::args().skip(1).collect::<Vec<_>>();
-    let database_url = env::var("DATABASE_URL").unwrap_or_else(|_| DEFAULT_DATABASE_URL.to_owned());
-    let mut persistence = Persistence::connect(&database_url)?;
+    let database_url = database_url_from_environment()?;
+    let mut persistence = Persistence::connect_existing(&database_url)?;
     let session_id = match arguments.as_slice() {
         [command, session_id] if command == "replay" => session_id.clone(),
         [command, option, account_id] if command == "replay" && option == "--latest" => persistence
@@ -43,6 +41,7 @@ fn run() -> Result<(), Box<dyn Error>> {
                 kind: event.event_type.parse::<ReplayEventKind>()?,
                 timestamp: event.timestamp,
                 session_id: event.session_id,
+                account_id: event.account_id,
                 activity_id: event.activity_id,
                 actor_id: event.actor_id.map(u64::try_from).transpose()?,
                 payload: event.payload,
@@ -51,7 +50,7 @@ fn run() -> Result<(), Box<dyn Error>> {
         .collect::<Result<Vec<_>, Box<dyn Error>>>()?;
     let state = reconstruct(&events)?;
     println!("Replay session {}", state.session_id);
-    for line in state.timeline {
+    for line in &state.timeline {
         println!("{line}");
     }
     println!(
@@ -64,6 +63,37 @@ fn run() -> Result<(), Box<dyn Error>> {
         state.progression_grants,
         state.equipment_changes,
         state.completed
+    );
+    println!(
+        "Modules: legacy={} participants={} snapshots={} combinations={} loadout_changes={}",
+        state.module_replay_legacy,
+        state.module_participants.len(),
+        state.module_snapshots,
+        state.module_combinations,
+        state.module_loadout_changes
+    );
+    for (id, status) in &state.field_objectives {
+        println!("Field objective: {id} {status}");
+    }
+    let cooperation_terminal = state.cooperation.terminal.as_ref();
+    println!(
+        "Cooperation: legacy={} state={:?} phase={:?} outcome={:?} elapsed_ms={:?} participants={} contributions={} revives={} reward_participants={}",
+        state.cooperation.started.is_none(),
+        state.cooperation.state,
+        state.cooperation.last_phase(),
+        cooperation_terminal.map(|terminal| terminal.outcome),
+        cooperation_terminal.map(|terminal| terminal.terminal_elapsed_ms),
+        state
+            .cooperation
+            .started
+            .as_ref()
+            .map_or(0, |started| started.participants.len()),
+        state.cooperation.contribution_count(),
+        cooperation_terminal.map_or_else(
+            || usize::from(state.cooperation.revived.is_some()),
+            |terminal| usize::from(terminal.contributions.revive_count),
+        ),
+        cooperation_terminal.map_or(0, |terminal| terminal.grants.len()),
     );
     Ok(())
 }

@@ -1,0 +1,17 @@
+[package]
+name = "revenant-operation-lab"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+revenant-ai = { path = "../../runtime/ai" }
+revenant-combat = { path = "../../runtime/combat" }
+revenant-inventory = { path = "../../runtime/inventory" }
+revenant-modules = { path = "../../runtime/modules" }
+revenant-operations = { path = "../../runtime/operations" }
+serde.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true

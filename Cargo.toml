@@ -4,11 +4,17 @@ members = [
     "runtime/actors",
     "runtime/ai",
     "runtime/combat",
+    "runtime/campaign",
+    "runtime/challenges",
+    "runtime/cooperation",
     "runtime/compatibility",
     "runtime/gateway",
     "runtime/identity",
     "runtime/inventory",
+    "runtime/local-security-lab",
+    "runtime/modules",
     "runtime/objectives",
+    "runtime/operations",
     "runtime/persistence",
     "runtime/protocol",
     "runtime/progression",
@@ -18,6 +24,12 @@ members = [
     "archive/clients/v1",
     "tools/reconstruction-server",
     "tools/fake-client",
+    "tools/combat-lab",
+    "tools/cooperation-bot",
+    "tools/cooperation-lab",
+    "tools/activity-validator",
+    "tools/module-lab",
+    "tools/operation-lab",
 ]
 resolver = "2"
 
@@ -38,3 +50,6 @@ rmp-serde = "1.3.0"
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.140"
 postgres = "0.19.10"
+getrandom = "0.4.3"
+sha2 = "0.11.0"
+subtle = "2.6.1"

@@ -1,0 +1,2759 @@
+msgid ""
+msgstr ""
+"Language: pt_BR\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+msgid "%d / 3 RECORDS READ"
+msgstr "%d / 3 REGISTROS LIDOS"
+
+msgid "%s  •  %s  •  COST %d"
+msgstr "%s  •  %s  •  CUSTO %d"
+
+msgid "%s  •  DMG %d  RANGE %d  CD %d MS"
+msgstr "%s  •  DANO %d  ALCANCE %d  RECARGA %d MS"
+
+msgid "01 / ARRIVAL PLATFORM"
+msgstr "01 / PLATAFORMA DE CHEGADA"
+
+msgid "02 / MAINTENANCE BENCH"
+msgstr "02 / BANCADA DE MANUTENÇÃO"
+
+msgid "03 / CORE MEMORY — SIGNAL RESTORED"
+msgstr "03 / MEMÓRIA DO NÚCLEO — SINAL RESTAURADO"
+
+msgid "1 • COOLANT INTAKE"
+msgstr "1 • ENTRADA DE REFRIGERAÇÃO"
+
+msgid "1-32 letters, digits, _, . or -"
+msgstr "1–32 letras, números, _, . ou -"
+
+msgid "2 • TRANSFER"
+msgstr "2 • TRANSFERÊNCIA"
+
+msgid "3 • DELIVERY"
+msgstr "3 • ENTREGA"
+
+msgid "A VOICE BEYOND THE RELAY"
+msgstr "UMA VOZ ALÉM DO RELAY"
+
+msgid "ACCEPTED"
+msgstr "ACEITO"
+
+msgid "ACCEPTED REPLAY"
+msgstr "SOLICITAÇÃO JÁ CONFIRMADA"
+
+msgid "ACTIVE"
+msgstr "ATIVO"
+
+msgid "ACTIVITY ACTIVE"
+msgstr "ATIVIDADE EM ANDAMENTO"
+
+msgid "ACTIVITY COMPLETE"
+msgstr "ATIVIDADE CONCLUÍDA"
+
+msgid "ACTIVITY COMPLETE  •  RELAY AWAKENED"
+msgstr "ATIVIDADE CONCLUÍDA  •  RELAY DESPERTO"
+
+msgid "APPLIES NEXT SESSION  •  CURRENT ACTOR UNCHANGED"
+msgstr "VÁLIDO NA PRÓXIMA INCURSÃO  •  OPERADOR ATUAL SEM ALTERAÇÕES"
+
+msgid "APPLIES NEXT SESSION AFTER ACCEPTANCE"
+msgstr "VÁLIDO NA PRÓXIMA INCURSÃO APÓS CONFIRMAÇÃO"
+
+msgid "APPLY"
+msgstr "APLICAR"
+
+msgid "APPLY LOADOUT"
+msgstr "SALVAR EQUIPAMENTO"
+
+msgid "APPROACH THE TERMINAL"
+msgstr "APROXIME-SE DO TERMINAL"
+
+msgid "ARC SIDEARM"
+msgstr "PISTOLA DE ARCO"
+
+msgid "ARC WARDEN  •  TRACK THE JUMPS"
+msgstr "GUARDIÃO DE ARCO  •  SIGA OS SALTOS"
+
+msgid "ARCHIVE"
+msgstr "ARQUIVO"
+
+msgid "ARCHIVE %02d"
+msgstr "ARQUIVO %02d"
+
+msgid "ARCHIVE [%s]  %d/3"
+msgstr "ARQUIVO [%s]  %d/3"
+
+msgid "ARCHIVE [J]  %d/3"
+msgstr "ARQUIVO [J]  %d/3"
+
+msgid "ATTACK"
+msgstr "ATACAR"
+
+msgid "ATTACK [%s]"
+msgstr "ATACAR [%s]"
+
+msgid "ATTACK FAILED  •  CONNECTION ERROR"
+msgstr "ATAQUE FALHOU  •  ERRO DE CONEXÃO"
+
+msgid "ATTACK SENT  •  AWAITING SERVER  •  TARGET %d"
+msgstr "ATAQUE ENVIADO  •  AGUARDANDO  •  ALVO %d"
+
+msgid "Accepted changes apply next session; this actor never changes in place."
+msgstr "As alterações aceitas valem na próxima incursão. Seu operador atual permanece igual."
+
+msgid "Accessibility"
+msgstr "Acessibilidade"
+
+msgid "Active"
+msgstr "Ativo"
+
+msgid "Ambience volume"
+msgstr "Volume do ambiente"
+
+msgid "Approach the marked terminal behind the sentinel."
+msgstr "Aproxime-se do terminal marcado atrás do sentinela."
+
+msgid "Arc Sidearm"
+msgstr "Pistola de Arco"
+
+msgid "Arc Sidearm fires"
+msgstr "Disparo da Pistola de Arco"
+
+msgid "Archive"
+msgstr "Arquivo"
+
+msgid "Arrival platform · west of the landing ring"
+msgstr "Plataforma de chegada · a oeste do anel de pouso"
+
+msgid "Attack active enemy"
+msgstr "Atacar inimigo ativo"
+
+msgid "Attack requested"
+msgstr "Ataque solicitado"
+
+msgid "Attack the highlighted drone. Mouse clicks aim at the cursor."
+msgstr "Ataque o drone destacado. Cliques miram na posição do cursor."
+
+msgid "Audio and display"
+msgstr "Áudio e vídeo"
+
+msgid "BOSS ONLINE  •  ARC WARDEN"
+msgstr "CHEFE ATIVO  •  GUARDIÃO DE ARCO"
+
+msgid "BOSS ONLINE  •  WARDEN"
+msgstr "CHEFE ATIVO  •  GUARDIÃO"
+
+msgid "Back"
+msgstr "Voltar"
+
+msgid "Binding cancelled."
+msgstr "Alteração de comando cancelada."
+
+msgid "Binding changed. Conflicts swap places. Apply to save."
+msgstr "Comando alterado. Conflitos trocam de lugar. Aplique para salvar."
+
+msgid "CANCEL"
+msgstr "CANCELAR"
+
+msgid "CANDIDATE INPUT  •  SELECT UP TO THREE"
+msgstr "SELECIONE ATÉ TRÊS MÓDULOS"
+
+msgid "CHANGES LOCKED UNTIL ACTIVITY COMPLETE"
+msgstr "ALTERAÇÕES APÓS CONCLUIR A ATIVIDADE"
+
+msgid "CHARGE EXPIRED"
+msgstr "CARGA EXPIRADA"
+
+msgid "CHOOSE YOUR NEXT STEP"
+msgstr "ESCOLHA O PRÓXIMO PASSO"
+
+msgid "CLEAR DRONE GROUP"
+msgstr "DERROTE O DRONE"
+
+msgid "CLOSE"
+msgstr "FECHAR"
+
+msgid "CO-OP [%s]"
+msgstr "COOPERAÇÃO [%s]"
+
+msgid "CO-OP [C]"
+msgstr "COOPERAÇÃO [C]"
+
+msgid "COIL LANCE"
+msgstr "LANÇA DE BOBINA"
+
+msgid "COMBINE"
+msgstr "FABRICAR"
+
+msgid "COMBINE / LOADOUT LOCKED"
+msgstr "FABRICAÇÃO / EQUIPAMENTO BLOQUEADOS"
+
+msgid "COMBINE SELECTED"
+msgstr "FABRICAR SELECIONADO"
+
+msgid "COMPLETED"
+msgstr "CONCLUÍDO"
+
+msgid "CONNECT TO RELAY"
+msgstr "CONECTAR AO RELAY"
+
+msgid "CONNECTED  •  RELAY-HUB"
+msgstr "CONECTADO  •  CENTRAL RELAY"
+
+msgid "CONNECTING"
+msgstr "CONECTANDO"
+
+msgid "CONNECTING..."
+msgstr "CONECTANDO..."
+
+msgid "CONNECTION LOST"
+msgstr "CONEXÃO PERDIDA"
+
+msgid "COOLANT  •  %s"
+msgstr "REFRIGERAÇÃO  •  %s"
+
+msgid "COOLANT DELIVERED"
+msgstr "REFRIGERAÇÃO ENTREGUE"
+
+msgid "COOLANT RUN  •  %d / 3"
+msgstr "CIRCUITO DE REFRIGERAÇÃO  •  %d / 3"
+
+msgid "COOLANT • STATION 2"
+msgstr "REFRIGERAÇÃO • ESTAÇÃO 2"
+
+msgid "COOLANT • STATION 3"
+msgstr "REFRIGERAÇÃO • ESTAÇÃO 3"
+
+msgid "CORE OR LOST SIGNAL"
+msgstr "NÚCLEO OU SINAL PERDIDO"
+
+msgid "CURRENT SERVER STATE"
+msgstr "EQUIPAMENTO ATUAL"
+
+msgid "CYCLE BYPASS"
+msgstr "DESVIO DE CICLO"
+
+msgid "Changes take effect when you select Apply. Sound is optional."
+msgstr "As mudanças entram em vigor ao aplicar. O som é opcional."
+
+msgid "Choose a weapon from the action bar or use the shoulder buttons."
+msgstr "Escolha uma arma na barra de ações ou use os botões superiores."
+
+msgid "Coil Lance"
+msgstr "Lança de Bobina"
+
+msgid "Coil Lance fires"
+msgstr "Disparo da Lança de Bobina"
+
+msgid "Compact"
+msgstr "Compactas"
+
+msgid "Completed"
+msgstr "Concluído"
+
+msgid "Controls"
+msgstr "Controles"
+
+msgid "Cooperation"
+msgstr "Cooperação"
+
+msgid "Core door opens"
+msgstr "Porta do núcleo se abre"
+
+msgid "Core east; Lost Signal west; Coolant Run north at [-1, -5]."
+msgstr "Núcleo a leste; Sinal Perdido a oeste; refrigeração ao norte, em [-1, -5]."
+
+msgid "Core memory · recovered when the Warden falls"
+msgstr "Memória do núcleo · recuperada ao derrotar o Guardião"
+
+msgid "D-pad down"
+msgstr "Direcional baixo"
+
+msgid "D-pad left"
+msgstr "Direcional esquerda"
+
+msgid "D-pad right"
+msgstr "Direcional direita"
+
+msgid "D-pad up"
+msgstr "Direcional cima"
+
+msgid "DEAD NETWORKS REMAIN OPERATIONAL"
+msgstr "REDES MORTAS CONTINUAM OPERANDO"
+
+msgid "DEFEAT CONFIRMED  •  TARGET OFFLINE"
+msgstr "DERROTA CONFIRMADA  •  ALVO INATIVO"
+
+msgid "DEFEAT WARDEN"
+msgstr "DERROTE O GUARDIÃO"
+
+msgid "DEFEATED"
+msgstr "DERROTADO"
+
+msgid "DELIVERY"
+msgstr "ENTREGA"
+
+msgid "DMG %+d%%  CD %+d%%  RANGE %+d  HP %+d"
+msgstr "DANO %+d%%  RECARGA %+d%%  ALCANCE %+d  PV %+d"
+
+msgid "DMG %d  RANGE %d  COOLDOWN %d MS"
+msgstr "DANO %d  ALCANCE %d  RECARGA %d MS"
+
+msgid "DOWNED"
+msgstr "CAÍDO"
+
+msgid "Defaults restored in this form. Apply to save."
+msgstr "Padrões restaurados neste formulário. Aplique para salvar."
+
+msgid "Display"
+msgstr "Exibição"
+
+msgid "ENEMY  %s  •  %03d / %03d HP"
+msgstr "INIMIGO  %s  •  %03d / %03d PV"
+
+msgid "ENEMY  •  %03d / %03d HP"
+msgstr "INIMIGO  •  %03d / %03d PV"
+
+msgid "ENEMY  •  DEFEATED"
+msgstr "INIMIGO  •  DERROTADO"
+
+msgid "ENEMY  •  WAITING FOR ENCOUNTER"
+msgstr "INIMIGO  •  AGUARDANDO ENCONTRO"
+
+msgid "ENTER  CONNECT    •    TAB  NAVIGATE    •    ESC  RETURN"
+msgstr "ENTER  CONECTAR    •    TAB  NAVEGAR    •    ESC  VOLTAR"
+
+msgid "ENTRY"
+msgstr "ENTRADA"
+
+msgid "EXPIRED"
+msgstr "EXPIRADO"
+
+msgid "Each hit makes it jump. Follow the trail and aim again."
+msgstr "Cada acerto provoca um salto. Siga o rastro e mire de novo."
+
+msgid "East / B"
+msgstr "Direito / B"
+
+msgid "Effects volume"
+msgstr "Volume dos efeitos"
+
+msgid "Enemy falls"
+msgstr "Inimigo cai"
+
+msgid "Expanded text preview"
+msgstr "Prévia de texto expandido"
+
+msgid "FAILED"
+msgstr "FALHA"
+
+msgid "FIND THE SIGNAL"
+msgstr "ENCONTRE O SINAL"
+
+msgid "FOCUS LENS"
+msgstr "LENTE DE FOCO"
+
+msgid "FORCE MATRIX"
+msgstr "MATRIZ DE FORÇA"
+
+msgid "FRAGMENTS %d  •  OWNED %d/%d  •  LOADOUT %d/3  •  REVISION %d"
+msgstr "FRAGMENTOS %d  •  ADQUIRIDOS %d/%d  •  EQUIPADOS %d/3  •  REVISÃO %d"
+
+msgid "Failed"
+msgstr "Falhou"
+
+msgid "Find the amber archive markers."
+msgstr "Encontre os marcadores âmbar do arquivo."
+
+msgid "Focus action bar"
+msgstr "Navegar na barra de ações"
+
+msgid "Full"
+msgstr "Completas"
+
+msgid "Fullscreen"
+msgstr "Tela cheia"
+
+msgid "GUIDANCE HIDDEN"
+msgstr "ORIENTAÇÕES OCULTAS"
+
+msgid "GUIDANCE OFF"
+msgstr "ORIENTAÇÕES DESATIVADAS"
+
+msgid "Guidance"
+msgstr "Orientações"
+
+msgid "HOLD HERE • 1.2 S"
+msgstr "FIQUE AQUI • 1,2 S"
+
+msgid "HOSTILE HIT CONFIRMED  •  -%d  •  %d HP"
+msgstr "ATINGIDO PELO INIMIGO  •  -%d  •  %d PV"
+
+msgid "HP  %03d / %03d"
+msgstr "PV  %03d / %03d"
+
+msgid "HP  %03d / %03d  •  %s"
+msgstr "PV  %03d / %03d  •  %s"
+
+msgid "Head east to the amber core door at [6, 0]."
+msgstr "Vá a leste até a porta âmbar do núcleo em [6, 0]."
+
+msgid "Head east to the core, or follow the west beacon for an optional encounter."
+msgstr "Vá ao núcleo a leste ou siga o farol a oeste para um encontro opcional."
+
+msgid "High contrast"
+msgstr "Alto contraste"
+
+msgid "Hit impact"
+msgstr "Impacto do acerto"
+
+msgid "Hold at [4, -1] for 1.2 s to deliver the charge."
+msgstr "Fique em [4, -1] por 1,2 s para entregar a carga."
+
+msgid "Hold at [4, -5] for 1.2 s. Finish both stations within 8 s."
+msgstr "Fique em [4, -5] por 1,2 s. Conclua as duas estações em 8 s."
+
+msgid "IDENTITY FORMAT READY"
+msgstr "IDENTIFICAÇÃO VÁLIDA"
+
+msgid "INVENTORY"
+msgstr "INVENTÁRIO"
+
+msgid "Interface size"
+msgstr "Tamanho da interface"
+
+msgid "Interface volume"
+msgstr "Volume da interface"
+
+msgid "Keep attacking the Warden until its health reaches zero."
+msgstr "Ataque o Guardião até esgotar a vida dele."
+
+msgid "LANCE"
+msgstr "LANÇA"
+
+msgid "LOADOUT"
+msgstr "EQUIPAMENTO"
+
+msgid "LOCAL OPERATOR ID"
+msgstr "IDENTIFICAÇÃO LOCAL"
+
+msgid "LOCAL RELAY  •  %s"
+msgstr "RELAY LOCAL  •  %s"
+
+msgid "LOCKED"
+msgstr "BLOQUEADO"
+
+msgid "LOOT SECURED  •  %s +%d"
+msgstr "RECOMPENSA OBTIDA  •  %s +%d"
+
+msgid "LOST SIGNAL"
+msgstr "SINAL PERDIDO"
+
+msgid "LOST SIGNAL  •  %d / 2"
+msgstr "SINAL PERDIDO  •  %d / 2"
+
+msgid "LOST SIGNAL  •  RECOVERED"
+msgstr "SINAL PERDIDO  •  RECUPERADO"
+
+msgid "Language"
+msgstr "Idioma"
+
+msgid "Left stick"
+msgstr "Analógico esquerdo"
+
+msgid "MISSION COMPLETE"
+msgstr "MISSÃO CONCLUÍDA"
+
+msgid "MISSION GUIDE"
+msgstr "ORIENTAÇÕES"
+
+msgid "MODULE WORKSHOP  •  SERVER AUTHORITY"
+msgstr "OFICINA DE MÓDULOS"
+
+msgid "MODULES  •  %s"
+msgstr "MÓDULOS  •  %s"
+
+msgid "MODULES [%s]"
+msgstr "MÓDULOS [%s]"
+
+msgid "MODULES [M]"
+msgstr "MÓDULOS [M]"
+
+msgid "Maintenance bench · beside the stabilizer lane"
+msgstr "Bancada de manutenção · ao lado do estabilizador"
+
+msgid "Master volume"
+msgstr "Volume geral"
+
+msgid "Mission complete"
+msgstr "Missão concluída"
+
+msgid "Modules"
+msgstr "Módulos"
+
+msgid "Move east"
+msgstr "Mover para o leste"
+
+msgid "Move north"
+msgstr "Mover para o norte"
+
+msgid "Move south"
+msgstr "Mover para o sul"
+
+msgid "Move west"
+msgstr "Mover para o oeste"
+
+msgid "Move with the arrow keys, left stick, or on-screen pad."
+msgstr "Use as setas, o analógico esquerdo ou o direcional na tela."
+
+msgid "Mute all audio"
+msgstr "Silenciar todo o áudio"
+
+msgid "NO REQUEST PENDING"
+msgstr "NENHUMA SOLICITAÇÃO PENDENTE"
+
+msgid "NONE"
+msgstr "NENHUM"
+
+msgid "Next weapon"
+msgstr "Próxima arma"
+
+msgid "No fragment, ownership, loadout, stat, or actor change is projected yet."
+msgstr "Aguardando confirmação dos custos, módulos e atributos."
+
+msgid "No local stat calculation is shown."
+msgstr "Os valores serão confirmados pelo servidor."
+
+msgid "North / Y"
+msgstr "Superior / Y"
+
+msgid "OBJECTIVE  •  %s  [%d/%d]  %s"
+msgstr "OBJETIVO  •  %s  [%d/%d]  %s"
+
+msgid "OBJECTIVE  •  COMPLETE"
+msgstr "OBJETIVO  •  CONCLUÍDO"
+
+msgid "OBJECTIVE  •  WAITING FOR ACTIVITY"
+msgstr "OBJETIVO  •  AGUARDANDO ATIVIDADE"
+
+msgid "OPERATOR MAX HP  •  %d"
+msgstr "VIDA MÁXIMA  •  %d"
+
+msgid "OPTIONAL  •  LOADOUT"
+msgstr "OPCIONAL  •  EQUIPAMENTO"
+
+msgid "OPTIONAL • 8 SECOND RUN"
+msgstr "OPCIONAL • PERCURSO DE 8 S"
+
+msgid "OPTIONAL • STANDARD REWARD"
+msgstr "OPCIONAL • RECOMPENSA PADRÃO"
+
+msgid "OWNED"
+msgstr "ADQUIRIDO"
+
+msgid "Off"
+msgstr "Desativadas"
+
+msgid "Opening a local relay connection to %s:%d."
+msgstr "Conectando ao relay local em %s:%d."
+
+msgid "Operator footsteps"
+msgstr "Passos do operador"
+
+msgid "Operator hit"
+msgstr "Operador atingido"
+
+msgid "PENDING"
+msgstr "PENDENTE"
+
+msgid "PREVIEW"
+msgstr "PRÉVIA"
+
+msgid "PROGRESSION  •  LEVEL %d"
+msgstr "PROGRESSÃO  •  NÍVEL %d"
+
+msgid "PROGRESSION SECURED  •  +%d XP"
+msgstr "PROGRESSÃO OBTIDA  •  +%d XP"
+
+msgid "PULSE RIFLE"
+msgstr "RIFLE DE PULSO"
+
+msgid "Pending"
+msgstr "Pendente"
+
+msgid "Press a %s for %s. Esc cancels."
+msgstr "Pressione um(a) %s para %s. Esc cancela."
+
+msgid "Previous weapon"
+msgstr "Arma anterior"
+
+msgid "Pulse Rifle"
+msgstr "Rifle de Pulso"
+
+msgid "Pulse Rifle fires"
+msgstr "Disparo do Rifle de Pulso"
+
+msgid "QUIT"
+msgstr "SAIR"
+
+msgid "REACH LATTICE"
+msgstr "MALHA DE ALCANCE"
+
+msgid "REACH RELAY DOOR"
+msgstr "ALCANCE A PORTA DO NÚCLEO"
+
+msgid "READ"
+msgstr "LIDO"
+
+msgid "READ %02d"
+msgstr "LIDO %02d"
+
+msgid "READ RECORD [%s]"
+msgstr "LER REGISTRO [%s]"
+
+msgid "READ RECORD [E]"
+msgstr "LER REGISTRO [E]"
+
+msgid "RECOVER SIGNAL"
+msgstr "RECUPERAR SINAL"
+
+msgid "REFRESH"
+msgstr "ATUALIZAR"
+
+msgid "REJECTED"
+msgstr "RECUSADO"
+
+msgid "RELAY CORE FRAGMENT"
+msgstr "FRAGMENTO DO NÚCLEO"
+
+msgid "RELAY FIELD ARCHIVE"
+msgstr "ARQUIVO DE CAMPO DO RELAY"
+
+msgid "RELAY-DRONE"
+msgstr "DRONE RELAY"
+
+msgid "REQUEST PENDING  •  %s"
+msgstr "SOLICITAÇÃO PENDENTE  •  %s"
+
+msgid "RESTORE DEFAULTS"
+msgstr "RESTAURAR PADRÕES"
+
+msgid "RETRY CONNECTION"
+msgstr "TENTAR NOVAMENTE"
+
+msgid "RETURN TO THE HUB [ESC / J]"
+msgstr "VOLTAR À CENTRAL [ESC]"
+
+msgid "REVENANT"
+msgstr "REVENANT"
+
+msgid "RIFLE"
+msgstr "RIFLE"
+
+msgid "ROUTES [%s]"
+msgstr "ROTAS [%s]"
+
+msgid "ROUTES [R]"
+msgstr "ROTAS [R]"
+
+msgid "Read nearby archive"
+msgstr "Ler registro próximo"
+
+msgid "Records available between encounters."
+msgstr "Registros disponíveis entre encontros."
+
+msgid "Reduced flash"
+msgstr "Flashes reduzidos"
+
+msgid "Reduced motion"
+msgstr "Movimento reduzido"
+
+msgid "Relay connected"
+msgstr "Relay conectado"
+
+msgid "Relay drone signal"
+msgstr "Sinal do drone relay"
+
+msgid "Relay hum"
+msgstr "Zumbido do relay"
+
+msgid "Relay joined. Waiting for the server to begin the activity."
+msgstr "Conexão estabelecida. Aguardando o início da atividade."
+
+msgid "Return to intake [-1, -5] to retry, or head east to the core."
+msgstr "Volte à entrada [-1, -5] para tentar de novo ou vá ao núcleo, a leste."
+
+msgid "Review your local identity, then connect to the relay."
+msgstr "Confira sua identificação local e conecte-se ao relay."
+
+msgid "Reward received. Open Modules to prepare your next run."
+msgstr "Recompensa recebida. Abra Módulos e prepare a próxima incursão."
+
+msgid "Right stick"
+msgstr "Analógico direito"
+
+msgid "Routes"
+msgstr "Rotas"
+
+msgid "SERVER"
+msgstr "SERVIDOR"
+
+msgid "SERVER HIT CONFIRMED  •  %d DAMAGE  •  %d HP"
+msgstr "ACERTO CONFIRMADO  •  %d DANO  •  %d PV"
+
+msgid "SERVER PREVIEW  •  NOT ACTIVE"
+msgstr "PRÉVIA  •  AINDA NÃO ATIVA"
+
+msgid "SETTINGS"
+msgstr "CONFIGURAÇÕES"
+
+msgid "SIDEARM"
+msgstr "PISTOLA"
+
+msgid "SIGNAL RECEIVED"
+msgstr "SINAL RECEBIDO"
+
+msgid "SIGNAL SENTINEL  •  LONG RANGE"
+msgstr "SENTINELA DO SINAL  •  LONGO ALCANCE"
+
+msgid "SIGNAL-SENTINEL"
+msgstr "SENTINELA DO SINAL"
+
+msgid "STATE"
+msgstr "ESTADO"
+
+msgid "STEP 1  •  MOVE"
+msgstr "PASSO 1  •  MOVA-SE"
+
+msgid "STEP 2  •  ATTACK"
+msgstr "PASSO 2  •  ATAQUE"
+
+msgid "STEP 3  •  OPEN THE CORE"
+msgstr "PASSO 3  •  ABRA O NÚCLEO"
+
+msgid "STEP 4  •  DEFEAT THE WARDEN"
+msgstr "PASSO 4  •  DERROTE O GUARDIÃO"
+
+msgid "Select a binding, then press a key or controller button. Conflicts swap.\nEsc cancels capture. Delete clears a controller binding. Left stick moves.\nMenus: Tab / arrows / D-pad, Enter / South to select, Esc / East to close."
+msgstr "Selecione um comando e pressione a nova tecla ou botão. Conflitos trocam de lugar.\nEsc cancela. Delete remove um botão. O analógico esquerdo move.\nMenus: Tab / setas / direcional; Enter / botão inferior confirma; Esc / botão direito volta."
+
+msgid "Select a candidate and request server preview."
+msgstr "Selecione módulos e solicite a prévia."
+
+msgid "Settings"
+msgstr "Configurações"
+
+msgid "Signal sentinel signal"
+msgstr "Sinal do sentinela"
+
+msgid "Someone kept the lights on."
+msgstr "Alguém manteve as luzes acesas."
+
+msgid "Sound captions"
+msgstr "Legendas sonoras"
+
+msgid "South / A"
+msgstr "Inferior / A"
+
+msgid "Start"
+msgstr "Iniciar"
+
+msgid "TARGET UNAVAILABLE  •  ATTACK NOT SENT"
+msgstr "ALVO INDISPONÍVEL  •  ATAQUE NÃO ENVIADO"
+
+msgid "TEMPO REGULATOR"
+msgstr "REGULADOR DE CADÊNCIA"
+
+msgid "TRACES OF THE LAST SHIFT"
+msgstr "VESTÍGIOS DO ÚLTIMO TURNO"
+
+msgid "TRANSFER"
+msgstr "TRANSFERÊNCIA"
+
+msgid "Target unavailable"
+msgstr "Alvo indisponível"
+
+msgid "That input is reserved for menu navigation. Choose another."
+msgstr "Esse comando é reservado aos menus. Escolha outro."
+
+msgid "The barrier blocks both sides. Go around its ends to fire."
+msgstr "A barreira bloqueia os dois lados. Contorne as extremidades para atirar."
+
+msgid "The custodian's order"
+msgstr "A ordem do custodiante"
+
+msgid "The last departure"
+msgstr "A última partida"
+
+msgid "The north relay is stable. Head east to the core and Warden."
+msgstr "O relay norte está estável. Vá a leste até o núcleo e o Guardião."
+
+msgid "Two signals in the dark"
+msgstr "Dois sinais na escuridão"
+
+msgid "UNRECOVERED RECORD"
+msgstr "REGISTRO NÃO RECUPERADO"
+
+msgid "USE 1-32 ASCII LETTERS, DIGITS, _, . OR -"
+msgstr "USE 1–32 LETRAS SEM ACENTO, NÚMEROS, _, . OU -"
+
+msgid "Unassigned"
+msgstr "Sem comando"
+
+msgid "WAITING"
+msgstr "AGUARDANDO"
+
+msgid "WAITING FOR MODULE SNAPSHOT"
+msgstr "AGUARDANDO MÓDULOS"
+
+msgid "WAITING FOR SNAPSHOT"
+msgstr "AGUARDANDO DADOS"
+
+msgid "WARD CAPACITOR"
+msgstr "CAPACITOR DE PROTEÇÃO"
+
+msgid "WARDEN"
+msgstr "GUARDIÃO"
+
+msgid "WEAPON  •  %s"
+msgstr "ARMA  •  %s"
+
+msgid "WEAPON COOLING  •  %d MS"
+msgstr "ARMA RECARREGANDO  •  %d MS"
+
+msgid "WEAPON EQUIPPED  •  %s"
+msgstr "ARMA EQUIPADA  •  %s"
+
+msgid "Warden signal"
+msgstr "Sinal do Guardião"
+
+msgid "Weapon cooling"
+msgstr "Arma recarregando"
+
+msgid "West / X"
+msgstr "Esquerdo / X"
+
+msgid "Windowed"
+msgstr "Janela"
+
+msgid "XP %d  •  %d TO NEXT LEVEL"
+msgstr "XP %d  •  FALTAM %d PARA SUBIR"
+
+msgid "button"
+msgstr "botão"
+
+msgid "key"
+msgstr "tecla"
+
+msgid "select at most three modules; no request was sent"
+msgstr "selecione no máximo três módulos; nada foi enviado"
+
+msgid "“Vale is alive.” Signal received. Head east to the core."
+msgstr "“Vale está viva.” Sinal recebido. Vá a leste até o núcleo."
+
+msgid "✓ CHARGED"
+msgstr "✓ CARREGADO"
+
+msgid "%d SERVER TRANSITIONS  •  GRANT %d FRAGMENT(S) / %d XP"
+msgstr "%d TRANSIÇÕES  •  RECEBIDOS %d FRAGMENTO(S) / %d XP"
+
+msgid "%s  •  %s  •  EVENT %s  •  SEED %d"
+msgstr "%s  •  %s  •  EVENTO %s  •  SEMENTE %d"
+
+msgid "%s  •  ACTOR %d%s"
+msgstr "%s  •  OPERADOR %d%s"
+
+msgid "%s  •  SERVER CANDIDATE"
+msgstr "%s  •  OPÇÃO DISPONÍVEL"
+
+msgid "%s  •  WAITING FOR SERVER"
+msgstr "%s  •  AGUARDANDO SERVIDOR"
+
+msgid "%s  •  WARDEN HP %d BP  •  COUNTER %d"
+msgstr "%s  •  VIDA DO GUARDIÃO %d PB  •  CONTRA-ATAQUE %d"
+
+msgid "%s ACCEPTED%s  •  ID %s"
+msgstr "%s ACEITO%s  •  ID %s"
+
+msgid "%s PENDING  •  AWAITING SERVER"
+msgstr "%s PENDENTE  •  AGUARDANDO SERVIDOR"
+
+msgid "%s%s  •  %d MS"
+msgstr "%s%s  •  %d MS"
+
+msgid "01  ANCHOR ARRIVED"
+msgstr "01  ÂNCORA CHEGOU"
+
+msgid "02  RELAY CONSOLE PINGED"
+msgstr "02  CONSOLE SINALIZADO"
+
+msgid "03  RUNNER ARRIVED"
+msgstr "03  CORREDOR CHEGOU"
+
+msgid "04  RUNNER REVIVED"
+msgstr "04  CORREDOR REANIMADO"
+
+msgid "05  WARDEN COMPLETED"
+msgstr "05  GUARDIÃO DERROTADO"
+
+msgid "2 ORDERED GRANTS  •  EACH %d RELAY CORE FRAGMENT(S) / %d XP"
+msgstr "2 RECOMPENSAS  •  %d FRAGMENTO(S) / %d XP CADA"
+
+msgid "ACTOR %d DECIDES  •  This participant can inspect the same server facts but cannot submit a choice."
+msgstr "O OPERADOR %d DECIDE  •  Você pode consultar as opções."
+
+msgid "ANCHOR"
+msgstr "ÂNCORA"
+
+msgid "ARC SURGE"
+msgstr "SURTO DE ARCO"
+
+msgid "ARC WARDEN  •  Repositions after each hit. Track its jumps."
+msgstr "GUARDIÃO DE ARCO  •  Muda de posição a cada acerto. Siga os saltos."
+
+msgid "ARRIVE [3,0,3]  →  PING  →  REVIVE RUNNER"
+msgstr "ALCANCE [3,0,3]  →  SINALIZE  →  REANIME O CORREDOR"
+
+msgid "AUTHORITATIVE OPTION MISSING"
+msgstr "OPÇÃO AINDA NÃO RECEBIDA"
+
+msgid "AVAILABLE FOR EXPLICIT REQUEST"
+msgstr "DISPONÍVEL PARA SOLICITAÇÃO"
+
+msgid "AWAITING AUTHORITATIVE ROUTE STATE"
+msgstr "AGUARDANDO DADOS DA ROTA"
+
+msgid "After clearing the drone, look for the amber archive markers near the arrival platform and maintenance bench.\n\nApproach a terminal and press E to read it. The core memory becomes available when the Warden is defeated.\n\nRecovered records can be revisited here during this run."
+msgstr "Após derrotar o drone, procure os marcadores âmbar perto da plataforma de chegada e da bancada de manutenção.\n\nAproxime-se de um terminal e use Ler registro. A memória do núcleo fica disponível ao derrotar o Guardião.\n\nOs registros recuperados podem ser relidos aqui durante esta incursão."
+
+msgid "BASELINE"
+msgstr "PADRÃO"
+
+msgid "BREACH"
+msgstr "RUPTURA"
+
+msgid "BUDGET  •  %d MS"
+msgstr "LIMITE  •  %d MS"
+
+msgid "BUDGETS  •  OP %d  •  PING %d  •  REVIVE WINDOW %d  •  CHANNEL %d MS  •  RANGE² %d  •  RESTORE %d HP  •  REWARD %d FRAGMENT(S) / %d XP EACH"
+msgstr "LIMITES  •  OP %d  •  SINAL %d  •  REANIMAR %d  •  CANAL %d MS  •  ALCANCE² %d  •  RECUPERAR %d PV  •  RECOMPENSA %d FRAGMENTO(S) / %d XP CADA"
+
+msgid "CAPABILITY REQUEST PENDING  •  AWAITING SERVER"
+msgstr "CONSULTA PENDENTE  •  AGUARDANDO SERVIDOR"
+
+msgid "CHANNELING"
+msgstr "CANALIZANDO"
+
+msgid "CHOICE OPEN"
+msgstr "ESCOLHA ABERTA"
+
+msgid "CHOICE PENDING  •  REQUESTED %s"
+msgstr "ESCOLHA PENDENTE  •  SOLICITADA %s"
+
+msgid "CLOSE [ESC / C]"
+msgstr "FECHAR [ESC]"
+
+msgid "CLOSE [ESC / R]"
+msgstr "FECHAR [ESC]"
+
+msgid "CONNECTION INTERRUPTED  •  RETRY FROM START"
+msgstr "CONEXÃO INTERROMPIDA  •  REINICIE A INCURSÃO"
+
+msgid "CONNECTION LOST  •  OPERATION NOT RESUMED"
+msgstr "CONEXÃO PERDIDA  •  OPERAÇÃO NÃO RETOMADA"
+
+msgid "CONNECTION LOST  •  ROUTE NOT RESUMED"
+msgstr "CONEXÃO PERDIDA  •  ROTA NÃO RETOMADA"
+
+msgid "CONTRIBUTIONS  •  %s"
+msgstr "CONTRIBUIÇÕES  •  %s"
+
+msgid "CONTRIBUTIONS  •  AWAITING AUTHORITATIVE OPERATION"
+msgstr "CONTRIBUIÇÕES  •  AGUARDANDO OPERAÇÃO"
+
+msgid "COOPERATION LINK  •  SERVER AUTHORITY"
+msgstr "CONEXÃO COOPERATIVA"
+
+msgid "CORE RESONANCE"
+msgstr "RESSONÂNCIA DO NÚCLEO"
+
+msgid "Capability state is authoritative."
+msgstr "Disponibilidade confirmada pelo servidor."
+
+msgid "DOOR"
+msgstr "PORTA"
+
+msgid "DRONE"
+msgstr "DRONE"
+
+msgid "FAILED  •  DEADLINE EXCEEDED  •  %d / %d MS"
+msgstr "FALHOU  •  PRAZO ESGOTADO  •  %d / %d MS"
+
+msgid "Field notes from this run.\nExplore between encounters.\n\nE · read nearby record\nJ · revisit the archive\nEsc · return to the hub"
+msgstr "Notas desta incursão.\nExplore entre encontros.\n\nLeia registros próximos ou\nrevisite os já encontrados.\nEsc · voltar à central"
+
+msgid "INVALID SERVER DATA"
+msgstr "DADOS INVÁLIDOS DO SERVIDOR"
+
+msgid "LATEST  •  %s → %s  •  %s  •  SOURCE %s  •  %d MS"
+msgstr "ÚLTIMO  •  %s → %s  •  %s  •  ORIGEM %s  •  %d MS"
+
+msgid "LATEST LIFE EVENT  •  NONE"
+msgstr "ÚLTIMO EVENTO DE VIDA  •  NENHUM"
+
+msgid "LIFE %s  •  HP %d/%d"
+msgstr "ESTADO %s  •  PV %d/%d"
+
+msgid "NO AUTHORITATIVE COOPERATION STATE"
+msgstr "AGUARDANDO DADOS DA COOPERAÇÃO"
+
+msgid "NO AUTHORITATIVE ROUTE STATE"
+msgstr "AGUARDANDO DADOS DAS ROTAS"
+
+msgid "NO OPERATION  •  TARGETS AND BUDGETS ARE SERVER-OWNED"
+msgstr "SEM OPERAÇÃO  •  AGUARDANDO OBJETIVOS E PRAZOS"
+
+msgid "NO REWARD  •  %s"
+msgstr "SEM RECOMPENSA  •  %s"
+
+msgid "NO ROUTE REWARD  •  %d SERVER TRANSITIONS  •  %s"
+msgstr "SEM RECOMPENSA DA ROTA  •  %d TRANSIÇÕES  •  %s"
+
+msgid "NO SERVER-DECLARED LOCAL ROLE  •  Inspect state or wait for both participants."
+msgstr "FUNÇÃO AINDA NÃO DEFINIDA  •  Atualize ou aguarde os dois participantes."
+
+msgid "No actor, health, life, or responsibility assigned."
+msgstr "Nenhum operador, estado de vida ou função atribuído."
+
+msgid "No candidate or capability is inferred locally."
+msgstr "As opções dependem da resposta do servidor."
+
+msgid "No cooperation operation, timer, life state, contribution, or reward is inferred locally."
+msgstr "Aguardando confirmação da operação e de suas condições."
+
+msgid "No cooperation role, timer, life state, contribution, or reward is projected."
+msgstr "Aguardando confirmação de funções, prazos e recompensas."
+
+msgid "No participant, role, target, timer, contribution, life state, or reward is displayed before acceptance."
+msgstr "Participantes e condições da operação dependem da confirmação."
+
+msgid "No phase, contribution, ping, life, channel, completion, or reward is accepted locally."
+msgstr "Aguardando confirmação da ação e do progresso."
+
+msgid "No route candidate or selection is displayed before the authoritative response."
+msgstr "As opções serão exibidas após a resposta do servidor."
+
+msgid "No route, event, objective, reward, effect, or timer is accepted yet."
+msgstr "Aguardando confirmação da rota e de seus efeitos."
+
+msgid "No route, event, objective, reward, or timer has been projected."
+msgstr "Nenhuma rota, evento ou recompensa foi confirmado."
+
+msgid "OBJECTIVE  •  ACTIVITY DID NOT COMPLETE"
+msgstr "OBJETIVO  •  ATIVIDADE NÃO CONCLUÍDA"
+
+msgid "OBJECTIVES  •  %s"
+msgstr "OBJETIVOS  •  %s"
+
+msgid "PHASE %s  •  LEADER ACTOR %d  •  CAPABLE %d/%d"
+msgstr "FASE %s  •  LÍDER %d  •  PRONTOS %d/%d"
+
+msgid "PHASE %s  •  SESSION %s  •  CAPABLE %d/%d"
+msgstr "FASE %s  •  SESSÃO %s  •  PRONTOS %d/%d"
+
+msgid "PING  •  %s  •  SOURCE %d  •  ACCEPTED %d MS  •  EXPIRES %d MS"
+msgstr "SINAL  •  %s  •  ORIGEM %d  •  ACEITO %d MS  •  EXPIRA %d MS"
+
+msgid "PING  •  NONE ACCEPTED"
+msgstr "SINAL  •  NENHUM ACEITO"
+
+msgid "PING ACCEPTED%s  •  %s  •  TARGET RELAY CONSOLE"
+msgstr "SINAL ACEITO%s  •  %s  •  ALVO CONSOLE RELAY"
+
+msgid "PING RELAY CONSOLE"
+msgstr "SINALIZAR CONSOLE"
+
+msgid "POSSIBLE SERVER EVENTS  •  ONE RESOLVES AFTER ACCEPTANCE"
+msgstr "EVENTOS POSSÍVEIS  •  UM SERÁ DEFINIDO APÓS A ESCOLHA"
+
+msgid "REFRESH SERVER STATE"
+msgstr "ATUALIZAR"
+
+msgid "REJECTED  •  NO AUTHORITATIVE CHANGE"
+msgstr "RECUSADO  •  NENHUMA ALTERAÇÃO"
+
+msgid "REJECTED  •  NO ROUTE CHANGE"
+msgstr "RECUSADO  •  ROTA SEM ALTERAÇÕES"
+
+msgid "RELAY CORE OPEN  •  WARDEN INBOUND"
+msgstr "NÚCLEO ABERTO  •  GUARDIÃO A CAMINHO"
+
+msgid "RELAY CORE SEALED"
+msgstr "NÚCLEO RELAY SELADO"
+
+msgid "RELAY DOOR UNLOCKED  •  MOVE TO X=6"
+msgstr "PORTA DESTRAVADA  •  VÁ ATÉ X=6"
+
+msgid "RELAY HUB ONLINE"
+msgstr "CENTRAL RELAY ATIVA"
+
+msgid "REQUIRED  •  %s"
+msgstr "NECESSÁRIO  •  %s"
+
+msgid "RETURN TO ENTRY AND RETRY FROM THE BEGINNING"
+msgstr "VOLTE À ENTRADA E TENTE NOVAMENTE"
+
+msgid "REVIVE %s%s  •  OBSERVED %d MS"
+msgstr "REANIMAÇÃO %s%s  •  TEMPO %d MS"
+
+msgid "REVIVE COUNT %d / 1"
+msgstr "REANIMAÇÕES %d / 1"
+
+msgid "REVIVE RUNNER"
+msgstr "REANIMAR CORREDOR"
+
+msgid "REVIVE WINDOW"
+msgstr "JANELA DE REANIMAÇÃO"
+
+msgid "REWARD PLAN  •  %d FRAGMENT(S)  •  %d XP"
+msgstr "RECOMPENSA  •  %d FRAGMENTO(S)  •  %d XP"
+
+msgid "ROUTE CONSOLE  •  SERVER AUTHORITY"
+msgstr "CONSOLE DE ROTAS"
+
+msgid "RUNNER"
+msgstr "CORREDOR"
+
+msgid "Reconnect from the entry screen."
+msgstr "Reconecte pela tela de entrada."
+
+msgid "Request server capability. No role or operation is inferred locally."
+msgstr "Atualize para consultar as funções e a operação disponíveis."
+
+msgid "Request server state to inspect route engineering tradeoffs."
+msgstr "Atualize para comparar os riscos e as recompensas das rotas."
+
+msgid "SELECT %s"
+msgstr "ESCOLHER %s"
+
+msgid "SERVER OPTION"
+msgstr "OPÇÃO DISPONÍVEL"
+
+msgid "SERVER STATE RECEIVED"
+msgstr "DADOS DO SERVIDOR RECEBIDOS"
+
+msgid "SOURCE %d  •  ACCEPTED %d MS  •  EXPIRES %d MS"
+msgstr "ORIGEM %d  •  ACEITO %d MS  •  EXPIRA %d MS"
+
+msgid "SOURCE %d  →  TARGET %d  •  CHANNEL %d MS  •  DISTANCE² %d/%d"
+msgstr "ORIGEM %d  →  ALVO %d  •  CANAL %d MS  •  DISTÂNCIA² %d/%d"
+
+msgid "STABILIZE"
+msgstr "ESTABILIZAÇÃO"
+
+msgid "START OPERATION"
+msgstr "INICIAR OPERAÇÃO"
+
+msgid "STATE PENDING  •  AWAITING SERVER"
+msgstr "DADOS PENDENTES  •  AGUARDANDO SERVIDOR"
+
+msgid "SUCCEEDED"
+msgstr "SUCESSO"
+
+msgid "SUCCEEDED  •  %d MS  •  ALL 5 CONTRIBUTIONS  •  REVIVE 1/1"
+msgstr "SUCESSO  •  %d MS  •  5 CONTRIBUIÇÕES  •  REANIMAÇÃO 1/1"
+
+msgid "SUCCEEDED  •  %s / %s  •  %d / %d MS"
+msgstr "SUCESSO  •  %s / %s  •  %d / %d MS"
+
+msgid "Server accepted request."
+msgstr "O servidor aceitou a solicitação."
+
+msgid "Server rejected cooperation request."
+msgstr "O servidor recusou a solicitação de cooperação."
+
+msgid "Server rejected the request."
+msgstr "O servidor recusou a solicitação."
+
+msgid "TARGETS  •  ANCHOR [3,0,3]  •  CONSOLE [4,0,3]  •  OBSERVED %d MS"
+msgstr "ALVOS  •  ÂNCORA [3,0,3]  •  CONSOLE [4,0,3]  •  TEMPO %d MS"
+
+msgid "THE LOST SIGNAL"
+msgstr "O SINAL PERDIDO"
+
+msgid "The departure board still says ON TIME. Someone has crossed out the destination and written HOME beneath it.\n\nSHIFT LOG — E. VALE\nThe last shuttle left with seventeen seats and sixteen passengers. We kept one empty for the operator still below the relay. The station continued to answer their badge long after the lift stopped moving.\n\nI asked Control to cut the signal. They told me the Warden was already guarding it.\n\nIf someone returns through this platform, leave the lights on. They may not remember which way they came."
+msgstr "O painel de partidas ainda diz NO HORÁRIO. Alguém riscou o destino e escreveu CASA logo abaixo.\n\nREGISTRO DE TURNO — E. VALE\nO último transporte partiu com dezessete lugares e dezesseis passageiros. Deixamos um vazio para o operador que ainda estava abaixo do relay. A estação continuou respondendo ao crachá dele muito depois de o elevador parar.\n\nPedi ao Controle que cortasse o sinal. Disseram que o Guardião já estava protegendo aquilo.\n\nSe alguém voltar por esta plataforma, deixem as luzes acesas. Talvez não se lembre de onde veio."
+
+msgid "Two mugs sit beside the relay controls. One is tied to the workbench with a length of copper wire.\n\nMAINTENANCE NOTE\nThe feedback used to knock us out before we could reach the second contact. Vale stayed at the anchor while I crossed. One pulse to say ready. Two to say come back.\n\nWhen the relay dropped me, she held the connection until I could stand. We left the marks on the floor for the next pair.\n\nThe breach circuit is faster. Stabilizing gives you time to listen. Neither route explains why a third signal keeps answering from inside the core."
+msgstr "Duas canecas repousam ao lado dos controles do relay. Uma está amarrada à bancada com um fio de cobre.\n\nNOTA DE MANUTENÇÃO\nA realimentação nos derrubava antes que alcançássemos o segundo contato. Vale ficou na âncora enquanto eu atravessava. Um pulso para dizer pronto. Dois para dizer volte.\n\nQuando o relay me derrubou, ela manteve a conexão até eu conseguir levantar. Deixamos as marcas no chão para a próxima dupla.\n\nO circuito de ruptura é mais rápido. Estabilizar dá tempo para escutar. Nenhuma das rotas explica por que um terceiro sinal continua respondendo de dentro do núcleo."
+
+msgid "UNAVAILABLE  •  NO ROUTE REQUEST SENT"
+msgstr "INDISPONÍVEL  •  NENHUMA ROTA SOLICITADA"
+
+msgid "WAIT FOR PING  →  ARRIVE [4,0,3]  →  SURVIVE REVIVE"
+msgstr "AGUARDE O SINAL  →  ALCANCE [4,0,3]  →  AGUARDE A REANIMAÇÃO"
+
+msgid "WAITING FOR ANCHOR"
+msgstr "AGUARDANDO ÂNCORA"
+
+msgid "WAITING FOR PING"
+msgstr "AGUARDANDO SINAL"
+
+msgid "WAITING FOR RUNNER"
+msgstr "AGUARDANDO CORREDOR"
+
+msgid "WAITING FOR SERVER"
+msgstr "AGUARDANDO SERVIDOR"
+
+msgid "WARDEN COMBAT"
+msgstr "COMBATE COM O GUARDIÃO"
+
+msgid "WARDEN HP %d BP  •  COUNTER %d  •  PATH %s  •  REWARD %d FRAGMENT(S) / %d XP"
+msgstr "VIDA DO GUARDIÃO %d PB  •  CONTRA-ATAQUE %d  •  CAMINHO %s  •  RECOMPENSA %d FRAGMENTO(S) / %d XP"
+
+msgid "WARDEN OVERCLOCK"
+msgstr "SOBRECARGA DO GUARDIÃO"
+
+msgid "WEST RELAY  •  OPTIONAL EXCURSION"
+msgstr "RELAY OESTE  •  EXCURSÃO OPCIONAL"
+
+msgid "With the Warden silent, the relay finishes a transmission it has been repeating for years.\n\nCUSTODIAN ORDER 04\nKeep the carrier inside. Preserve the return signal. Do not interpret a familiar badge as proof of identity.\n\nThe last entry is not an order. It is a recording from the empty shuttle seat:\n\n“If you make it back, find the others. We kept the route lit.”\n\nOutside the chamber, a distant relay answers once. This station was never the end of the line."
+msgstr "Com o Guardião em silêncio, o relay termina uma transmissão que vinha repetindo há anos.\n\nORDEM DO CUSTODIANTE 04\nMantenha o portador no interior. Preserve o sinal de retorno. Não interprete um crachá familiar como prova de identidade.\n\nO último registro não é uma ordem. É uma gravação vinda do lugar vazio no transporte:\n\n“Se conseguir voltar, encontre os outros. Mantivemos a rota iluminada.”\n\nDo lado de fora da câmara, um relay distante responde uma vez. Esta estação nunca foi o fim da linha."
+
+msgid "YOU"
+msgstr "VOCÊ"
+
+msgid "YOU ARE %s  •  ACTOR %d  •  Only the matching server-authorized actions can be sent."
+msgstr "VOCÊ É %s  •  OPERADOR %d  •  Use as ações da sua função."
+
+msgid "YOU ARE THE SERVER-DECLARED LEADER  •  Choices unlock only in open phase with complete capability."
+msgstr "VOCÊ É O LÍDER  •  Escolha quando a fase abrir e todos estiverem prontos."
+
+msgid "duplicate module"
+msgstr "módulo repetido"
+
+msgid "insufficient fragments"
+msgstr "fragmentos insuficientes"
+
+msgid "module combined"
+msgstr "módulo fabricado"
+
+msgid "module is already owned"
+msgstr "módulo já adquirido"
+
+msgid "module loadout change replayed"
+msgstr "equipamento já confirmado"
+
+msgid "module loadout changed"
+msgstr "equipamento salvo"
+
+msgid "module loadout is unchanged"
+msgstr "o equipamento já está assim"
+
+msgid "module loadout revision is stale"
+msgstr "o equipamento foi alterado; atualize os dados"
+
+msgid "no change requested"
+msgstr "nenhuma alteração solicitada"
+
+msgid "operation identifier conflict"
+msgstr "conflito na identificação da operação"
+
+msgid "operation timed out"
+msgstr "o prazo da operação esgotou"
+
+msgid "server failure"
+msgstr "falha do servidor"
+
+msgid "OVERCHARGED ARMOR"
+msgstr "ARMADURA SOBRECARREGADA"
+
+msgid "SHIELDED CHANNEL"
+msgstr "CANAL PROTEGIDO"
+
+msgid "RESIDUAL FEEDBACK"
+msgstr "RETORNO RESIDUAL"
+
+msgid "REACH RELAY STABILIZER"
+msgstr "ALCANCE O ESTABILIZADOR"
+
+msgid "route capability accepted"
+msgstr "dados de rotas recebidos"
+
+msgid "cooperation capability is unavailable for this activity"
+msgstr "a cooperação não está disponível nesta atividade"
+
+msgid "module capability accepted"
+msgstr "dados de módulos recebidos"
+
+msgid "module state accepted"
+msgstr "dados de módulos recebidos"
+
+msgid "The relay is awake. Your authoritative reward is safely stored."
+msgstr "O relay despertou. Sua recompensa foi salva."
+
+msgid "CORE OPEN"
+msgstr "NÚCLEO ABERTO"
+
+msgid "The Warden is spawning. Get ready to aim and attack."
+msgstr "O Guardião está chegando. Prepare-se para mirar e atacar."
+
+msgid "Aim at the purple Warden and attack until its HP reaches zero."
+msgstr "Mire no Guardião e ataque até esgotar seus PV."
+
+msgid "Hold D to move right until you reach the orange relay door at x=6."
+msgstr "Siga para a direita até a porta âmbar do núcleo em x=6."
+
+msgid "Use D and S to reach the server-authored stabilizer coordinate [3, 0, 3]. The relay door remains pending."
+msgstr "Vá ao estabilizador em [3, 0, 3]. A porta do núcleo ainda está bloqueada."
+
+msgid "The server closed this routed operation after its deadline. No route reward was granted."
+msgstr "O prazo da rota terminou. Nenhuma recompensa de rota foi concedida."
+
+msgid "The authoritative deadline elapsed. No route reward was granted; reconnect starts a new run."
+msgstr "O prazo terminou sem recompensa de rota. Reconecte para uma nova incursão."
+
+msgid "Follow the server objective to [3, 0, 3], then continue to the relay door. Event and effects are shown in Routes [R]."
+msgstr "Vá a [3, 0, 3] e depois à porta do núcleo. Consulte o evento e seus efeitos no menu Rotas."
+
+msgid "Continue to the relay door at [6, 0, 0]. Event and effects are shown in Routes [R]."
+msgstr "Siga até a porta do núcleo em [6, 0, 0]. Consulte o evento e seus efeitos no menu Rotas."
+
+msgid "LOCAL RELAY"
+msgstr "RELAY LOCAL"
+
+msgid "MERIDIAN ANNEX\nOPTIONAL • WEST"
+msgstr "ANEXO MERIDIAN\nOPCIONAL • OESTE"
+
+msgid "MERIDIAN • N ↑"
+msgstr "MERIDIAN • N ↑"
+
+msgid "1 • ARRIVAL LOCK"
+msgstr "1 • ECLUSA DE CHEGADA"
+
+msgid "2 • LENS CISTERN"
+msgstr "2 • CISTERNA DA LENTE"
+
+msgid "3 • SKY GALLERY"
+msgstr "3 • GALERIA DO CÉU"
+
+msgid "KEEPER'S WALK"
+msgstr "PASSARELA DO GUARDIÃO"
+
+msgid "2 • ALIGN THE LENS"
+msgstr "2 • ALINHAR A LENTE"
+
+msgid "3 • SURVEY THE SKY"
+msgstr "3 • OBSERVAR O CÉU"
+
+msgid "4 • KEEPER'S LOG"
+msgstr "4 • DIÁRIO DO GUARDIÃO"
+
+msgid "5 • RETURN THE LOG"
+msgstr "5 • DEVOLVER O DIÁRIO"
+
+msgid "A NAME IN THE GLASS"
+msgstr "UM NOME NO VIDRO"
+
+msgid "✓ A NAME IN THE GLASS"
+msgstr "✓ UM NOME NO VIDRO"
+
+msgid "✓ RECORDED"
+msgstr "✓ REGISTRADO"
+
+msgid "◇ APPROACH"
+msgstr "◇ APROXIME-SE"
+
+msgid "HUB →\nRETURN EAST"
+msgstr "NÚCLEO →\nVOLTE A LESTE"
+
+msgid "2 NORTH / 3 SOUTH\n4 WEST"
+msgstr "2 NORTE / 3 SUL\n4 OESTE"
+
+msgid "1 Arrival • 2 Lens • 3 Sky\n4 Log • Return east →"
+msgstr "1 Chegada • 2 Lente • 3 Céu\n4 Diário • Volte a leste →"
+
+msgid "SECTOR 03 • MERIDIAN"
+msgstr "SETOR 03 • MERIDIAN"
+
+msgid "WEST PASSAGE"
+msgstr "PASSAGEM OESTE"
+
+msgid "MERIDIAN • SURVEY %d/2 • LOG %d/1"
+msgstr "MERIDIAN • PESQUISA %d/2 • DIÁRIO %d/1"
+
+msgid "MERIDIAN • EXPLORE AT YOUR PACE"
+msgstr "MERIDIAN • EXPLORE SEM PRESSA"
+
+msgid "Survey the north lens, then the south gallery. Bring the west log back to Arrival. Return east anytime."
+msgstr "Observe a lente ao norte e a galeria ao sul. Leve o diário do oeste à Chegada. Volte a leste quando quiser."
+
+msgid "Core east; Meridian due west at [-12, 0]; Signal southwest; Coolant north."
+msgstr "Núcleo a leste; Meridian a oeste em [-12, 0]; Sinal a sudoeste; Refrigerante ao norte."
+
+msgid "Meridian is west. Continue east to the Warden whenever you are ready."
+msgstr "Meridian fica a oeste. Siga a leste até o Guardião quando estiver pronto."
+
+msgid "“Vale, we kept your window facing home.” A name scratched beneath the last intact star."
+msgstr "“Vale, deixamos sua janela voltada para casa.” Um nome riscado sob a última estrela intacta."
+
+msgid "THE KEEPER'S LAST ROUND"
+msgstr "A ÚLTIMA RONDA DO GUARDIÃO"
+
+msgid "“The relay went dark. We left the sky open.” Carry this log east to the Arrival marker."
+msgstr "“O relé apagou. Deixamos o céu aberto.” Leve o diário a leste, até o marco da Chegada."
+
+msgid "MERIDIAN RECORDED"
+msgstr "MERIDIAN REGISTRADO"
+
+msgid "The lens still points home. Follow the pale paths east to the hub and Warden."
+msgstr "A lente ainda aponta para casa. Siga os caminhos claros a leste até o núcleo e o Guardião."
+
+msgid "Wind through the Meridian glass"
+msgstr "Vento nos vidros de Meridian"
+
+msgid "1 Arrival"
+msgstr "1 Chegada"
+
+msgid "2 Lens"
+msgstr "2 Lente"
+
+msgid "3 Sky"
+msgstr "3 Céu"
+
+msgid "4 Log"
+msgstr "4 Diário"
+
+msgid "Return east →"
+msgstr "Volte a leste →"
+
+msgid "← Return west"
+msgstr "← Volte a oeste"
+
+msgid "RETURN WEST"
+msgstr "RETORNO OESTE"
+
+msgid "✓ Memory"
+msgstr "✓ Memória"
+
+msgid "MERIDIAN • SAFE EXPLORATION"
+msgstr "MERIDIAN • EXPLORAÇÃO SEGURA"
+
+msgid "A name in the glass"
+msgstr "Um nome no vidro"
+
+msgid "04 / MERIDIAN — SKY GALLERY"
+msgstr "04 / MERIDIAN — GALERIA DO CÉU"
+
+msgid "ARCHIVE [J]  %d/%d"
+msgstr "ARQUIVO [J]  %d/%d"
+
+msgid "%d / %d RECORDS READ"
+msgstr "%d / %d REGISTROS LIDOS"
+
+msgid "5 Return log"
+msgstr "5 Devolver diário"
+
+msgid "GLASS LANCER"
+msgstr "LANCEIRO DE VIDRO"
+
+msgid "GLASS-LANCER"
+msgstr "LANCEIRO DE VIDRO"
+
+msgid "Glass Lancer signal"
+msgstr "Sinal do Lanceiro de Vidro"
+
+msgid "Lancer charging — step off the line"
+msgstr "Lanceiro preparando investida — saia da linha"
+
+msgid "CHARGE • STEP ASIDE"
+msgstr "INVESTIDA • SAIA DA LINHA"
+
+msgid "RECOVERING • ATTACK"
+msgstr "RECUPERANDO • ATAQUE"
+
+msgid "GLASS LANCER\nOPTIONAL • APPROACH TO TRAIN"
+msgstr "LANCEIRO DE VIDRO\nOPCIONAL • APROXIME-SE PARA TREINAR"
+
+msgid "RETREAT NORTH\nLEAVE THE TRAINING PAD"
+msgstr "RECUE AO NORTE\nSAIA DA ÁREA DE TREINO"
+
+msgid "GLASS LANCER • WATCH THE FLOOR"
+msgstr "LANCEIRO • OBSERVE O CHÃO"
+
+msgid "GLASS LANCER • OPTIONAL ENCOUNTER"
+msgstr "LANCEIRO • ENCONTRO OPCIONAL"
+
+msgid "GLASS LANCER • CLEARED"
+msgstr "LANCEIRO • DERROTADO"
+
+msgid "GLASS LANCER • WITHDRAWN"
+msgstr "LANCEIRO • RETIRADA"
+
+msgid "The Lancer caught you. Step sideways when the line appears, then attack during recovery. Your existing items are safe."
+msgstr "O Lanceiro acertou você. Dê um passo para o lado quando a linha aparecer e ataque durante a recuperação. Seus itens estão seguros."
+
+msgid "CORE EAST • CONTINUE WHEN READY"
+msgstr "NÚCLEO A LESTE • SIGA QUANDO QUISER"
+
+msgid "Core east; Meridian west; Signal southwest; Coolant north; Lancer south at [4, 8]."
+msgstr "Núcleo a leste; Meridian a oeste; Sinal a sudoeste; Refrigeração ao norte; Lanceiro ao sul em [4, 8]."
+
+msgid "LANCER • STEP OFF THE LINE"
+msgstr "LANCEIRO • SAIA DA LINHA"
+
+msgid "Step off the line. Attack during recovery. Leave the pad to withdraw."
+msgstr "Saia da linha. Ataque na recuperação. Saia da área para recuar."
+
+msgid "CONTINUE TO THE CORE"
+msgstr "SIGA ATÉ O NÚCLEO"
+
+msgid "Head north off the pad, then east to the core and Warden."
+msgstr "Saia da área pelo norte e siga a leste até o núcleo e o Guardião."
+
+msgid "STEEL BULWARK"
+msgstr "BASTIÃO DE AÇO"
+
+msgid "STEEL-BULWARK"
+msgstr "BASTIÃO DE AÇO"
+
+msgid "STEEL BULWARK\nOPTIONAL • APPROACH TO TRAIN"
+msgstr "BASTIÃO DE AÇO\nOPCIONAL • APROXIME-SE PARA TREINAR"
+
+msgid "RETREAT SOUTH\nLEAVE THE TRAINING PAD"
+msgstr "RECUE AO SUL\nSAIA DA ÁREA DE TREINO"
+
+msgid "STEEL BULWARK • OPTIONAL ENCOUNTER"
+msgstr "BASTIÃO • ENCONTRO OPCIONAL"
+
+msgid "STEEL BULWARK • CLEARED"
+msgstr "BASTIÃO • DERROTADO"
+
+msgid "STEEL BULWARK • WITHDRAWN"
+msgstr "BASTIÃO • RETIRADA"
+
+msgid "SHIELD UP • FLANK"
+msgstr "ESCUDO ERGUIDO • CONTORNE"
+
+msgid "SHIELD DOWN • ATTACK"
+msgstr "ESCUDO BAIXO • ATAQUE"
+
+msgid "BLOCKED • FLANK OR WAIT"
+msgstr "BLOQUEADO • CONTORNE OU ESPERE"
+
+msgid "The Bulwark stopped you. Flank the shield or attack when it lowers. Your existing items are safe."
+msgstr "O Bastião deteve você. Contorne o escudo ou ataque quando ele baixar. Seus itens estão seguros."
+
+msgid "Core east; Meridian west. Train against Lancer south [4, 8] or Bulwark north [6, -8]."
+msgstr "Núcleo a leste; Meridian a oeste. Treine com Lanceiro ao sul [4, 8] ou Bastião ao norte [6, -8]."
+
+msgid "BULWARK • FLANK THE SHIELD"
+msgstr "BASTIÃO • CONTORNE O ESCUDO"
+
+msgid "Avoid the front wedge. Attack the sides or wait for the shield to lower. Leave the pad to withdraw."
+msgstr "Saia do setor frontal. Ataque pelo lado ou com escudo baixo. Saia da área para recuar."
+
+msgid "Head south off the pad to the core door [6, 0]."
+msgstr "Saia da área pelo sul até a porta do núcleo [6, 0]."
+
+msgid "Steel Bulwark signal"
+msgstr "Sinal do Bastião de Aço"
+
+msgid "Bulwark preparing slam — step aside"
+msgstr "Bastião preparando golpe — saia para o lado"
+
+msgid "Shield blocks the shot"
+msgstr "Escudo bloqueia o tiro"
+
+msgid "Next enemy"
+msgstr "Próximo inimigo"
+
+msgid "NEXT ENEMY"
+msgstr "PRÓXIMO ALVO"
+
+msgid "NEXT ENEMY [%s]"
+msgstr "PRÓXIMO ALVO [%s]"
+
+msgid "TARGET • %s • %d/%d HP"
+msgstr "ALVO • %s • %d/%d PV"
+
+msgid "MENDER PAIR • %d/2 DEFEATED"
+msgstr "DUPLA REPARADORA • %d/2 ELIMINADOS"
+
+msgid "MENDER PAIR • CLEARED"
+msgstr "DUPLA REPARADORA • ELIMINADA"
+
+msgid "MENDER PAIR • WITHDRAWN"
+msgstr "DUPLA REPARADORA • RETIRADA"
+
+msgid "MENDER PAIR • CHOOSE A TARGET"
+msgstr "DUPLA REPARADORA • ESCOLHA UM ALVO"
+
+msgid "The pair stopped you. Defeat the Mender to stop repairs and step off the charge line. Your existing items are safe."
+msgstr "A dupla deteve você. Elimine o Reparador para interromper os reparos e saia da linha de investida. Seus itens continuam seguros."
+
+msgid "Core east; Meridian west. Lancer [4, 8], Bulwark [6, -8], Mender pair [2, 6]."
+msgstr "Núcleo a leste; Meridian a oeste. Lanceiro [4, 8], Bastião [6, -8], dupla reparadora [2, 6]."
+
+msgid "MENDER • BREAK THE REPAIR LINK"
+msgstr "REPARADOR • INTERROMPA OS REPAROS"
+
+msgid "Mender repairs its ally. Click a target or use Next Enemy [%s]. Step off charge lines. Leave the pad to withdraw."
+msgstr "O Reparador restaura o aliado. Clique no alvo ou use Próximo Alvo [%s]. Saia das linhas de investida. Saia do pátio para recuar."
+
+msgid "MENDER + LANCER\nOPTIONAL • APPROACH TO TRAIN"
+msgstr "REPARADOR + LANCEIRO\nOPCIONAL • APROXIME-SE PARA TREINAR"
+
+msgid "RELAY MENDER"
+msgstr "REPARADOR RELAY"
+
+msgid "RELAY-MENDER"
+msgstr "REPARADOR RELAY"
+
+msgid "REPAIR +%d"
+msgstr "REPARO +%d"
+
+msgid "Relay Mender signal"
+msgstr "Sinal do Reparador Relay"
+
+msgid "Mender repairs its ally"
+msgstr "Reparador restaura seu aliado"
+
+msgid "STOP MENDER REPAIRS"
+msgstr "PARE OS REPAROS"
+
+msgid "Targets: click or [%s]. Dodge charge lines. Leave the pad to retreat."
+msgstr "Alvos: clique ou [%s]. Desvie das linhas. Saia do pátio para recuar."
+
+msgid "BASTION LINK"
+msgstr "ELO BASTIÃO"
+
+msgid "CROSSED GUARD"
+msgstr "GUARDA CRUZADA"
+
+msgid "%s • %d/2 DEFEATED"
+msgstr "%s • %d/2 ELIMINADOS"
+
+msgid "%s • CLEARED"
+msgstr "%s • CONCLUÍDO"
+
+msgid "%s • WITHDRAWN"
+msgstr "%s • RETIRADA"
+
+msgid "The elite pair stopped you. Choose your target, avoid the marked danger and use the recovery windows. Your existing items are safe."
+msgstr "A dupla elite deteve você. Escolha seu alvo, desvie das áreas marcadas e aproveite a recuperação. Seus itens continuam seguros."
+
+msgid "Core east; Meridian west. Elites: Link [5,-6], Guard [5,-10]."
+msgstr "Núcleo a leste; Meridian a oeste. Elites: Elo [5,-6], Guarda [5,-10]."
+
+msgid "BREAK THE REPAIR LINK"
+msgstr "CORTE O REPARO"
+
+msgid "ALTERNATING ATTACKS"
+msgstr "ATAQUES ALTERNADOS"
+
+msgid "Targets: click or [%s]. Flank the shield; dodge the marks. Leave the pad to retreat."
+msgstr "Alvos: clique ou [%s]. Flanque e desvie. Saia do pátio para recuar."
+
+msgid "BASTION LINK\nBULWARK + MENDER"
+msgstr "ELO BASTIÃO\nBASTIÃO + REPARADOR"
+
+msgid "CROSSED GUARD\nBULWARK + LANCER"
+msgstr "GUARDA CRUZADA\nBASTIÃO + LANCEIRO"
+
+msgid "PRISM WARDEN"
+msgstr "GUARDIÃO PRISMA"
+
+msgid "I • SHELL CLOSED"
+msgstr "I • CARAPAÇA FECHADA"
+
+msgid "II • SHELL CLOSED"
+msgstr "II • CARAPAÇA FECHADA"
+
+msgid "SHELL OPEN • ATTACK"
+msgstr "CARAPAÇA ABERTA • ATAQUE"
+
+msgid "PHASE II • CORE PULSES"
+msgstr "FASE II • PULSOS DO NÚCLEO"
+
+msgid "MOVE OFF THE STRIPE"
+msgstr "SAIA DA FAIXA"
+
+msgid "LEAVE THE CENTER"
+msgstr "SAIA DO CENTRO"
+
+msgid "RETURN TO THE CENTER"
+msgstr "VOLTE AO CENTRO"
+
+msgid "SHELL CLOSED • WAIT FOR OPENING"
+msgstr "CARAPAÇA FECHADA • ESPERE ABRIR"
+
+msgid "PRISM WARDEN\nOPTIONAL CORE • ENTER HERE"
+msgstr "GUARDIÃO PRISMA\nNÚCLEO OPCIONAL • ENTRE AQUI"
+
+msgid "RETREAT WEST\nLEAVE THE MARKED SQUARE"
+msgstr "RECUE A OESTE\nSAIA DO QUADRADO MARCADO"
+
+msgid "PRISM WARDEN • PHASE %d/2"
+msgstr "GUARDIÃO PRISMA • FASE %d/2"
+
+msgid "PRISM WARDEN • CLEARED"
+msgstr "GUARDIÃO PRISMA • VENCIDO"
+
+msgid "PRISM WARDEN • WITHDRAWN"
+msgstr "GUARDIÃO PRISMA • RETIRADA"
+
+msgid "Attack now. The shell closes before the next warning."
+msgstr "Ataque agora. A carapaça fecha antes do próximo aviso."
+
+msgid "First leave the center, then return. Attack after both pulses."
+msgstr "Saia do centro, depois volte. Ataque após os dois pulsos."
+
+msgid "PREPARE TO RETURN"
+msgstr "PREPARE-SE PARA VOLTAR"
+
+msgid "Center pulse resolved. Return to the center for the next warning."
+msgstr "Pulso central encerrado. Volte ao centro para o próximo aviso."
+
+msgid "Stand outside the marked center until the pulse resolves."
+msgstr "Fique fora do centro marcado até o pulso terminar."
+
+msgid "Stand in the clear center. Attack after the outer pulse."
+msgstr "Fique no centro livre. Ataque após o pulso externo."
+
+msgid "Step off the stripe. Attack when the shell opens. Leave the square to retreat."
+msgstr "Saia da faixa. Ataque quando abrir. Saia do quadrado para recuar."
+
+msgid "The Prism Warden stopped you. Follow the floor warnings and attack when its shell opens. Your existing items are safe."
+msgstr "O Guardião Prisma deteve você. Siga os avisos no chão e ataque quando a carapaça abrir. Seus itens estão seguros."
+
+msgid "Core [6,0]. Optional Prism Warden [5,2]. Elites north; Meridian west."
+msgstr "Núcleo [6,0]. Prisma opcional [5,2]. Elites ao norte; Meridian a oeste."
+
+msgid "Prism Warden signal"
+msgstr "Sinal do Guardião Prisma"
+
+msgid "Prism firing lane locked"
+msgstr "Prisma fixa sua faixa de disparo"
+
+msgid "Center pulse charging"
+msgstr "Pulso central carregando"
+
+msgid "Outer pulse charging"
+msgstr "Pulso externo carregando"
+
+msgid "Prism enters phase two"
+msgstr "Prisma entra na segunda fase"
+
+msgid "Prism shell opens"
+msgstr "Carapaça do Prisma abre"
+
+# M35 arsenal
+msgid "SCATTER CASTER"
+msgstr "DISPERSOR"
+
+msgid "RAIL DRIVER"
+msgstr "ACELERADOR"
+
+msgid "SCATTER"
+msgstr "DISPERSOR"
+
+msgid "RAIL"
+msgstr "ACELERADOR"
+
+msgid "HALF DAMAGE BEYOND 3"
+msgstr "METADE DO DANO ALÉM DE 3"
+
+msgid "MINIMUM RANGE 4"
+msgstr "ALCANCE MÍNIMO 4"
+
+msgid "Full damage within 3 units; half damage beyond."
+msgstr "Dano total até 3 unidades; metade além disso."
+
+msgid "Cannot fire within 4 units; switch weapons when rushed."
+msgstr "Não dispara a menos de 4 unidades; troque se cercado."
+
+msgid "Full damage within 3 units; half damage beyond. Use weapon cycling or this button."
+msgstr "Dano total até 3 unidades; metade além disso. Alterne as armas ou use este botão."
+
+msgid "Cannot fire within 4 units. Retreat or switch weapons when rushed."
+msgstr "Não dispara a menos de 4 unidades. Recue ou troque de arma quando pressionado."
+
+msgid "Scatter Caster fires"
+msgstr "Disparo do Dispersor"
+
+msgid "Rail Driver fires"
+msgstr "Disparo do Acelerador"
+
+msgid "TOO CLOSE • RETREAT TO 4 UNITS OR SWITCH WEAPONS"
+msgstr "PERTO DEMAIS • RECUE ATÉ 4 UNIDADES OU TROQUE DE ARMA"
+
+msgid "WEAPONS AVAILABLE  •  5"
+msgstr "ARMAS DISPONÍVEIS  •  5"
+
+msgid "TOO CLOSE • KEEP 4 UNITS OR SWITCH"
+msgstr "PERTO DEMAIS • MANTENHA 4 UNIDADES OU TROQUE"
+
+# M35 fixed builds
+msgid "BREACH SHUNT"
+msgstr "DERIVADOR DE RUPTURA"
+
+msgid "STANDOFF OPTIC"
+msgstr "ÓPTICA DE DISTÂNCIA"
+
+msgid "SKIRMISH DRIVE"
+msgstr "PROPULSOR DE ESCARAMUÇA"
+
+msgid "ABLATIVE SHELL"
+msgstr "BLINDAGEM ABLATIVA"
+
+msgid "BREACHER"
+msgstr "ASSALTO"
+
+msgid "MARKSMAN"
+msgstr "ATIRADOR"
+
+msgid "GUARD"
+msgstr "GUARDA"
+
+msgid "PREVIEW A PLAYSTYLE"
+msgstr "PRÉVIA DE ESTILO"
+
+msgid "Choose a suggested setup, then compare the server preview."
+msgstr "Escolha uma sugestão e compare a prévia."
+
+msgid "Pair with Scatter Caster. Strong close burst; short reach and slow follow-up."
+msgstr "Use com o Dispersor. Impacto forte de perto; alcance curto e recarga lenta."
+
+msgid "Pair with Rail Driver. Long reach and quicker cycling; lower health and a close dead zone."
+msgstr "Use com o Acelerador. Maior alcance e cadência; menos vida e zona morta de perto."
+
+msgid "Pair with Pulse Rifle. More health and steady fire; weaker hits and short reach."
+msgstr "Use com o Rifle de Pulso. Mais vida e fogo constante; acertos fracos e alcance curto."
+
+msgid "Preview only. Save modules after completion; equip the suggested weapon next session."
+msgstr "Apenas prévia. Salve módulos após concluir; equipe a arma sugerida na próxima incursão."
+
+msgid "TO ACQUIRE  •  %d MODULES / %d FRAGMENTS"
+msgstr "FALTAM  •  %d MÓDULOS / %d FRAGMENTOS"
+
+msgid "NEXT CRAFT  •  %s / %d FRAGMENTS"
+msgstr "PRÓXIMA FABRICAÇÃO  •  %s / %d FRAGMENTOS"
+
+msgid "After clearing the drone, compare mission rewards in Routes."
+msgstr "Após derrotar o drone, compare as recompensas das missões em Rotas."
+
+msgid "ALL SELECTED MODULES OWNED"
+msgstr "TODOS OS MÓDULOS SELECIONADOS ADQUIRIDOS"
+
+msgid "Save this loadout after mission completion. It becomes active next session."
+msgstr "Salve este equipamento após concluir a missão. Ele valerá na próxima incursão."
+
+msgid "ACQUISITION COMMISSIONS"
+msgstr "COMISSÕES DE AQUISIÇÃO"
+
+msgid "Each commission grants 2 fragments once per character. Spend them on any module recipe. Claim after completing a mission."
+msgstr "Cada comissão concede 2 fragmentos uma vez por personagem. Use-os em qualquer receita de módulo. Resgate após concluir uma missão."
+
+msgid "MERIDIAN RECOVERY"
+msgstr "RECUPERAÇÃO EM MERIDIAN"
+
+msgid "TWO APPROACHES"
+msgstr "DUAS ABORDAGENS"
+
+msgid "PRISM BREAKER"
+msgstr "RUPTURA DO PRISMA"
+
+msgid "Survey Meridian, recover the log and finish that mission."
+msgstr "Explore Meridian, recupere o registro e conclua essa missão."
+
+msgid "Win a mission through the Breach route."
+msgstr "Vença uma missão pela rota Ruptura."
+
+msgid "Win a mission through the Stabilize route."
+msgstr "Vença uma missão pela rota Estabilização."
+
+msgid "Defeat Prism Warden and finish that mission."
+msgstr "Derrote o Guardião Prisma e conclua essa missão."
+
+msgid "IN PROGRESS"
+msgstr "EM ANDAMENTO"
+
+msgid "READY TO CLAIM"
+msgstr "PRONTO PARA RESGATE"
+
+msgid "CLAIMED"
+msgstr "RESGATADO"
+
+msgid "DONE"
+msgstr "CONCLUÍDO"
+
+msgid "TO DO"
+msgstr "PENDENTE"
+
+msgid "CLAIM 2 FRAGMENTS"
+msgstr "RESGATAR 2 FRAGMENTOS"
+
+msgid "FINISH MISSION TO CLAIM"
+msgstr "CONCLUA A MISSÃO PARA RESGATAR"
+
+msgid "commission already claimed"
+msgstr "comissão já resgatada"
+
+msgid "commission claimed"
+msgstr "comissão resgatada"
+
+msgid "commission claim is locked until activity completion"
+msgstr "o resgate exige a conclusão da missão"
+
+msgid "commission requirements are incomplete"
+msgstr "os requisitos da comissão estão incompletos"
+
+msgid "commission claim could not be sent"
+msgstr "não foi possível enviar o resgate da comissão"
+
+msgid "CLAIM"
+msgstr "RESGATE"
+
+msgid "PLAY MODE"
+msgstr "MODO DE JOGO"
+
+msgid "Standalone operation"
+msgstr "Operação avulsa"
+
+msgid "Campaign — continue / resume"
+msgstr "Campanha — continuar / retomar"
+
+msgid "Practice — Return signal"
+msgstr "Treino — Sinal de retorno"
+
+msgid "Practice — Meridian readings"
+msgstr "Treino — Leituras de Meridian"
+
+msgid "Campaign progress saves at checkpoints. Practice requires a cleared chapter and grants no reward."
+msgstr "A campanha salva nos pontos de retomada. O treino exige um capítulo concluído e não concede recompensa."
+
+msgid "This server does not support campaign entry."
+msgstr "Este servidor ainda não permite entrar na campanha."
+
+msgid "Complete this chapter before entering practice."
+msgstr "Conclua este capítulo antes de entrar no treino."
+
+msgid "The two available chapters are complete. Choose practice or a standalone operation."
+msgstr "Os dois capítulos disponíveis foram concluídos. Escolha treino ou uma operação avulsa."
+
+msgid "CHAPTER MENU"
+msgstr "MENU DE CAPÍTULOS"
+
+msgid "Continue the campaign from your last checkpoint, or choose a cleared chapter for practice."
+msgstr "Continue a campanha do último ponto salvo ou escolha um capítulo concluído para treinar."
+
+msgid "RETURN SIGNAL"
+msgstr "SINAL DE RETORNO"
+
+msgid "MERIDIAN READINGS"
+msgstr "LEITURAS DE MERIDIAN"
+
+msgid "CHAPTER COMPLETE"
+msgstr "CAPÍTULO CONCLUÍDO"
+
+msgid "Practice complete. No reward granted. Open Chapter menu to continue."
+msgstr "Treino concluído. Nenhuma recompensa concedida. Abra o menu de capítulos para continuar."
+
+msgid "Chapter complete. Progress saved. Open Chapter menu to continue."
+msgstr "Capítulo concluído. Progresso salvo. Abra o menu de capítulos para continuar."
+
+msgid "Open Chapter menu to restart from your last checkpoint."
+msgstr "Abra o menu de capítulos para reiniciar do último ponto salvo."
+
+msgid "Recover the return signal. Clear the relay drone, then reach the core and defeat the Warden."
+msgstr "Recupere o sinal de retorno. Elimine o drone, alcance o núcleo e derrote o Warden."
+
+msgid "Trace the signal through Meridian. Reach the entrance, link the lens and gallery, then collect the log and return."
+msgstr "Siga o sinal por Meridian. Alcance a entrada, conecte a lente e a galeria, colete o registro e retorne."
+
+msgid "Practice — Broken supply line"
+msgstr "Treino — Linha de suprimento rompida"
+
+msgid "The available chapters are complete. Choose practice or a standalone operation."
+msgstr "Os capítulos disponíveis foram concluídos. Escolha treino ou uma operação avulsa."
+
+msgid "BROKEN SUPPLY LINE"
+msgstr "LINHA DE SUPRIMENTO ROMPIDA"
+
+msgid "SUPPLY LINE • %d/4"
+msgstr "SUPRIMENTO • %d/4"
+
+msgid "The core has no power. Follow the west supply beacon to recover a cell for the north relay."
+msgstr "O núcleo está sem energia. Siga o sinal a oeste e recupere uma célula para o relay norte."
+
+msgid "The sentinel blocks the supply terminal. The barrier stops fire from both sides; flank its west end."
+msgstr "O sentinela bloqueia o terminal. A barreira impede tiros dos dois lados; contorne-a pelo oeste."
+
+msgid "The route is clear. Collect the power cell at the terminal north of the barrier."
+msgstr "O caminho está livre. Colete a célula de energia no terminal ao norte da barreira."
+
+msgid "Carry the cell to the marked north relay intake. There is no time limit."
+msgstr "Leve a célula ao ponto marcado do relay norte. Não há limite de tempo."
+
+msgid "DELIVER POWER CELL"
+msgstr "ENTREGAR CÉLULA DE ENERGIA"
+
+msgid "WEST SUPPLY ROUTE"
+msgstr "ROTA DE SUPRIMENTO OESTE"
+
+msgid "CELL RECOVERED"
+msgstr "CÉLULA RECUPERADA"
+
+msgid "RECOVER POWER CELL"
+msgstr "RECUPERAR CÉLULA DE ENERGIA"
+
+msgid "NORTH RELAY POWERED"
+msgstr "RELAY NORTE ENERGIZADO"
+
+msgid "DELIVER POWER CELL\nNO TIME LIMIT"
+msgstr "ENTREGAR CÉLULA\nSEM LIMITE DE TEMPO"
+
+msgid "Practice — Counter-signal"
+msgstr "Treino — Contrassinal"
+
+msgid "COUNTER-SIGNAL"
+msgstr "CONTRASSINAL"
+
+msgid "COUNTER-SIGNAL • %d/6"
+msgstr "CONTRASSINAL • %d/6"
+
+msgid "COUNTER-SIGNAL • REPAIR LINK"
+msgstr "CONTRASSINAL • ELO DE REPARO"
+
+msgid "COUNTER-SIGNAL • EMITTER DEFENSE"
+msgstr "CONTRASSINAL • DEFESA DO EMISSOR"
+
+msgid "REPAIR LINK"
+msgstr "ELO DE REPARO"
+
+msgid "DECODE TRANSMISSION"
+msgstr "DECODIFICAR TRANSMISSÃO"
+
+msgid "ISOLATE EMITTER"
+msgstr "ISOLAR EMISSOR"
+
+msgid "The powered relay repeats a false return signal. Reach the marked eastern repair link."
+msgstr "O relay energizado repete um falso sinal de retorno. Alcance o elo de reparo marcado a leste."
+
+msgid "Defeat the Mender and dodge the charge line. Chapter menu resumes this fight."
+msgstr "Elimine o reparador e desvie da investida. O menu de capítulos retoma este combate."
+
+msgid "The link is down. Reach its terminal to decode the repeated transmission."
+msgstr "O elo caiu. Alcance o terminal para decodificar a transmissão repetida."
+
+msgid "The signal is a trap from the core. Cut its source at the northern Bastion Link."
+msgstr "O sinal é uma armadilha do núcleo. Corte a fonte no Elo Bastião ao norte."
+
+msgid "Defeat the Mender, then flank the shield. Chapter menu resumes this fight."
+msgstr "Elimine o reparador e flanqueie o escudo. O menu de capítulos retoma este combate."
+
+msgid "The defense is down. Reach the emitter to isolate the counter-signal and reveal the way into the core."
+msgstr "A defesa caiu. Alcance o emissor para isolar o contrassinal e revelar o acesso ao núcleo."
+
+msgid "Practice — The breach"
+msgstr "Treino — A brecha"
+
+msgid "THE BREACH"
+msgstr "A BRECHA"
+
+msgid "THE BREACH • %d/4"
+msgstr "A BRECHA • %d/4"
+
+msgid "SHIELD POWERED • DRAIN THE RELAY"
+msgstr "ESCUDO ATIVO • DRENE O RELAY"
+
+msgid "OPEN THE BREACH"
+msgstr "ABRIR A BRECHA"
+
+msgid "DRAIN THE RELAY"
+msgstr "DRENAR O RELAY"
+
+msgid "CORE THRESHOLD"
+msgstr "ACESSO AO NÚCLEO"
+
+msgid "The false signal is isolated. Open the marked east door to reach the core relay."
+msgstr "O falso sinal foi isolado. Abra a porta marcada a leste para alcançar o relay do núcleo."
+
+msgid "The shield absorbs shots; the Warden still retaliates. Reach the marked stabilizer to drain it."
+msgstr "O escudo absorve tiros; o Warden revida. Alcance o estabilizador marcado para drená-lo."
+
+msgid "Relay drained. The Warden is vulnerable. Defeat it to unlock the core threshold."
+msgstr "Relay drenado. O Warden está vulnerável. Derrote-o para liberar o acesso ao núcleo."
+
+msgid "The core is open. Cross the marked threshold to reach the Prism chamber."
+msgstr "O núcleo está aberto. Cruze o acesso marcado para alcançar a câmara Prism."
+
+msgid "Practice — Prism core"
+msgstr "Treino — Núcleo Prisma"
+
+msgid "PRISM CORE"
+msgstr "NÚCLEO PRISMA"
+
+msgid "SOURCE SILENT • RETURN TO THE RELAY"
+msgstr "FONTE SILENCIADA • VOLTE AO RELAY"
+
+msgid "PRISM CORE • %d/4"
+msgstr "NÚCLEO PRISMA • %d/4"
+
+msgid "CAMPAIGN COMPLETE"
+msgstr "CAMPANHA CONCLUÍDA"
+
+msgid "PRISM CHAMBER"
+msgstr "CÂMARA PRISMA"
+
+msgid "SHUT DOWN THE SOURCE"
+msgstr "DESLIGUE A FONTE"
+
+msgid "RETURN TO THE RELAY"
+msgstr "VOLTE AO RELAY"
+
+msgid "The false signal is silent. You are back at the relay. Campaign complete."
+msgstr "O falso sinal cessou. Você voltou ao relay. Campanha concluída."
+
+msgid "Step off the stripe. Attack when the shell opens. Chapter menu restarts this fight."
+msgstr "Saia da faixa. Ataque quando a carapaça abrir. O menu de capítulos reinicia a luta."
+
+msgid "Enter the marked Prism chamber. Stop its guardian, then shut down the false signal."
+msgstr "Entre na câmara Prisma marcada. Vença o guardião e desligue o falso sinal."
+
+msgid "Follow the floor warnings. Chapter menu restarts this fight from the chamber entrance."
+msgstr "Siga os alertas no chão. O menu de capítulos reinicia a luta na entrada da câmara."
+
+msgid "The guardian is down. Reach the marked source to shut down the false signal."
+msgstr "O guardião caiu. Alcance a fonte marcada para desligar o falso sinal."
+
+msgid "The source is silent. Return to the marked relay hub to finish the campaign."
+msgstr "A fonte silenciou. Volte ao relay marcado para concluir a campanha."
+
+msgid "CAMPAIGN JOURNAL"
+msgstr "DIÁRIO DA CAMPANHA"
+
+msgid "Optional records grant no rewards. Choices can be changed here during chapter practice; they affect later attempts and ending text."
+msgstr "Registros opcionais não dão recompensas. No treino do capítulo, você pode mudar a escolha neste mesmo ponto. Ela vale para as próximas tentativas e para o texto do final."
+
+msgid "The empty seat"
+msgstr "O assento vazio"
+
+msgid "The held connection"
+msgstr "A conexão mantida"
+
+msgid "Recover the seat memory"
+msgstr "Recuperar a memória do assento"
+
+msgid "Return the memory to the departure board"
+msgstr "Devolver a memória ao quadro de partidas"
+
+msgid "Recover the maintenance note"
+msgstr "Recuperar a nota de manutenção"
+
+msgid "Restore the note at the bench"
+msgstr "Restaurar a nota na bancada"
+
+msgid "Use the covered supply approach"
+msgstr "Usar a aproximação pela cobertura"
+
+msgid "Use the western service path"
+msgstr "Usar o caminho de serviço a oeste"
+
+msgid "Ground the relay before fighting"
+msgstr "Aterrar o relé antes do combate"
+
+msgid "Breach directly and fight first"
+msgstr "Entrar pela brecha e lutar primeiro"
+
+msgid "Return to menu"
+msgstr "Voltar ao menu"
+
+msgid "Return to the chapter"
+msgstr "Voltar ao capítulo"
+
+msgid "Saving the record…"
+msgstr "Salvando o registro…"
+
+msgid "Record saved."
+msgstr "Registro salvo."
+
+msgid "This interaction is not available here."
+msgstr "Esta interação não está disponível aqui."
+
+msgid "Save not confirmed. Return to the chapter menu and resume to check the record."
+msgstr "Não foi possível confirmar o salvamento. Volte ao menu de capítulos e retome para conferir o registro."
+
+msgid "Service path"
+msgstr "Caminho de serviço"
+
+msgid "Covered approach"
+msgstr "Aproximação pela cobertura"
+
+msgid "Direct breach"
+msgstr "Brecha direta"
+
+msgid "Grounded relay"
+msgstr "Relé aterrado"
+
+msgid "INTERACT [E]"
+msgstr "INTERAGIR [E]"
+
+msgid "JOURNAL [J]"
+msgstr "DIÁRIO [J]"
+
+msgid "OPTIONAL MEMORY"
+msgstr "MEMÓRIA OPCIONAL"
+
+msgid "DEPARTURE BOARD"
+msgstr "QUADRO DE PARTIDAS"
+
+msgid "MAINTENANCE NOTE"
+msgstr "NOTA DE MANUTENÇÃO"
+
+msgid "RETURN THE NOTE"
+msgstr "DEVOLVER A NOTA"
+
+msgid "CORE APPROACH"
+msgstr "ACESSO AO NÚCLEO"
+
+msgid "WESTERN SERVICE PATH"
+msgstr "CAMINHO DE SERVIÇO A OESTE"
+
+msgid "A name survives beneath the glass: Vale. The shuttle left her seat empty. Take the memory to Meridian's departure board; someone left a route there."
+msgstr "Um nome sobrevive sob o vidro: Vale. O transporte partiu com o assento dela vazio. Leve a memória ao quadro de partidas de Meridian; alguém deixou uma rota ali."
+
+msgid "THE EMPTY SEAT\n\nThe board recognizes Vale's last message: 'Do not wait for my badge. Keep the service path lit for whoever comes next.'\n\nThe empty seat was a promise to a person, not to the signal wearing her name. A maintenance route leads around the west end of the supply barrier. You can take it, or stay on the covered approach."
+msgstr "O ASSENTO VAZIO\n\nO quadro reconhece a última mensagem de Vale: “Não esperem pelo meu crachá. Mantenham o caminho de serviço iluminado para quem vier depois.”\n\nO assento vazio era uma promessa a uma pessoa, não ao sinal que usava seu nome. Uma rota de manutenção contorna a ponta oeste da barreira de suprimentos. Você pode segui-la ou manter a aproximação pela cobertura."
+
+msgid "The note records two pulses: ready, then come back. Its missing ending belongs at the maintenance bench near the relay entrance."
+msgstr "A nota registra dois pulsos: pronto, depois volte. O trecho que falta está na bancada de manutenção perto da entrada do relé."
+
+msgid "THE HELD CONNECTION\n\n'When the relay dropped me, Vale held the contact until I could stand. She did not ask the signal who it was. She waited for my answer.'\n\nThe bench restores the final instruction: grounding the relay drains the Warden's shield before the fight. A direct breach bypasses the shield feed, but the relay must still be drained after the guard falls."
+msgstr "A CONEXÃO MANTIDA\n\n“Quando o relé me derrubou, Vale manteve o contato até eu conseguir levantar. Ela não perguntou ao sinal quem estava ali. Esperou pela minha resposta.”\n\nA bancada restaura a instrução final: aterrar o relé drena o escudo do Warden antes da luta. A brecha direta contorna a alimentação do escudo, mas o relé ainda precisa ser drenado depois da queda do guardião."
+
+msgid "The false signal is silent. You return by the covered route, leaving the relay grounded. For the first time, the station waits for a real answer."
+msgstr "O falso sinal se calou. Você volta pela rota coberta e deixa o relé aterrado. Pela primeira vez, a estação espera por uma resposta de verdade."
+
+msgid "The false signal is silent. The service lights remain on, and the grounded relay carries one clear pulse. Whoever comes next will have a way home."
+msgstr "O falso sinal se calou. As luzes de serviço continuam acesas, e o relé aterrado transmite um pulso claro. Quem vier depois terá um caminho para casa."
+
+msgid "The false signal is silent. The Warden fell before the circuit was drained; the passage is open. Beyond the core, a distant relay answers once. You leave the choice of a reply to those who follow."
+msgstr "O falso sinal se calou. O Warden caiu antes de o circuito ser drenado; a passagem está aberta. Além do núcleo, um relé distante responde uma vez. Você deixa a escolha de responder para quem vier depois."
+
+msgid "The departure board offers two supply approaches. Covered: approach the barrier, then flank west. Service: circle farther west and meet the sentinel near its terminal. Both recover the same power cell."
+msgstr "O quadro de partidas mostra dois acessos aos suprimentos. Cobertura: aproxime-se da barreira e contorne pelo oeste. Serviço: dê a volta mais a oeste e encontre o sentinela perto do terminal. Ambos recuperam a mesma célula de energia."
+
+msgid "The isolated emitter reveals two ways in. Grounded: drain the shield under the Warden's pressure, then fight. Direct: fight without the shield, then drain the relay before entering the core."
+msgstr "O emissor isolado revela dois acessos. Aterrado: drene o escudo sob a pressão do Warden e então lute. Direto: lute sem o escudo e depois drene o relé antes de entrar no núcleo."
+
+msgid "Meridian's gallery holds a memory of the empty seat. The supply line holds a maintenance note after its guard falls. Recover either record, then return it to its marked terminal. You can continue the campaign without them."
+msgstr "A galeria de Meridian guarda uma memória do assento vazio. A linha de suprimentos guarda uma nota de manutenção após a queda do guardião. Recupere um registro e devolva-o ao terminal marcado. Você pode continuar a campanha sem eles."
+
+msgid "Your recorded service route leads around the far west end of the barrier. Reach its marker to approach the sentinel from the terminal side."
+msgstr "O caminho de serviço escolhido contorna a ponta oeste da barreira. Alcance a marca para se aproximar do sentinela pelo lado do terminal."
+
+msgid "Direct breach: the shield feed is bypassed. Defeat the Warden before draining the relay."
+msgstr "Brecha direta: a alimentação do escudo foi contornada. Derrote o Warden antes de drenar o relé."
+
+msgid "The Warden is down. Drain the marked stabilizer to open the core threshold."
+msgstr "O Warden caiu. Drene o estabilizador marcado para abrir o acesso ao núcleo."
+
+msgid "Practice complete. No reward granted. Read the campaign ending in the journal."
+msgstr "Treino concluído, sem recompensa. Leia o final da campanha no diário."
+
+msgid "The service route stays lit. The relay carries one clear pulse. Campaign complete."
+msgstr "O caminho de serviço segue iluminado. O relé transmite um pulso claro. Campanha concluída."
+
+msgid "The passage is open. A distant relay answers once. Campaign complete."
+msgstr "A passagem está aberta. Um relé distante responde uma vez. Campanha concluída."
+
+msgid "Resume %s from checkpoint %d. The interrupted encounter restarts."
+msgstr "Retome %s a partir do checkpoint %d. O combate interrompido recomeça."
+
+msgid "RESUME CHAPTER"
+msgstr "RETOMAR CAPÍTULO"
+
+msgid "START PRACTICE"
+msgstr "INICIAR TREINO"
+
+msgid "READ CAMPAIGN JOURNAL"
+msgstr "LER DIÁRIO DA CAMPANHA"
+
+msgid "START NEXT CHAPTER"
+msgstr "PRÓXIMO CAPÍTULO"
+
+msgid "CONTINUE CAMPAIGN"
+msgstr "CONTINUAR CAMPANHA"
+
+msgid "Replay a cleared chapter. Choices affect later attempts; first-clear rewards are not repeated."
+msgstr "Repita um capítulo concluído. Escolhas afetam tentativas futuras; a recompensa da primeira conclusão não se repete."
+
+msgid "Campaign complete. Continue to read your journal, or choose a chapter for practice."
+msgstr "Campanha concluída. Continue para ler o diário ou escolha um capítulo para treinar."
+
+msgid "Next: %s. First clear: %d fragment and %d XP."
+msgstr "A seguir: %s. Primeira conclusão: %d fragmento e %d XP."
+
+msgid "Follow the return signal through six chapters. Optional records can be skipped. Your saved chapter resumes automatically."
+msgstr "Siga o sinal de retorno por seis capítulos. Os registros são opcionais. Seu capítulo salvo será retomado automaticamente."
+
+msgid "Return signal"
+msgstr "Sinal de retorno"
+
+msgid "Meridian readings"
+msgstr "Leituras de Meridian"
+
+msgid "Broken supply line"
+msgstr "Linha de suprimentos rompida"
+
+msgid "Counter-signal"
+msgstr "Contrassinal"
+
+msgid "The breach"
+msgstr "A brecha"
+
+msgid "Prism core"
+msgstr "Núcleo Prism"
+
+msgid "ACT I • TRACE THE RETURN"
+msgstr "ATO I • SIGA O RETORNO"
+
+msgid "ACT II • CUT THE FALSE SIGNAL"
+msgstr "ATO II • CORTE O FALSO SINAL"
+
+msgid "ACT III • OPEN THE CORE"
+msgstr "ATO III • ABRA O NÚCLEO"
+
+msgid "Challenge board"
+msgstr "Quadro de desafios"
+
+msgid "Challenge — Close quarters"
+msgstr "Desafio — Combate próximo"
+
+msgid "Challenge — Meridian circuit"
+msgstr "Desafio — Circuito Meridian"
+
+msgid "CHALLENGES"
+msgstr "DESAFIOS"
+
+msgid "REFRESH CHALLENGE BOARD"
+msgstr "ATUALIZAR DESAFIOS"
+
+msgid "Load your records, then choose a contract in Play mode. Challenges use your current equipment and grant no items or XP."
+msgstr "Carregue seus registros e escolha um contrato em Modo de jogo. Os desafios usam seu equipamento atual e não concedem itens ou XP."
+
+msgid "Completed contracts: %d / %d. Choose a contract in Play mode. Every attempt starts from the beginning."
+msgstr "Contratos concluídos: %d / %d. Escolha um contrato em Modo de jogo. Toda tentativa começa do início."
+
+msgid "RESTART CONTRACT"
+msgstr "REINICIAR CONTRATO"
+
+msgid "START CONTRACT"
+msgstr "INICIAR CONTRATO"
+
+msgid "Defeat the Glass Lancer and Relay Mender. Equipment is locked during the attempt."
+msgstr "Derrote o Glass Lancer e o Relay Mender. O equipamento fica fixo durante a tentativa."
+
+msgid "Visit the lens, gallery and log in any order, then return to the Meridian entrance."
+msgstr "Visite a lente, a galeria e o registro em qualquer ordem. Depois volte à entrada de Meridian."
+
+msgid "Record: complete. "
+msgstr "Registro: concluído. "
+
+msgid "No items or XP. Restart resets all progress."
+msgstr "Sem itens ou XP. Reiniciar apaga o progresso da tentativa."
+
+msgid "Restart the interrupted contract before choosing another one."
+msgstr "Reinicie o contrato interrompido antes de escolher outro."
+
+msgid "This server does not support challenges."
+msgstr "Este servidor não oferece desafios."
+
+msgid "CHALLENGE BOARD"
+msgstr "QUADRO DE DESAFIOS"
+
+msgid "ABANDON / BOARD"
+msgstr "ABANDONAR / QUADRO"
+
+msgid "CLOSE QUARTERS"
+msgstr "COMBATE PRÓXIMO"
+
+msgid "MERIDIAN CIRCUIT"
+msgstr "CIRCUITO MERIDIAN"
+
+msgid "CONTRACT COMPLETE"
+msgstr "CONTRATO CONCLUÍDO"
+
+msgid "CONTRACT DEFEATED"
+msgstr "DERROTA NO CONTRATO"
+
+msgid "CONTRACT ABANDONED"
+msgstr "CONTRATO ABANDONADO"
+
+msgid "CONTRACT INTERRUPTED"
+msgstr "CONTRATO INTERROMPIDO"
+
+msgid "Attempt saved. Open Challenge board to review or restart. No items or XP granted."
+msgstr "Tentativa salva. Abra o quadro de desafios para consultar ou reiniciar. Nenhum item ou XP concedido."
+
+msgid "Defeat the Mender to stop repairs. Step off the Lancer's warning line, then attack."
+msgstr "Derrote o Mender para impedir reparos. Saia da linha de aviso do Lancer e ataque."
+
+msgid "Visit lens [-28, -7], gallery [-28, 7], log [-30, 0], then return [-16, 0]. Readings confirm on arrival."
+msgstr "Visite lente [-28, -7], galeria [-28, 7], registro [-30, 0] e retorne [-16, 0]. Leituras confirmadas ao chegar."
+
+msgid "WASD MOVE • SPACE ATTACK • TAB CONTROLS • EQUIPMENT LOCKED"
+msgstr "WASD MOVER • ESPAÇO ATACAR • TAB CONTROLES • EQUIPAMENTO FIXO"
+
+msgid "Abandonment was not confirmed. Reconnect to check the saved attempt."
+msgstr "O abandono não foi confirmado. Reconecte para conferir a tentativa salva."
+
+msgid "Attempt saved, without items or XP. Open the board to restart."
+msgstr "Tentativa salva, sem itens ou XP. Abra o quadro para reiniciar."
+
+msgid "Defeat the Mender. Dodge the Lancer's line and attack during recovery."
+msgstr "Derrote o Mender. Saia da linha do Lancer e ataque na recuperação."
+
+msgid "Read the lens, gallery and log, then return to the entrance. Readings confirm on arrival."
+msgstr "Leia lente, galeria e diário; volte à entrada. Leituras confirmadas ao chegar."
+
+msgid "5 Return\n2 Lens\n3 Sky\n4 Log\nReturn east →"
+msgstr "5 Retorno\n2 Lente\n3 Céu\n4 Diário\nVolte a leste →"
+
+msgid "Challenge — Coolant recovery"
+msgstr "Desafio — Recuperação de refrigerante"
+
+msgid "Collect, transfer, deliver. Hold 1.2 s at stations 2 and 3. No deadline or rewards. Retry starts over."
+msgstr "Colete, transfira e entregue. Fique 1,2 s nas estações 2 e 3. Sem prazo ou prêmios. Reinício total."
+
+msgid "COOLANT RECOVERY"
+msgstr "RECUPERAÇÃO DE REFRIGERANTE"
+
+msgid "✓ CONFIRMED"
+msgstr "✓ CONFIRMADO"
+
+msgid "RETRIEVE • UNTIMED"
+msgstr "COLETE • SEM PRAZO"
+
+msgid "WASD MOVE • TAB CONTROLS • HOLD STILL AT STATIONS"
+msgstr "WASD MOVER • TAB CONTROLES • FIQUE NAS ESTAÇÕES"
+
+msgid "POSITION [%d, %d] • NO TIME LIMIT"
+msgstr "POSIÇÃO [%d, %d] • SEM PRAZO"
+
+msgid "Retrieve coolant at station 1 [-1, -5]. No time limit."
+msgstr "Colete na estação 1 [-1, -5]. Sem prazo."
+
+msgid "Hold at station 2 [4, -5] for 1.2 s. Moving away resets the hold."
+msgstr "Fique 1,2 s na estação 2 [4, -5]. Sair reinicia a espera."
+
+msgid "Hold at station 3 [4, -1] for 1.2 s to deliver the coolant."
+msgstr "Fique 1,2 s na estação 3 [4, -1] para entregar."
+
+msgid "1 • INTAKE"
+msgstr "1 • COLETA"
+
+msgid "Challenge — Bastion link"
+msgstr "Desafio — Elo do bastião"
+
+msgid "Defeat the Mender and Bulwark. Flank the shield. No items or XP; retry starts over."
+msgstr "Derrote Mender e Bulwark. Ataque o flanco do escudo. Sem itens ou XP; reinício total."
+
+msgid "Stop the Mender’s repairs. Flank the Bulwark’s shield and avoid its marked slam."
+msgstr "Pare os reparos do Mender. Contorne o escudo e evite a área marcada."
+
+msgid "Challenge — Prism discipline"
+msgstr "Desafio — Disciplina Prism"
+
+msgid "PRISM DISCIPLINE"
+msgstr "DISCIPLINA PRISM"
+
+msgid "Defeat both Prism phases. Follow the floor warnings. No items or XP; retry restarts the boss."
+msgstr "Derrote as duas fases Prism. Siga os avisos no chão. Sem itens ou XP; reinício total."
+
+msgid "Step off the stripe. Attack when the shell opens. The board restarts the whole fight."
+msgstr "Saia da faixa. Ataque com o escudo aberto. O quadro reinicia toda a luta."
+
+msgid "Challenge — Distant signal"
+msgstr "Desafio — Sinal distante"
+
+msgid "DISTANT SIGNAL"
+msgstr "SINAL DISTANTE"
+
+msgid "Defeat the Sentinel around cover. Range 4+ required; Rail Driver suggested. No items or XP; retry starts over."
+msgstr "Derrote o Sentinela pela lateral. Alcance mínimo 4; Acelerador sugerido. Sem itens ou XP; reinício completo."
+
+msgid "Go around either end of cover to fire. Stay inside the marked lane. The board restarts the fight."
+msgstr "Contorne a cobertura para atirar. Fique na área marcada. O quadro reinicia a luta."
+
+
+msgid "Challenge — Last reserve"
+msgstr "Desafio — Última reserva"
+
+msgid "LAST RESERVE"
+msgstr "ÚLTIMA RESERVA"
+
+msgid "Hold west then east for 3.6 s; return alive. Reserve pad: +36 HP once. Weapons offline. No items, XP or deadline."
+msgstr "Fique 3,6 s no oeste e depois no leste; volte vivo. Reserva: +36 PV uma vez. Sem armas, itens, XP ou prazo."
+
+msgid "Hold at west relay [-8, 0] for 3.6 s. Leaving resets the hold."
+msgstr "Fique 3,6 s no relé oeste [-8, 0]. Sair reinicia a espera."
+
+msgid "Hold at east relay [0, 0] for 3.6 s. Use cover between relays."
+msgstr "Fique 3,6 s no relé leste [0, 0]. Use a cobertura no caminho."
+
+msgid "Both relays charged. Return to shelter [-4, 4] alive."
+msgstr "Relés carregados. Volte vivo ao abrigo [-4, 4]."
+
+msgid "RESERVE SPENT • WEAPONS OFFLINE"
+msgstr "RESERVA ESGOTADA • SEM ARMAS"
+
+msgid "RESERVE [-4, 5]\nHOLD 1.2 S • UP TO +36 HP ONCE\nWEAPONS OFFLINE"
+msgstr "RESERVA [-4, 5]\nFIQUE 1,2 S • ATÉ +36 PV UMA VEZ\nSEM ARMAS"
+
+msgid "CHARGING RELAY • STAY STILL"
+msgstr "CARREGANDO RELÉ • FIQUE PARADO"
+
+msgid "USING RESERVE • STAY STILL"
+msgstr "USANDO RESERVA • FIQUE PARADO"
+
+msgid "LAST RESERVE • RESERVE SPENT"
+msgstr "ÚLTIMA RESERVA • RESERVA ESGOTADA"
+
+msgid "WEST RELAY"
+msgstr "RELÉ OESTE"
+
+msgid "EAST RELAY"
+msgstr "RELÉ LESTE"
+
+msgid "RESERVE"
+msgstr "RESERVA"
+
+msgid "Reserve restores health"
+msgstr "Reserva recupera vida"
+
+msgid "Challenge — Relay gauntlet"
+msgstr "Desafio — Sequência do relé"
+
+msgid "RELAY GAUNTLET"
+msgstr "SEQUÊNCIA DO RELÉ"
+
+msgid "Close Quarters → Bastion → Prism. +24 HP between stages. Pulse Rifle. No items or XP; retry restarts all."
+msgstr "Curta distância → Bastião → Prisma. +24 PV entre etapas. Rifle de pulso. Sem itens ou XP; reinício total."
+
+msgid "RELAY GAUNTLET • STAGE %d/3"
+msgstr "SEQUÊNCIA DO RELÉ • ETAPA %d/3"
+
+msgid "Return to [%d, %d]. Hold 1.2 s for up to +24 HP and the next stage. Leaving resets the hold."
+msgstr "Volte a [%d, %d]. Fique 1,2 s para curar até 24 PV e avançar. Sair reinicia a espera."
+
+msgid "TRANSFER • STAY STILL"
+msgstr "TRANSFERÊNCIA • FIQUE PARADO"
+
+msgid "STAGE CLEAR • RETURN TO TRANSFER"
+msgstr "ETAPA VENCIDA • VOLTE À TRANSFERÊNCIA"
+
+msgid "GAUNTLET 3/3 • PRISM PHASE %d/2"
+msgstr "SEQUÊNCIA 3/3 • PRISMA FASE %d/2"
+
+msgid "Step off the stripe. Attack when the shell opens. The board restarts all three stages."
+msgstr "Saia da faixa. Ataque quando a carapaça abrir. O quadro reinicia as três etapas."
+
+msgid "TRANSFER • UP TO +24 HP"
+msgstr "TRANSFERÊNCIA • ATÉ +24 PV"
+
+msgid "Transfer restores health"
+msgstr "Transferência restaura vida"
+
+msgid "Standard rules"
+msgstr "Regras padrão"
+
+msgid "West approach"
+msgstr "Entrada oeste"
+
+msgid "Bastion first"
+msgstr "Bastião primeiro"
+
+msgid "Single reserve"
+msgstr "Reserva única"
+
+msgid "Optional time goal"
+msgstr "Meta de tempo opcional"
+
+msgid "West approach + time goal"
+msgstr "Entrada oeste + meta de tempo"
+
+msgid "Bastion first + single reserve"
+msgstr "Bastião primeiro + reserva única"
+
+msgid "Single reserve + time goal"
+msgstr "Reserva única + meta de tempo"
+
+msgid "Read all three stations; return west [-31, 0]."
+msgstr "Leia as três estações; retorne ao oeste [-31, 0]."
+
+msgid "Bastion → Close Quarters → Prism."
+msgstr "Bastião → Curta distância → Prisma."
+
+msgid "Reserve: +24 HP once, after either early stage."
+msgstr "Reserva: +24 PV uma vez, após a etapa 1 ou 2."
+
+msgid "Optional goal: %d s. Late completion still counts."
+msgstr "Meta opcional: %d s. Atraso não impede concluir."
+
+msgid "Best: %.1f s."
+msgstr "Melhor: %.1f s."
+
+msgid "Meridian — West approach"
+msgstr "Meridian — Entrada oeste"
+
+msgid "Meridian — Time goal"
+msgstr "Meridian — Meta de tempo"
+
+msgid "Meridian — West + time goal"
+msgstr "Meridian — Oeste + tempo"
+
+msgid "Gauntlet — Bastion first"
+msgstr "Sequência — Bastião primeiro"
+
+msgid "Gauntlet — Single reserve"
+msgstr "Sequência — Reserva única"
+
+msgid "Gauntlet — Time goal"
+msgstr "Sequência — Meta de tempo"
+
+msgid "Gauntlet — Bastion + reserve"
+msgstr "Sequência — Bastião + reserva"
+
+msgid "Gauntlet — Reserve + time goal"
+msgstr "Sequência — Reserva + tempo"
+
+msgid "Exit [%d, %d]: hold 1.2 s. No transfer healing."
+msgstr "Saída [%d, %d]: segure 1,2 s. Transferência sem cura."
+
+msgid "Exit [%d, %d]. Reserve [%d, %d]: +24 HP once. Hold 1.2 s."
+msgstr "Saída [%d, %d]. Reserva [%d, %d]: +24 PV uma vez. Segure 1,2 s."
+
+msgid "TIME %.1f / %d s"
+msgstr "TEMPO %.1f / %d s"
+
+msgid "TIME GOAL MET"
+msgstr "META DE TEMPO ATINGIDA"
+
+msgid "COMPLETE • TIME GOAL MISSED"
+msgstr "CONCLUÍDO • FORA DA META DE TEMPO"
+
+msgid "RESERVE • +24 HP ONCE"
+msgstr "RESERVA • +24 PV UMA VEZ"
+
+msgid "TRANSFER • NO HEALING"
+msgstr "TRANSFERÊNCIA • SEM CURA"
+
+msgid "MASTERY & ARCHIVE"
+msgstr "MAESTRIAS E SELOS"
+
+msgid "Archive titles grant no combat power, items or XP. Earlier qualifying attempts count."
+msgstr "Selos não dão poder de combate, itens ou XP. Tentativas anteriores que cumpram as regras contam."
+
+msgid "LATEST ATTEMPT"
+msgstr "ÚLTIMA TENTATIVA"
+
+msgid "CHOOSE A MASTERY"
+msgstr "ESCOLHA UMA MAESTRIA"
+
+msgid "SELECT THIS CONTRACT"
+msgstr "SELECIONAR ESTE CONTRATO"
+
+msgid "BACK TO CHALLENGE BOARD"
+msgstr "VOLTAR AO QUADRO DE DESAFIOS"
+
+msgid "Build goals allow an extra owned module. In a standalone operation, equip your weapon before completion and save your modules at the workshop afterward."
+msgstr "Metas de build permitem um módulo extra que você possua. Em uma operação avulsa, equipe a arma antes de concluir e salve os módulos na oficina depois."
+
+msgid "Masteries: %d / 6 • Titles: %d / 3"
+msgstr "Maestrias: %d / 6 • Selos: %d / 3"
+
+msgid "Complete a contract to see its result here."
+msgstr "Conclua um contrato para ver seu resultado aqui."
+
+msgid "Attempt #%d"
+msgstr "Tentativa nº %d"
+
+msgid "This contract has no mastery objective. Its completion record is saved separately."
+msgstr "Este contrato não tem meta de maestria. Sua conclusão tem registro próprio."
+
+msgid "Route: %d / 40 moves"
+msgstr "Rota: %d / 40 movimentos"
+
+msgid "Pattern damage taken: %d"
+msgstr "Dano recebido dos padrões: %d"
+
+msgid "First achieved in attempt #%d"
+msgstr "Primeira conquista na tentativa nº %d"
+
+msgid "Not yet achieved. A missed mastery never invalidates contract completion."
+msgstr "Ainda não conquistada. Não atingir a maestria nunca invalida a conclusão do contrato."
+
+msgid "ROUTE PLANNER"
+msgstr "PLANEJAMENTO DE ROTA"
+
+msgid "TARGET PRIORITY"
+msgstr "PRIORIDADE DE ALVOS"
+
+msgid "PRISM EXECUTION"
+msgstr "EXECUÇÃO PRISM"
+
+msgid "ARSENAL ADEPT"
+msgstr "DOMÍNIO DO ARSENAL"
+
+msgid "FIELD TACTICIAN"
+msgstr "TÁTICA DE CAMPO"
+
+msgid "PRISM ADEPT"
+msgstr "DOMÍNIO DO PRISM"
+
+msgid "Complete Close Quarters with Scatter Caster, Focus Lens and Breach Shunt."
+msgstr "Conclua Combate Próximo com Dispersor, Lente de Foco e Derivador de Ruptura."
+
+msgid "Complete Distant Signal with Rail Driver, Standoff Optic and Skirmish Drive."
+msgstr "Conclua Sinal Distante com Acelerador, Óptica de Distância e Propulsor de Escaramuça."
+
+msgid "Complete Last Reserve with Pulse Rifle, Cycle Bypass and Ablative Shell. Keep the reserve unused."
+msgstr "Conclua Última Reserva com Rifle de Pulso, Desvio de Ciclo e Blindagem Ablativa. Não use a reserva."
+
+msgid "Complete the west Meridian route in 40 moves or fewer. Take as much time as you need."
+msgstr "Conclua a rota oeste de Meridian em até 40 movimentos. Use quanto tempo precisar."
+
+msgid "Complete Bastion Link. Defeat the Mender before dealing any damage to the Bulwark."
+msgstr "Conclua Elo Bastião. Derrote o Reparador antes de causar dano ao Baluarte."
+
+msgid "Complete both Prism Discipline phases without taking pattern damage."
+msgstr "Conclua as duas fases de Disciplina Prism sem receber dano dos padrões."
+
+msgid "Mastery achieved. Its first successful attempt stays in your archive."
+msgstr "Maestria conquistada. A primeira tentativa bem-sucedida fica registrada."
+
+msgid "Finish the contract alive to earn this mastery."
+msgstr "Conclua o contrato com vida para conquistar esta maestria."
+
+msgid "Equip the listed weapon and both modules in the workshop, then start a new attempt."
+msgstr "Equipe a arma indicada e os dois módulos na oficina. Depois, inicie outra tentativa."
+
+msgid "Keep the reserve unused. Use cover between relay holds."
+msgstr "Não use a reserva. Use a cobertura entre as ativações dos relés."
+
+msgid "Choose West approach. This route goal has no time limit."
+msgstr "Escolha Entrada oeste. Esta meta de rota não tem limite de tempo."
+
+msgid "Plan the two branches before leaving. Return west within 40 moves."
+msgstr "Planeje os dois percursos antes de sair. Retorne a oeste em até 40 movimentos."
+
+msgid "Focus on the Mender first. Start damaging the Bulwark after the Mender falls."
+msgstr "Concentre os ataques no Reparador. Cause dano ao Baluarte só depois que o Reparador cair."
+
+msgid "Move out of each warning shape, including the phase-two pulses. Attack while the shell is open."
+msgstr "Saia de cada área de aviso, incluindo os pulsos da segunda fase. Ataque quando a carapaça abrir."

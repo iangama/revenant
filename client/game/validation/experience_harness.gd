@@ -17,6 +17,10 @@ func validate(fixtures: Dictionary) -> String:
 	var apply_settings: Callable = fixtures.apply_settings
 	var refresh_onboarding: Callable = fixtures.refresh_onboarding
 	var save_capture: Callable = fixtures.save_capture
+	var original_settings: Dictionary = fixtures.current_settings.call()
+	var original_window_mode := DisplayServer.window_get_mode()
+	var original_window_size := DisplayServer.window_get_size()
+	var original_viewport_size := Vector2i(tree.root.get_visible_rect().size)
 	var onboarding_validation := ONBOARDING_CONTROLLER.new()
 	onboarding_validation.call("reset", "Full")
 	onboarding_validation.call("note_local", "movement")
@@ -132,6 +136,17 @@ func validate(fixtures: Dictionary) -> String:
 		"reduced_flash": true,
 		"guidance_mode": "Compact",
 	}, false)
+	if DisplayServer.get_name() != "headless":
+		var windowed_deadline := Time.get_ticks_msec() + 2000
+		while (
+			DisplayServer.window_get_mode() != DisplayServer.WINDOW_MODE_WINDOWED
+			and Time.get_ticks_msec() < windowed_deadline
+		):
+			await tree.process_frame
+		if DisplayServer.window_get_mode() != DisplayServer.WINDOW_MODE_WINDOWED:
+			return "M22 settings do not apply Windowed mode before restoration"
+		await tree.process_frame
+		await tree.process_frame
 	var audio_state: Dictionary = settings_store.call("audio_state")
 	var buses: Dictionary = audio_state.get("buses", {})
 	if (
@@ -144,5 +159,28 @@ func validate(fixtures: Dictionary) -> String:
 		or not presentation_polish.call("presentation_state").get("reduced_flash", false)
 	):
 		return "M22 local settings do not apply bounded buses and accessibility state"
-	apply_settings.call(settings_store.call("defaults"), false)
+	apply_settings.call(original_settings, false)
+	if DisplayServer.get_name() != "headless":
+		var restore_deadline := Time.get_ticks_msec() + 2000
+		while Time.get_ticks_msec() < restore_deadline:
+			await tree.process_frame
+			if (
+				DisplayServer.window_get_mode() == original_window_mode
+				and DisplayServer.window_get_size() == original_window_size
+				and Vector2i(tree.root.get_visible_rect().size) == original_viewport_size
+			):
+				break
+		if (
+			DisplayServer.window_get_mode() != original_window_mode
+			or DisplayServer.window_get_size() != original_window_size
+			or Vector2i(tree.root.get_visible_rect().size) != original_viewport_size
+		):
+			return "M22 settings do not restore mode %s/%s, window %s/%s, and viewport %s/%s" % [
+				DisplayServer.window_get_mode(),
+				original_window_mode,
+				DisplayServer.window_get_size(),
+				original_window_size,
+				Vector2i(tree.root.get_visible_rect().size),
+				original_viewport_size,
+			]
 	return ""

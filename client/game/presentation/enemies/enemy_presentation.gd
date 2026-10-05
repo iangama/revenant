@@ -10,6 +10,8 @@ var _targeted := false
 var _danger_close := false
 var _retired := false
 var _idle_clock := 0.0
+var _reduced_motion := false
+var _reduced_flash := false
 
 
 func _ready() -> void:
@@ -24,17 +26,25 @@ func _ready() -> void:
 	play_spawn()
 
 
+func set_accessibility(motion: bool, flash: bool) -> void:
+	_reduced_motion = motion
+	_reduced_flash = flash
+
+
 func _process(delta: float) -> void:
 	if _retired:
 		return
 	_idle_clock += delta
-	_visual_root.position.y = sin(_idle_clock * 2.8) * 0.035
+	_visual_root.position.y = 0.0 if _reduced_motion else sin(_idle_clock * 2.8) * 0.035
 	if _core_material != null:
-		_core_material.emission_energy_multiplier = 1.65 + sin(_idle_clock * 3.6) * 0.28
+		_core_material.emission_energy_multiplier = 1.65 if _reduced_flash else 1.65 + sin(_idle_clock * 3.6) * 0.28
 
 
 func play_spawn() -> void:
 	_last_animation = "spawn"
+	if _reduced_motion:
+		_motion_root.scale = Vector3.ONE
+		return
 	_motion_root.scale = Vector3(0.15, 0.15, 0.15)
 	var tween := create_tween()
 	tween.tween_property(_motion_root, "scale", Vector3.ONE, 0.24).set_trans(Tween.TRANS_BACK)
@@ -44,6 +54,9 @@ func play_authoritative_move(local_offset: Vector3) -> void:
 	if _retired:
 		return
 	_last_animation = "chase"
+	if _reduced_motion:
+		_motion_root.position = Vector3.ZERO
+		return
 	_motion_root.position = local_offset
 	if absf(local_offset.x) + absf(local_offset.z) > 0.01:
 		_visual_root.rotation.y = atan2(-local_offset.x, -local_offset.z)
@@ -58,9 +71,9 @@ func play_confirmed_attack() -> void:
 		return
 	_last_animation = "attack_confirmed"
 	var original_scale := _visual_root.scale
-	_visual_root.scale = original_scale * 1.12
+	_visual_root.scale = original_scale if _reduced_motion else original_scale * 1.12
 	if _core_material != null:
-		_core_material.emission_energy_multiplier = 4.2
+		_core_material.emission_energy_multiplier = 1.8 if _reduced_flash else 4.2
 	var tween := create_tween().set_parallel(true)
 	tween.tween_property(_visual_root, "scale", original_scale, 0.13)
 	if _core_material != null:
@@ -71,6 +84,8 @@ func play_confirmed_hit() -> void:
 	if _retired:
 		return
 	_last_animation = "hit_confirmed"
+	if _reduced_motion:
+		return
 	_motion_root.scale = Vector3(1.18, 0.82, 1.18)
 	var tween := create_tween()
 	tween.tween_property(_motion_root, "scale", Vector3.ONE, 0.14)
@@ -85,6 +100,10 @@ func retire() -> void:
 	_target_indicator.visible = false
 	if _core_material != null:
 		_core_material.emission_energy_multiplier = 0.08
+	if _reduced_motion:
+		visible = false
+		queue_free()
+		return
 	var tween := create_tween().set_parallel(true)
 	tween.tween_property(_motion_root, "scale", Vector3(1.25, 0.08, 1.25), 0.24)
 	tween.tween_property(_motion_root, "position:y", 0.06, 0.24)
@@ -113,6 +132,7 @@ func presentation_state() -> Dictionary:
 		"retired": _retired,
 		"mesh_count": _count_meshes(self),
 		"material_count": materials.size(),
+		"reduced_motion": _reduced_motion, "reduced_flash": _reduced_flash,
 	}
 
 
@@ -164,6 +184,22 @@ func _add_cylinder(part_name: String, radius: float, height: float, position: Ve
 	mesh.radial_segments = 16
 	part.mesh = mesh
 	part.position = position
+	part.material_override = material
+	_visual_root.add_child(part)
+	return part
+
+
+func _add_torus(part_name: String, radius: float, tube_radius: float, position: Vector3, material: Material, rotation: Vector3 = Vector3.ZERO) -> MeshInstance3D:
+	var part := MeshInstance3D.new()
+	part.name = part_name
+	var mesh := TorusMesh.new()
+	mesh.inner_radius = radius - tube_radius
+	mesh.outer_radius = radius + tube_radius
+	mesh.rings = 20
+	mesh.ring_segments = 8
+	part.mesh = mesh
+	part.position = position
+	part.rotation_degrees = rotation
 	part.material_override = material
 	_visual_root.add_child(part)
 	return part

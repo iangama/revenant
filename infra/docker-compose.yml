@@ -1,23 +1,83 @@
+x-revenant-logging: &revenant-logging
+  driver: local
+  options:
+    max-size: "2m"
+    max-file: "5"
+    compress: "false"
+
 services:
   postgres:
-    image: postgres:16-alpine
+    image: postgres:16.15-alpine@sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-revenant}
       POSTGRES_USER: ${POSTGRES_USER:-revenant}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-revenant_local}
-    ports:
-      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_admin_password
+    secrets:
+      - postgres_admin_password
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 10
     restart: unless-stopped
+    mem_limit: 256m
+    pids_limit: 64
+    logging: *revenant-logging
     security_opt:
       - no-new-privileges:true
     stop_grace_period: 15s
     volumes:
       - revenant-postgres:/var/lib/postgresql/data
+      - revenant-postgres-socket:/var/run/postgresql
+
+  migrate:
+    build:
+      context: ..
+      dockerfile: infra/gateway.Dockerfile
+    command: ["--migrate-only"]
+    environment:
+      DATABASE_URL_FILE: /run/secrets/postgres_admin_database_url
+    secrets:
+      - postgres_admin_database_url
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    mem_limit: 128m
+    pids_limit: 32
+    logging: *revenant-logging
+    read_only: true
+    tmpfs:
+      - /run/revenant:rw,nosuid,nodev,noexec,size=1m
+    security_opt:
+      - no-new-privileges:true
+
+  db-provision:
+    image: postgres:16.15-alpine@sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685
+    entrypoint: ["/scripts/m30-provision-database.sh", "--container"]
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-revenant}
+      POSTGRES_USER: ${POSTGRES_USER:-revenant}
+      POSTGRES_RUNTIME_USER: revenant_runtime
+      POSTGRES_ADMIN_HOST: /var/run/postgresql
+      POSTGRES_HOST: postgres
+    secrets:
+      - postgres_runtime_password
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: "no"
+    mem_limit: 128m
+    pids_limit: 32
+    logging: *revenant-logging
+    read_only: true
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,noexec,size=16m
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - ../scripts/m30-provision-database.sh:/scripts/m30-provision-database.sh:ro
+      - revenant-postgres-socket:/var/run/postgresql
 
   gateway:
     build:
@@ -27,10 +87,14 @@ services:
       REVENANT_BIND_ADDR: 0.0.0.0:8080
       REVENANT_GAME_ADDR: 0.0.0.0:7000
       REVENANT_ACTIVITY_SCRIPT: /scripts/activities/relay_awakening.lua
-      DATABASE_URL: postgres://${POSTGRES_USER:-revenant}:${POSTGRES_PASSWORD:-revenant_local}@postgres:5432/${POSTGRES_DB:-revenant}
+      REVENANT_DATABASE_MODE: existing
+      REVENANT_INSPECTOR_ORIGIN: http://127.0.0.1:${INSPECTOR_PORT:-4173}
+      DATABASE_URL_FILE: /run/secrets/gateway_database_url
+    secrets:
+      - gateway_database_url
     depends_on:
-      postgres:
-        condition: service_healthy
+      db-provision:
+        condition: service_completed_successfully
     ports:
       - "127.0.0.1:8080:8080"
       - "127.0.0.1:7000:7000"
@@ -40,7 +104,12 @@ services:
       timeout: 3s
       retries: 10
     restart: unless-stopped
+    mem_limit: 128m
+    pids_limit: 192
+    logging: *revenant-logging
     read_only: true
+    tmpfs:
+      - /run/revenant:rw,nosuid,nodev,noexec,size=1m
     security_opt:
       - no-new-privileges:true
     stop_grace_period: 15s
@@ -60,9 +129,23 @@ services:
       timeout: 3s
       retries: 10
     restart: unless-stopped
+    mem_limit: 64m
+    pids_limit: 32
+    logging: *revenant-logging
     security_opt:
       - no-new-privileges:true
     stop_grace_period: 15s
 
 volumes:
   revenant-postgres:
+  revenant-postgres-socket:
+
+secrets:
+  postgres_admin_password:
+    file: ${REVENANT_SECRETS_DIR:?set REVENANT_SECRETS_DIR to an owner-only Linux path}/postgres_admin_password
+  postgres_runtime_password:
+    file: ${REVENANT_SECRETS_DIR:?set REVENANT_SECRETS_DIR to an owner-only Linux path}/postgres_runtime_password
+  postgres_admin_database_url:
+    file: ${REVENANT_SECRETS_DIR:?set REVENANT_SECRETS_DIR to an owner-only Linux path}/postgres_admin_database_url
+  gateway_database_url:
+    file: ${REVENANT_SECRETS_DIR:?set REVENANT_SECRETS_DIR to an owner-only Linux path}/gateway_database_url

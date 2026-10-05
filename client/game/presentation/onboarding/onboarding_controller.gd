@@ -1,12 +1,12 @@
 extends RefCounted
 
 const CONTENT := {
-	"Movement": ["STEP 1  •  MOVE", "Use WASD, arrows, or the on-screen pad. Server-confirmed movement advances this step."],
-	"Attack": ["STEP 2  •  AIM AND ATTACK", "Aim at the highlighted drone. Confirmed damage advances this step."],
-	"Loadout": ["OPTIONAL  •  LOADOUT", "Try Rifle or Sidearm. EquipmentChanged confirms the selected profile."],
-	"Door": ["STEP 3  •  OPEN THE CORE", "Move toward the amber relay door. Objective and door state remain server-owned."],
-	"Warden": ["STEP 4  •  DEFEAT THE WARDEN", "Attack until authoritative health reaches zero."],
-	"Completion": ["MISSION COMPLETE", "Authoritative rewards and progression remain visible in the HUD."],
+	"Movement": ["STEP 1  •  MOVE", "Move with the arrow keys, left stick, or on-screen pad."],
+	"Attack": ["STEP 2  •  ATTACK", "Attack the highlighted drone. Mouse clicks aim at the cursor."],
+	"Loadout": ["OPTIONAL  •  LOADOUT", "Choose a weapon from the action bar or use the shoulder buttons."],
+	"Door": ["STEP 3  •  OPEN THE CORE", "Head east to the amber core door at [6, 0]."],
+	"Warden": ["STEP 4  •  DEFEAT THE WARDEN", "Keep attacking the Warden until its health reaches zero."],
+	"Completion": ["MISSION COMPLETE", "Reward received. Open Modules to prepare your next run."],
 }
 var mode := "Full"
 var step := "Movement"

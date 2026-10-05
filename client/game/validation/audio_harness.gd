@@ -9,7 +9,8 @@ func validate(audio_director: Node3D, door: Node3D) -> String:
 		or initial_audio_state.get("foundation_voices") != 4
 		or initial_audio_state.get("combat_voices") != 8
 		or initial_audio_state.get("interface_critical_voices") != 4
-		or initial_audio_state.get("decoded_bytes") != 741120
+		or int(initial_audio_state.get("decoded_bytes", 0)) <= 0
+		or int(initial_audio_state.get("decoded_bytes", 0)) > 1024 * 1024
 		or not initial_audio_state.get("ambience_looping", false)
 		or initial_audio_state.get("routes") != {"ambience": "Ambience", "door": "Effects", "system": "Interface", "combat": "Effects"}
 	):

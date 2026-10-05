@@ -7,12 +7,18 @@ var _visual_root: Node3D
 var _motion_root: Node3D
 var _weapon_mount: Node3D
 var _core_material: StandardMaterial3D
+var _scatter_caster: Node3D
+var _rail_driver: Node3D
+var _coil_lance: Node3D
 var _pulse_rifle: Node3D
 var _arc_sidearm: Node3D
 var _equipped_weapon := "pulse_rifle"
 var _last_animation := "idle"
 var _idle_clock := 0.0
 var _defeated := false
+var _authoritative_life := "active"
+var _reduced_motion := false
+var _reduced_flash := false
 
 
 func _ready() -> void:
@@ -21,23 +27,56 @@ func _ready() -> void:
 	_last_animation = "idle"
 
 
+func set_accessibility(motion: bool, flash: bool) -> void:
+	_reduced_motion = motion
+	_reduced_flash = flash
+
+
 func _process(delta: float) -> void:
 	if _defeated:
 		return
 	_idle_clock += delta
-	_visual_root.position.y = sin(_idle_clock * 2.4) * 0.018
-	_core_material.emission_energy_multiplier = 1.9 + sin(_idle_clock * 3.2) * 0.35
+	_visual_root.position.y = 0.0 if _reduced_motion else sin(_idle_clock * 2.4) * 0.018
+	_core_material.emission_energy_multiplier = 1.9 if _reduced_flash else 1.9 + sin(_idle_clock * 3.2) * 0.35
 
 
 func set_weapon(item_id: String) -> void:
-	if item_id not in ["pulse_rifle", "arc_sidearm"]:
+	if item_id not in ["pulse_rifle", "arc_sidearm", "coil_lance", "scatter_caster", "rail_driver"]:
 		return
+	var current_models := {"pulse_rifle": _pulse_rifle, "arc_sidearm": _arc_sidearm, "coil_lance": _coil_lance, "scatter_caster": _scatter_caster, "rail_driver": _rail_driver}
+	if current_models.get(item_id) == null:
+		for model in current_models.values():
+			if is_instance_valid(model):
+				_weapon_mount.remove_child(model)
+				model.queue_free()
+		_pulse_rifle = null
+		_arc_sidearm = null
+		_coil_lance = null
+		_scatter_caster = null
+		_rail_driver = null
+		var model: Node3D = load("res://presentation/operator/weapons/%s.tscn" % item_id).instantiate()
+		_weapon_mount.add_child(model)
+		match item_id:
+			"pulse_rifle": _pulse_rifle = model
+			"arc_sidearm": _arc_sidearm = model
+			"coil_lance": _coil_lance = model
+			"scatter_caster": _scatter_caster = model
+			"rail_driver": _rail_driver = model
 	_equipped_weapon = item_id
 	if _pulse_rifle != null:
 		_pulse_rifle.visible = item_id == "pulse_rifle"
 	if _arc_sidearm != null:
 		_arc_sidearm.visible = item_id == "arc_sidearm"
+	if _coil_lance != null:
+		_coil_lance.visible = item_id == "coil_lance"
+	if _scatter_caster != null:
+		_scatter_caster.visible = item_id == "scatter_caster"
+	if _rail_driver != null:
+		_rail_driver.visible = item_id == "rail_driver"
 	_last_animation = "equip"
+	if _reduced_motion:
+		_weapon_mount.rotation_degrees = Vector3.ZERO
+		return
 	_weapon_mount.rotation_degrees = Vector3(0.0, 0.0, -18.0)
 	var tween := create_tween()
 	tween.tween_property(_weapon_mount, "rotation_degrees", Vector3.ZERO, 0.16)
@@ -47,6 +86,10 @@ func play_authoritative_move(local_offset: Vector3) -> void:
 	if _defeated:
 		return
 	_last_animation = "move"
+	if _reduced_motion:
+		_motion_root.position = Vector3.ZERO
+		_motion_root.rotation_degrees = Vector3.ZERO
+		return
 	_motion_root.position = local_offset
 	_motion_root.rotation_degrees.z = clampf(-local_offset.x * 3.0, -5.0, 5.0)
 	var tween := create_tween().set_parallel(true)
@@ -57,9 +100,12 @@ func play_authoritative_move(local_offset: Vector3) -> void:
 func play_confirmed_attack() -> void:
 	if _defeated:
 		return
-	_last_animation = "attack_%s" % ("rifle" if _equipped_weapon == "pulse_rifle" else "sidearm")
-	var weapon: Node3D = _pulse_rifle if _equipped_weapon == "pulse_rifle" else _arc_sidearm
-	weapon.call("pulse")
+	_last_animation = "attack_%s" % {"pulse_rifle": "rifle", "arc_sidearm": "sidearm", "coil_lance": "lance", "scatter_caster": "scatter", "rail_driver": "rail"}[_equipped_weapon]
+	var weapon: Node3D = {"pulse_rifle": _pulse_rifle, "arc_sidearm": _arc_sidearm, "coil_lance": _coil_lance, "scatter_caster": _scatter_caster, "rail_driver": _rail_driver}[_equipped_weapon]
+	if not _reduced_flash:
+		weapon.call("pulse")
+	if _reduced_motion:
+		return
 	_weapon_mount.position.x = -0.1
 	var tween := create_tween()
 	tween.tween_property(_weapon_mount, "position", Vector3.ZERO, 0.12)
@@ -69,6 +115,8 @@ func play_confirmed_hit() -> void:
 	if _defeated:
 		return
 	_last_animation = "hit"
+	if _reduced_motion:
+		return
 	_motion_root.scale = Vector3(1.08, 0.92, 1.08)
 	var tween := create_tween()
 	tween.tween_property(_motion_root, "scale", Vector3.ONE, 0.14)
@@ -78,21 +126,52 @@ func play_defeat() -> void:
 	if _defeated:
 		return
 	_defeated = true
+	_authoritative_life = "defeated"
 	_last_animation = "defeat"
 	_core_material.emission_energy_multiplier = 0.15
+	if _reduced_motion:
+		_motion_root.rotation_degrees = Vector3(0.0, 0.0, 78.0)
+		_motion_root.position = Vector3(0.0, 0.18, 0.0)
+		return
 	var tween := create_tween().set_parallel(true)
 	tween.tween_property(_motion_root, "rotation_degrees", Vector3(0.0, 0.0, 78.0), 0.32)
 	tween.tween_property(_motion_root, "position", Vector3(0.0, 0.18, 0.0), 0.32)
+
+
+func set_authoritative_life(life: String) -> void:
+	if life not in ["active", "downed", "defeated"] or (_defeated and life != "defeated"):
+		return
+	_authoritative_life = life
+	if life == "defeated":
+		play_defeat()
+		return
+	_defeated = false
+	_last_animation = "revived" if life == "active" else "downed"
+	var target_rotation := Vector3.ZERO if life == "active" else Vector3(0.0, 0.0, 62.0)
+	var target_position := Vector3.ZERO if life == "active" else Vector3(0.0, 0.12, 0.0)
+	_core_material.emission_energy_multiplier = 2.0 if life == "active" else 0.32
+	if _reduced_motion:
+		_motion_root.rotation_degrees = target_rotation
+		_motion_root.position = target_position
+		return
+	var tween := create_tween().set_parallel(true)
+	tween.tween_property(_motion_root, "rotation_degrees", target_rotation, 0.24)
+	tween.tween_property(_motion_root, "position", target_position, 0.24)
 
 
 func presentation_state() -> Dictionary:
 	return {
 		"equipped_weapon": _equipped_weapon,
 		"last_animation": _last_animation,
-		"pulse_rifle_visible": _pulse_rifle.visible,
-		"arc_sidearm_visible": _arc_sidearm.visible,
+		"pulse_rifle_visible": is_instance_valid(_pulse_rifle) and _pulse_rifle.visible,
+		"arc_sidearm_visible": is_instance_valid(_arc_sidearm) and _arc_sidearm.visible,
+		"coil_lance_visible": is_instance_valid(_coil_lance) and _coil_lance.visible,
+		"scatter_caster_visible": is_instance_valid(_scatter_caster) and _scatter_caster.visible,
+		"rail_driver_visible": is_instance_valid(_rail_driver) and _rail_driver.visible,
 		"defeated": _defeated,
+		"authoritative_life": _authoritative_life,
 		"part_count": _count_mesh_parts(self),
+		"reduced_motion": _reduced_motion, "reduced_flash": _reduced_flash,
 	}
 
 
@@ -128,10 +207,7 @@ func _build_operator() -> void:
 	_weapon_mount.name = "WeaponMount"
 	_weapon_mount.position = Vector3(0.4, 1.08, -0.32)
 	_visual_root.add_child(_weapon_mount)
-	_pulse_rifle = PULSE_RIFLE_SCENE.instantiate()
-	_arc_sidearm = ARC_SIDEARM_SCENE.instantiate()
-	_weapon_mount.add_child(_pulse_rifle)
-	_weapon_mount.add_child(_arc_sidearm)
+
 
 
 func _add_limb(part_name: String, position: Vector3, size: Vector3, material: Material) -> void:

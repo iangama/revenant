@@ -6,6 +6,7 @@ license.workspace = true
 
 [dependencies]
 revenant-actors = { path = "../actors" }
+revenant-combat = { path = "../combat" }
 
 [lints]
 workspace = true

@@ -1,0 +1,22 @@
+# Disposable Gate 4 fixture: always use a fresh m30g4-prefixed project name.
+# Never apply this override to the normal infra project.
+services:
+  postgres:
+    volumes: !override
+      - revenant-postgres-socket:/var/run/postgresql
+    tmpfs:
+      - /var/lib/postgresql/data:rw,nosuid,nodev,size=128m
+  migrate:
+    image: infra-migrate:latest
+  gateway:
+    image: infra-gateway:latest
+    environment:
+      REVENANT_EXPECTED_PLAYERS: "2"
+      REVENANT_INSPECTOR_ORIGIN: http://127.0.0.1:41473
+    ports: !override
+      - "127.0.0.1:18440:8080"
+      - "127.0.0.1:17440:7000"
+  inspector:
+    image: infra-inspector:latest
+    ports: !override
+      - "127.0.0.1:41473:80"

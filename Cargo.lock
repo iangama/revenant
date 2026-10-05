@@ -551,7 +551,18 @@ dependencies = [
  "mlua",
  "revenant-inventory",
  "revenant-objectives",
+ "revenant-operations",
  "revenant-progression",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "revenant-activity-validator"
+version = "0.2.0"
+dependencies = [
+ "revenant-activities",
+ "serde_json",
 ]
 
 [[package]]
@@ -563,6 +574,7 @@ name = "revenant-ai"
 version = "0.2.0"
 dependencies = [
  "revenant-actors",
+ "revenant-combat",
 ]
 
 [[package]]
@@ -570,6 +582,28 @@ name = "revenant-bot"
 version = "0.2.0"
 dependencies = [
  "revenant-protocol",
+ "rmp-serde",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "revenant-campaign"
+version = "0.2.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "revenant-challenges"
+version = "0.2.0"
+dependencies = [
+ "revenant-ai",
+ "revenant-inventory",
+ "revenant-modules",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -588,10 +622,49 @@ dependencies = [
 ]
 
 [[package]]
+name = "revenant-combat-lab"
+version = "0.2.0"
+dependencies = [
+ "revenant-ai",
+ "revenant-combat",
+ "revenant-inventory",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "revenant-compatibility"
 version = "0.2.0"
 dependencies = [
  "revenant-protocol",
+]
+
+[[package]]
+name = "revenant-cooperation"
+version = "0.2.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "revenant-cooperation-bot"
+version = "0.2.0"
+dependencies = [
+ "revenant-protocol",
+ "serde_json",
+]
+
+[[package]]
+name = "revenant-cooperation-lab"
+version = "0.2.0"
+dependencies = [
+ "revenant-ai",
+ "revenant-cooperation",
+ "revenant-inventory",
+ "revenant-modules",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -606,14 +679,20 @@ dependencies = [
 name = "revenant-gateway"
 version = "0.2.0"
 dependencies = [
+ "getrandom",
  "revenant-activities",
  "revenant-actors",
  "revenant-ai",
+ "revenant-campaign",
+ "revenant-challenges",
  "revenant-combat",
  "revenant-compatibility",
+ "revenant-cooperation",
  "revenant-identity",
  "revenant-inventory",
+ "revenant-modules",
  "revenant-objectives",
+ "revenant-operations",
  "revenant-persistence",
  "revenant-progression",
  "revenant-protocol",
@@ -631,15 +710,74 @@ name = "revenant-inventory"
 version = "0.2.0"
 
 [[package]]
+name = "revenant-local-security-lab"
+version = "0.2.0"
+dependencies = [
+ "getrandom",
+ "serde",
+ "serde_json",
+ "sha2",
+ "subtle",
+]
+
+[[package]]
+name = "revenant-module-lab"
+version = "0.2.0"
+dependencies = [
+ "revenant-ai",
+ "revenant-combat",
+ "revenant-inventory",
+ "revenant-modules",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "revenant-modules"
+version = "0.2.0"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "revenant-objectives"
 version = "0.2.0"
+
+[[package]]
+name = "revenant-operation-lab"
+version = "0.2.0"
+dependencies = [
+ "revenant-ai",
+ "revenant-combat",
+ "revenant-inventory",
+ "revenant-modules",
+ "revenant-operations",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "revenant-operations"
+version = "0.2.0"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "revenant-persistence"
 version = "0.2.0"
 dependencies = [
  "postgres",
+ "revenant-campaign",
+ "revenant-challenges",
+ "revenant-cooperation",
+ "revenant-inventory",
+ "revenant-modules",
+ "revenant-operations",
  "revenant-progression",
+ "revenant-replay",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -665,6 +803,19 @@ dependencies = [
 [[package]]
 name = "revenant-replay"
 version = "0.2.0"
+dependencies = [
+ "revenant-activities",
+ "revenant-actors",
+ "revenant-ai",
+ "revenant-campaign",
+ "revenant-challenges",
+ "revenant-cooperation",
+ "revenant-inventory",
+ "revenant-modules",
+ "revenant-operations",
+ "serde",
+ "serde_json",
+]
 
 [[package]]
 name = "revenant-world"
@@ -808,6 +959,12 @@ dependencies = [
  "unicode-normalization",
  "unicode-properties",
 ]
+
+[[package]]
+name = "subtle"
+version = "2.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 
 [[package]]
 name = "syn"

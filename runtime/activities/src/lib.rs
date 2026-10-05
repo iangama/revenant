@@ -1,12 +1,20 @@
 use std::collections::HashMap;
-use std::error::Error;
-use std::fmt::{self, Display, Formatter};
-use std::fs;
 use std::path::Path;
 
-use mlua::{Lua, LuaOptions, StdLib, Table};
+mod authoring;
+pub mod coolant;
+pub mod meridian;
+
+pub use authoring::{
+    validate_activity_file, validate_activity_source, ActivityAuthoringManifest, ActivityError,
+    AuthoringLimits, AuthoringObjective, AuthoringRoute, AuthoringRouteEvent, AuthoringTrigger,
+    MAX_ACTIVITY_LUA_BYTES, MAX_ACTIVITY_LUA_INSTRUCTIONS, MAX_ACTIVITY_LUA_MEMORY_BYTES,
+};
+
+use authoring::parse_activity_source;
+use authoring::{parse_activity_file, ParsedActivity, TriggerDefinition};
 use revenant_inventory::Reward;
-use revenant_objectives::{Objective, ObjectiveKind, ObjectiveState, WorldTrigger};
+use revenant_objectives::{Objective, ObjectiveState, WorldTrigger};
 use revenant_progression::ExperienceReward;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -18,7 +26,7 @@ pub enum ActivityEvent {
     Completed { activity_id: String },
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ScriptedActivity {
     id: String,
     reward: Reward,
@@ -26,29 +34,8 @@ pub struct ScriptedActivity {
     objectives: HashMap<String, Objective>,
     objective_order: Vec<String>,
     triggers: Vec<TriggerDefinition>,
+    manifest: ActivityAuthoringManifest,
 }
-
-#[derive(Debug, Clone)]
-struct TriggerDefinition {
-    event: String,
-    subject: String,
-    complete: Vec<String>,
-    activate: Vec<String>,
-    open_door: Option<String>,
-    spawn_boss: Option<String>,
-    complete_activity: bool,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ActivityError(String);
-
-impl Display for ActivityError {
-    fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
-        formatter.write_str(&self.0)
-    }
-}
-
-impl Error for ActivityError {}
 
 impl ScriptedActivity {
     #[must_use]
@@ -63,54 +50,33 @@ impl ScriptedActivity {
     /// Returns an error when the file cannot be read or its Lua table does not match
     /// the activity schema.
     pub fn load(path: impl AsRef<Path>) -> Result<Self, ActivityError> {
-        let source = fs::read_to_string(path.as_ref())
-            .map_err(|error| ActivityError(format!("activity script read failed: {error}")))?;
-        Self::from_lua(&source)
+        parse_activity_file(path.as_ref()).map(Self::from_parsed)
     }
 
+    #[cfg(test)]
     fn from_lua(source: &str) -> Result<Self, ActivityError> {
-        let lua = Lua::new_with(StdLib::TABLE | StdLib::STRING, LuaOptions::default())
-            .map_err(activity_error)?;
-        let definition: Table = lua.load(source).eval().map_err(activity_error)?;
-        let id = definition.get("id").map_err(activity_error)?;
-        let reward_table: Table = definition.get("reward").map_err(activity_error)?;
-        let reward = Reward::validated(
-            reward_table
-                .get::<String>("item_id")
-                .map_err(activity_error)?,
-            reward_table
-                .get::<u32>("quantity")
-                .map_err(activity_error)?,
-        )
-        .map_err(activity_error)?;
-        let progression_table: Table = definition.get("progression").map_err(activity_error)?;
-        let experience_reward = ExperienceReward::validated(
-            progression_table
-                .get::<u64>("experience")
-                .map_err(activity_error)?,
-        )
-        .map_err(activity_error)?;
-        let objective_tables: Table = definition.get("objectives").map_err(activity_error)?;
-        let mut objectives = HashMap::new();
-        let mut objective_order = Vec::new();
-        for table in objective_tables.sequence_values::<Table>() {
-            let objective = parse_objective(&table.map_err(activity_error)?)?;
-            objective_order.push(objective.id.clone());
-            objectives.insert(objective.id.clone(), objective);
+        Self::from_source(source)
+    }
+
+    /// Loads embedded authored content with the same limits as a Lua file.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error for invalid, unbounded, or non-declarative content.
+    pub fn from_source(source: &str) -> Result<Self, ActivityError> {
+        parse_activity_source(source).map(Self::from_parsed)
+    }
+
+    fn from_parsed(parsed: ParsedActivity) -> Self {
+        Self {
+            id: parsed.id,
+            reward: parsed.reward,
+            experience_reward: parsed.experience_reward,
+            objectives: parsed.objectives,
+            objective_order: parsed.objective_order,
+            triggers: parsed.triggers,
+            manifest: parsed.manifest,
         }
-        let trigger_tables: Table = definition.get("triggers").map_err(activity_error)?;
-        let triggers = trigger_tables
-            .sequence_values::<Table>()
-            .map(|table| parse_trigger(&table.map_err(activity_error)?))
-            .collect::<Result<Vec<_>, _>>()?;
-        Ok(Self {
-            id,
-            reward,
-            experience_reward,
-            objectives,
-            objective_order,
-            triggers,
-        })
     }
 
     #[must_use]
@@ -124,6 +90,11 @@ impl ScriptedActivity {
     }
 
     #[must_use]
+    pub const fn authoring_manifest(&self) -> &ActivityAuthoringManifest {
+        &self.manifest
+    }
+
+    #[must_use]
     pub fn start(&self) -> Vec<ActivityEvent> {
         let mut events = vec![ActivityEvent::Started {
             activity_id: self.id.clone(),
@@ -134,6 +105,16 @@ impl ScriptedActivity {
                 .then(|| ActivityEvent::ObjectiveUpdated(objective.clone()))
         }));
         events
+    }
+
+    /// Projects every accepted objective when resuming an authored chapter.
+    #[must_use]
+    pub fn objective_snapshot(&self) -> Vec<ActivityEvent> {
+        self.objective_order
+            .iter()
+            .filter_map(|id| self.objectives.get(id))
+            .map(|objective| ActivityEvent::ObjectiveUpdated(objective.clone()))
+            .collect()
     }
 
     pub fn apply_trigger(&mut self, trigger: &WorldTrigger) -> Vec<ActivityEvent> {
@@ -178,68 +159,6 @@ impl ScriptedActivity {
     }
 }
 
-fn parse_objective(table: &Table) -> Result<Objective, ActivityError> {
-    let kind = match table
-        .get::<String>("kind")
-        .map_err(activity_error)?
-        .as_str()
-    {
-        "KillActors" => ObjectiveKind::KillActors,
-        "ReachArea" => ObjectiveKind::ReachArea,
-        "Boss" => ObjectiveKind::Boss,
-        value => return Err(ActivityError(format!("unknown objective kind: {value}"))),
-    };
-    let state = match table
-        .get::<String>("state")
-        .map_err(activity_error)?
-        .as_str()
-    {
-        "Pending" => ObjectiveState::Pending,
-        "Active" => ObjectiveState::Active,
-        value => {
-            return Err(ActivityError(format!(
-                "invalid initial objective state: {value}"
-            )))
-        }
-    };
-    Ok(Objective {
-        id: table.get("id").map_err(activity_error)?,
-        kind,
-        state,
-        progress: 0,
-        target: table.get("target").map_err(activity_error)?,
-    })
-}
-
-fn parse_trigger(table: &Table) -> Result<TriggerDefinition, ActivityError> {
-    Ok(TriggerDefinition {
-        event: table.get("event").map_err(activity_error)?,
-        subject: table.get("subject").map_err(activity_error)?,
-        complete: string_sequence(table, "complete")?,
-        activate: string_sequence(table, "activate")?,
-        open_door: table.get("open_door").map_err(activity_error)?,
-        spawn_boss: table.get("spawn_boss").map_err(activity_error)?,
-        complete_activity: table
-            .get::<Option<bool>>("complete_activity")
-            .map_err(activity_error)?
-            .unwrap_or(false),
-    })
-}
-
-fn string_sequence(table: &Table, key: &str) -> Result<Vec<String>, ActivityError> {
-    let Some(values) = table.get::<Option<Table>>(key).map_err(activity_error)? else {
-        return Ok(Vec::new());
-    };
-    values
-        .sequence_values::<String>()
-        .map(|value| value.map_err(activity_error))
-        .collect()
-}
-
-fn activity_error(error: impl Display) -> ActivityError {
-    ActivityError(error.to_string())
-}
-
 #[cfg(test)]
 mod tests {
     use revenant_objectives::WorldTrigger;
@@ -247,6 +166,45 @@ mod tests {
     use super::{ActivityEvent, ScriptedActivity};
 
     const SCRIPT: &str = include_str!("../../../scripts/activities/relay_awakening.lua");
+    const GOLDEN: &str = include_str!("../../../tests/fixtures/m27/relay_awakening_m26.lua");
+
+    #[test]
+    fn campaign_prism_boss_and_shutdown_do_not_emit_completion() {
+        let mut activity = ScriptedActivity::from_source(include_str!(
+            "../../../scripts/activities/campaign_prism.lua"
+        ))
+        .unwrap();
+        activity.apply_trigger(&WorldTrigger::AreaReached {
+            area_id: "prism_arrival".to_owned(),
+        });
+        let boss = activity.apply_trigger(&WorldTrigger::ActorGroupDead {
+            group_id: "prism_guard".to_owned(),
+        });
+        assert!(boss
+            .iter()
+            .all(|e| matches!(e, ActivityEvent::ObjectiveUpdated(_))));
+        assert!(activity.objective_snapshot().iter().any(|e| matches!(e,
+            ActivityEvent::ObjectiveUpdated(o) if o.id == "prism_shutdown" && o.state == super::ObjectiveState::Active
+        )));
+        let shutdown = activity.apply_trigger(&WorldTrigger::AreaReached {
+            area_id: "prism_shutdown".to_owned(),
+        });
+        assert!(shutdown
+            .iter()
+            .all(|e| matches!(e, ActivityEvent::ObjectiveUpdated(_))));
+        let returned = activity.apply_trigger(&WorldTrigger::AreaReached {
+            area_id: "prism_return".to_owned(),
+        });
+        assert_eq!(
+            returned
+                .iter()
+                .filter(|e| matches!(e, ActivityEvent::Completed { .. }))
+                .count(),
+            1
+        );
+        assert_eq!(activity.reward().quantity, 1);
+        assert_eq!(activity.experience_reward().experience(), 100);
+    }
 
     #[test]
     fn lua_activity_opens_door_spawns_boss_and_completes() {
@@ -272,5 +230,32 @@ mod tests {
         assert_eq!(activity.reward().item_id, "relay_core_fragment");
         assert_eq!(activity.reward().quantity, 1);
         assert_eq!(activity.experience_reward().experience(), 100);
+    }
+
+    #[test]
+    fn extended_authoring_preserves_exact_m26_runtime_projection() {
+        let mut current = ScriptedActivity::from_lua(SCRIPT).expect("current script should load");
+        let mut golden = ScriptedActivity::from_lua(GOLDEN).expect("golden script should load");
+        assert_eq!(current.start(), golden.start());
+        for trigger in [
+            WorldTrigger::ActorGroupDead {
+                group_id: "relay_drones".to_owned(),
+            },
+            WorldTrigger::AreaReached {
+                area_id: "relay_door".to_owned(),
+            },
+            WorldTrigger::ActorGroupDead {
+                group_id: "warden".to_owned(),
+            },
+        ] {
+            assert_eq!(
+                current.apply_trigger(&trigger),
+                golden.apply_trigger(&trigger)
+            );
+        }
+        assert_eq!(current.reward(), golden.reward());
+        assert_eq!(current.experience_reward(), golden.experience_reward());
+        assert_eq!(current.authoring_manifest().routes.len(), 2);
+        assert!(golden.authoring_manifest().routes.is_empty());
     }
 }

@@ -1,0 +1,55 @@
+[CmdletBinding()]
+param(
+    [Parameter(Mandatory = $true)]
+    [ValidatePattern('^PT-[A-Z0-9]{4}$')]
+    [string]$ParticipantCode,
+
+    [Parameter(Mandatory = $true)]
+    [ValidateSet('yes', 'no')]
+    [string]$ObservationConsent,
+
+    [Parameter(Mandatory = $true)]
+    [ValidateSet('yes', 'no')]
+    [string]$RetentionConsent
+)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+
+if ($RetentionConsent -eq 'yes' -and $ObservationConsent -ne 'yes') {
+    throw 'Retention cannot be accepted when observation consent is declined.'
+}
+
+$game = Join-Path $PSScriptRoot '..\participant\Revenant.exe'
+if (-not (Test-Path -LiteralPath $game -PathType Leaf)) {
+    throw "Participant executable is missing: $game"
+}
+
+$buildId = '@BUILD_ID@'
+$variables = @{
+    REVENANT_GAME_HOST = '127.0.0.1'
+    REVENANT_GAME_PORT = '7000'
+    REVENANT_GAME_USERNAME = "m24-$($ParticipantCode.ToLowerInvariant())"
+    REVENANT_PLAYTEST_MODE = '1'
+    REVENANT_PLAYTEST_PARTICIPANT = $ParticipantCode
+    REVENANT_PLAYTEST_BUILD_ID = $buildId
+    REVENANT_PLAYTEST_OBSERVATION_CONSENT = if ($ObservationConsent -eq 'yes') { '1' } else { '0' }
+    REVENANT_PLAYTEST_RETENTION_CONSENT = if ($RetentionConsent -eq 'yes') { '1' } else { '0' }
+}
+$previous = @{}
+
+try {
+    foreach ($name in $variables.Keys) {
+        $previous[$name] = [Environment]::GetEnvironmentVariable($name, 'Process')
+        [Environment]::SetEnvironmentVariable($name, $variables[$name], 'Process')
+    }
+    Write-Host "Starting unpublished Revenant package $buildId"
+    $process = Start-Process -FilePath $game -WorkingDirectory (Split-Path $game) -PassThru -Wait
+    exit $process.ExitCode
+}
+finally {
+    foreach ($name in $variables.Keys) {
+        [Environment]::SetEnvironmentVariable($name, $previous[$name], 'Process')
+    }
+}
+
